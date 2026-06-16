@@ -1,6 +1,32 @@
 {% extends 'teams/base.html' %}
 {% block title %}Gestión de Torneos y Ligas - Sistema Deportivo{% endblock %}
 
+{% block extra_css %}
+<style>
+    .team-select-card {
+        border-radius: 12px;
+        background: #f8fafc;
+        cursor: pointer;
+        border: 1.5px solid #cbd5e1;
+        user-select: none;
+        transition: all 0.2s ease-in-out;
+    }
+    .team-select-card:hover {
+        transform: translateY(-1px);
+        border-color: #94a3b8;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .team-select-card.selected {
+        border-color: #2563eb !important;
+        background-color: #eff6ff !important;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1) !important;
+    }
+    .team-select-card.selected .checkbox-indicator i {
+        color: #2563eb !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="gradient-header text-center py-5 shadow-sm">
     <div class="container">
@@ -119,9 +145,57 @@
                                 {% endif %}
                             </label>
                             
-                            {{ field }}
+                            {% if field.name == 'equipos' %}
+                                <!-- Ocultamos el select real pero lo mantenemos para que Django procese el POST -->
+                                <select name="{{ field.name }}" id="id_{{ field.name }}" multiple class="d-none">
+                                    {% for team in field.field.queryset %}
+                                        <option value="{{ team.id }}">{{ team.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                                
+                                <!-- Buscador y contador de equipos seleccionados -->
+                                <div class="d-flex align-items-center justify-content-between mb-2 gap-2">
+                                    <div class="input-group input-group-sm" style="max-width: 65%;">
+                                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass fs-9"></i></span>
+                                        <input type="text" id="teamSearchInput" class="form-control form-control-sm border-start-0 fs-8 bg-light" placeholder="Buscar equipo..." onkeyup="filterTeams()">
+                                    </div>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-8 px-2.5 py-1.5 rounded-pill" id="selectedTeamsCount">
+                                        0 Seleccionados
+                                    </span>
+                                </div>
+
+                                <!-- Contenedor visual premium con tarjetas interactivas -->
+                                <div class="team-selection-container border rounded-4 p-2 bg-white shadow-sm" style="max-height: 280px; overflow-y: auto; border: 1.5px solid #cbd5e1 !important;">
+                                    <div class="row g-2 m-0">
+                                        {% for team in field.field.queryset %}
+                                            <div class="col-12 px-0">
+                                                <div class="card team-select-card p-2.5 d-flex flex-row align-items-center justify-content-between" data-value="{{ team.id }}" onclick="toggleTeamSelection(this)">
+                                                    <div class="d-flex align-items-center">
+                                                        {% if team.logo %}
+                                                            <img src="{{ team.logo.url }}" alt="{{ team.nombre }}" class="rounded-circle border me-2.5 shadow-sm" style="width: 34px; height: 34px; object-fit: cover;">
+                                                        {% else %}
+                                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-2.5 shadow-sm" style="width: 34px; height: 34px; font-size: 12px; background: linear-gradient(135deg, #1e3c72 0%, #2563eb 100%) !important;">
+                                                                {{ team.nombre|slice:":2"|upper }}
+                                                            </div>
+                                                        {% endif %}
+                                                        <div class="text-start">
+                                                            <div class="fw-bold text-dark fs-7 lh-sm mb-1">{{ team.nombre }}</div>
+                                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-1.5 py-0.5 rounded-1 text-uppercase tracking-wider" style="font-size: 0.65rem !important;">{{ team.get_categoria_display }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="checkbox-indicator text-muted fs-5 pe-1">
+                                                        <i class="fa-regular fa-circle-check"></i>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% else %}
+                                {{ field }}
+                            {% endif %}
                             
-                            {% if field.help_text %}
+                            {% if field.help_text and field.name != 'equipos' %}
                                 <div class="form-text text-muted small mt-1 fs-8"><i class="fa-solid fa-circle-info me-1"></i>{{ field.help_text }}</div>
                             {% endif %}
                             
@@ -141,4 +215,75 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleTeamSelection(card) {
+        const val = card.getAttribute('data-value');
+        const select = document.getElementById('id_equipos');
+        const option = select.querySelector(`option[value="${val}"]`);
+        const icon = card.querySelector('.checkbox-indicator i');
+        
+        if (option) {
+            option.selected = !option.selected;
+            card.classList.toggle('selected', option.selected);
+            
+            if (option.selected) {
+                icon.classList.remove('fa-regular', 'fa-circle-check');
+                icon.classList.add('fa-solid', 'fa-circle-check');
+            } else {
+                icon.classList.remove('fa-solid', 'fa-circle-check');
+                icon.classList.add('fa-regular', 'fa-circle-check');
+            }
+            updateSelectedCount();
+        }
+    }
+
+    function filterTeams() {
+        const query = document.getElementById('teamSearchInput').value.toUpperCase();
+        const cards = document.querySelectorAll('.team-select-card');
+        
+        cards.forEach(card => {
+            const teamName = card.querySelector('.fw-bold').textContent.toUpperCase();
+            const teamCategory = card.querySelector('.badge').textContent.toUpperCase();
+            const containerCol = card.closest('.col-12');
+            
+            if (teamName.includes(query) || teamCategory.includes(query)) {
+                containerCol.style.setProperty('display', '', 'important');
+            } else {
+                containerCol.style.setProperty('display', 'none', 'important');
+            }
+        });
+    }
+
+    function updateSelectedCount() {
+        const select = document.getElementById('id_equipos');
+        if (select) {
+            const count = Array.from(select.options).filter(opt => opt.selected).length;
+            document.getElementById('selectedTeamsCount').textContent = `${count} Seleccionados`;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const select = document.getElementById('id_equipos');
+        if (select) {
+            const selectedValues = Array.from(select.selectedOptions).map(opt => opt.value);
+            const cards = document.querySelectorAll('.team-select-card');
+            
+            cards.forEach(card => {
+                const val = card.getAttribute('data-value');
+                if (selectedValues.includes(val)) {
+                    card.classList.add('selected');
+                    const icon = card.querySelector('.checkbox-indicator i');
+                    if (icon) {
+                        icon.classList.remove('fa-regular', 'fa-circle-check');
+                        icon.classList.add('fa-solid', 'fa-circle-check');
+                    }
+                }
+            });
+            updateSelectedCount();
+        }
+    });
+</script>
 {% endblock %}
