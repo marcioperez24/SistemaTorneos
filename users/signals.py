@@ -4,6 +4,11 @@ from django.db import models
 
 @receiver(pre_save)
 def auto_uppercase_fields(sender, instance, **kwargs):
+    # Solo aplicar a los modelos de nuestras aplicaciones para evitar corromper datos internos de Django (como sesiones o permisos)
+    mis_apps = ['users', 'teams', 'matches', 'finances']
+    if instance._meta.app_label not in mis_apps:
+        return
+
     for field in instance._meta.fields:
         if isinstance(field, (models.CharField, models.TextField)):
             # Skip fields with predefined choices to avoid breaking form validation/display
