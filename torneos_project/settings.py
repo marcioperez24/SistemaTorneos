@@ -23,9 +23,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-hf#8-!r-b(ns8-u@t*1js6y98azkc0*2f2vd6@!za5sac*v0_t'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['torneos.sysacadep.win']
+ALLOWED_HOSTS = ['torneos.sysacadep.win', '127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -128,12 +128,21 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
-
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+
+CSRF_TRUSTED_ORIGINS = ['https://torneos.sysacadep.win']
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'club_portal'
 LOGOUT_REDIRECT_URL = 'login'
 
-CSRF_TRUSTED_ORIGINS = ['https://torneos.sysacadep.win']
+try:
+    # pyrefly: ignore [missing-import]
+    from .settings_local import *
+except ImportError:
+    pass

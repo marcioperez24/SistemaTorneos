@@ -10,3 +10,4 @@ venv/
 .idea/
 .vscode/
 *.log
+torneos_project/settings_local.py
