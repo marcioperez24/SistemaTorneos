@@ -1,0 +1,167 @@
+{% extends 'teams/base.html' %}
+{% block title %}Portal del Club - Sistema Deportivo{% endblock %}
+
+{% block content %}
+<div class="gradient-header text-center text-md-start">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="fw-bold"><i class="fa-solid fa-users-gear me-3 text-warning"></i>Portal del Club</h1>
+                <p class="lead mb-0 text-white-50">Gestiona tu equipo, genera invitaciones de jugadores y monitorea su registro.</p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <a href="{% url 'crear_equipo' %}" class="btn btn-custom-accent py-2.5 px-4 shadow">
+                    <i class="fa-solid fa-plus me-2"></i>Registrar Nuevo Equipo
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    {% if not equipos %}
+        <div class="row justify-content-center">
+            <div class="col-md-8 text-center my-5 py-5">
+                <div class="mb-4 text-muted">
+                    <i class="fa-solid fa-shield-halved fa-5x"></i>
+                </div>
+                <h3>Aún no has registrado ningún equipo</h3>
+                <p class="text-muted">Para comenzar a gestionar tu plantilla, haz clic en el botón superior para registrar tu primer club.</p>
+                <a href="{% url 'crear_equipo' %}" class="btn btn-custom-primary mt-3 px-4 py-2">Crear Equipo Ahora</a>
+            </div>
+        </div>
+    {% else %}
+        {% for equipo in equipos %}
+            <div class="card card-custom mb-5">
+                <div class="card-header bg-white border-0 pt-4 px-4 d-flex flex-wrap align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        {% if equipo.logo %}
+                            <img src="{{ equipo.logo.url }}" alt="{{ equipo.nombre }}" class="rounded-circle border me-3 shadow-sm" style="width: 70px; height: 70px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-primary bg-gradient text-white rounded-circle border me-3 shadow-sm d-flex align-items-center justify-content-center" style="width: 70px; height: 70px; font-size: 28px; font-weight: 800;">
+                                {{ equipo.nombre|slice:":2"|upper }}
+                            </div>
+                        {% endif %}
+                        <div>
+                            <h2 class="h3 fw-bold mb-0 text-primary">{{ equipo.nombre }}</h2>
+                            <span class="badge bg-secondary px-3 py-1.5 rounded-pill mt-1" style="font-size: 0.85rem;">
+                                <i class="fa-solid fa-tags me-1"></i>{{ equipo.get_categoria_display }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3 mt-md-0">
+                        <a href="{% url 'generar_invitacion' equipo.id %}" class="btn btn-custom-primary">
+                            <i class="fa-solid fa-share-nodes me-2"></i>Generar Enlace de Registro
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body px-4 pb-4">
+                    <!-- Si acabamos de generar una invitación, la mostramos para copiar -->
+                    {% if nuevo_enlace and nuevo_enlace_equipo_id == equipo.id %}
+                        <div class="alert alert-success border-0 shadow-sm mb-4" role="alert">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="fa-solid fa-circle-check fa-lg text-success me-2"></i>
+                                <h5 class="alert-heading mb-0 fw-bold">¡Enlace Generado!</h5>
+                            </div>
+                            <p class="mb-3 text-secondary">Comparte este enlace único con tus jugadores. El enlace expira en 48 horas y les permite auto-registrarse en tu plantilla.</p>
+                            <div class="input-group">
+                                <input type="text" class="form-control bg-white font-monospace" id="inviteLinkInput" value="{{ nuevo_enlace }}" readonly>
+                                <button class="btn btn-primary" type="button" onclick="copyInviteLink()">
+                                    <i class="fa-regular fa-copy me-1"></i>Copiar
+                                </button>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <h4 class="fw-bold mt-4 mb-3 text-secondary border-bottom pb-2">
+                        <i class="fa-solid fa-users me-2 text-primary"></i>Plantilla del Club ({{ equipo.jugadores.count }} Jugadores)
+                    </h4>
+
+                    {% if not equipo.jugadores.exists %}
+                        <div class="text-center py-5 text-muted bg-light rounded-4">
+                            <i class="fa-solid fa-user-plus fa-3x mb-3 text-black-50"></i>
+                            <h5>No hay jugadores registrados en este equipo</h5>
+                            <p class="small">Haz clic en el botón superior derecho para generar el enlace de invitación y envíaselo a tus jugadores por WhatsApp.</p>
+                        </div>
+                    {% else %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light text-uppercase fs-7 tracking-wider">
+                                    <tr>
+                                        <th>Foto</th>
+                                        <th>Nombre Completo</th>
+                                        <th>Tipo Sangre</th>
+                                        <th>Contacto Emergencia</th>
+                                        <th>Firma Salud</th>
+                                        <th>Estado Carnet</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for jugador in equipo.jugadores.all %}
+                                        <tr>
+                                            <td>
+                                                {% if jugador.foto %}
+                                                    <img src="{{ jugador.foto.url }}" alt="{{ jugador.user.get_full_name }}" class="rounded shadow-sm" style="width: 50px; height: 50px; object-fit: cover;">
+                                                {% else %}
+                                                    <div class="bg-secondary rounded shadow-sm d-flex align-items-center justify-content-center text-white" style="width: 50px; height: 50px;">
+                                                        <i class="fa-regular fa-user"></i>
+                                                    </div>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="fw-bold">{{ jugador.user.get_full_name }}</div>
+                                                <small class="text-muted">{{ jugador.user.email }}</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark font-monospace border">{{ jugador.tipo_sangre|default:"-" }}</span>
+                                            </td>
+                                            <td>
+                                                <div>{{ jugador.contacto_emergencia|default:"-" }}</div>
+                                                <small class="text-muted">{{ jugador.telefono_emergencia|default:"" }}</small>
+                                            </td>
+                                            <td>
+                                                {% if jugador.firma_digital %}
+                                                    <span class="text-success"><i class="fa-solid fa-circle-check me-1"></i>Firmada</span>
+                                                {% else %}
+                                                    <span class="text-danger"><i class="fa-solid fa-circle-xmark me-1"></i>Pendiente</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if jugador.estado_validacion == 'aprobado' %}
+                                                    <span class="badge bg-success py-2 px-3 rounded-pill text-uppercase fs-8"><i class="fa-solid fa-id-card me-1"></i>Aprobado</span>
+                                                {% elif jugador.estado_validacion == 'pendiente' %}
+                                                    <span class="badge bg-warning text-dark py-2 px-3 rounded-pill text-uppercase fs-8"><i class="fa-solid fa-hourglass-half me-1"></i>En Revisión</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger py-2 px-3 rounded-pill text-uppercase fs-8" data-bs-toggle="tooltip" title="{{ jugador.motivo_rechazo }}">
+                                                        <i class="fa-solid fa-triangle-exclamation me-1"></i>Rechazado
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function copyInviteLink() {
+        var copyText = document.getElementById("inviteLinkInput");
+        copyText.select();
+        copyText.setSelectionRange(0, 99999); // For mobile devices
+        navigator.clipboard.writeText(copyText.value);
+        
+        // Show tooltip or change button temporarily
+        alert("Enlace de invitación copiado en el portapapeles.");
+    }
+</script>
+{% endblock %}

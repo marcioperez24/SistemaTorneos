@@ -1,0 +1,425 @@
+{% extends 'teams/base.html' %}
+{% block title %}Detalle del Torneo - {{ torneo.nombre }} - Sistema Deportivo{% endblock %}
+
+{% block content %}
+<div class="gradient-header text-center py-5 shadow-sm">
+    <div class="container">
+        <div class="d-flex justify-content-center align-items-center gap-3 mb-2">
+            <a href="{% url 'gestion_torneos' %}" class="btn btn-outline-light rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm" style="width: 40px; height: 40px;">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <h1 class="fw-bold mb-0 display-6">{{ torneo.nombre|upper }}</h1>
+        </div>
+        <p class="text-white-50 mb-0 fs-5">
+            Temporada: <strong>{{ torneo.temporada }}</strong> | Formato: 
+            <strong>
+                {% if torneo.tipo == 'liga' %}
+                    Liga (Todos contra todos)
+                {% else %}
+                    Torneo de Fases (Grupos + Eliminatorias)
+                {% endif %}
+            </strong>
+        </p>
+    </div>
+</div>
+
+<div class="container my-5">
+    <div class="row g-4">
+        <!-- Panel de Equipos Participantes -->
+        <div class="col-lg-4">
+            <!-- Registrar/Asignar Equipos -->
+            <div class="card card-custom p-4 border-0 shadow-sm mb-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-success-subtle text-success rounded-circle p-2.5 me-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                        <i class="fa-solid fa-people-group text-success fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Equipos Asignados</h5>
+                        <p class="text-muted mb-0 small">Lista de clubes participantes.</p>
+                    </div>
+                </div>
+
+                <!-- Formulario para agregar equipo -->
+                <form method="POST" class="mb-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="agregar_equipo">
+                    <label class="form-label small fw-bold text-secondary mb-1">Inscribir Equipo en este Torneo</label>
+                    <div class="input-group">
+                        <select name="equipo_id" class="form-select border-end-0 py-2 fs-7" required>
+                            <option value="" disabled selected>Selecciona un club...</option>
+                            {% for eq in equipos_no_asignados %}
+                                <option value="{{ eq.id }}">{{ eq.nombre }} ({{ eq.get_categoria_display }})</option>
+                            {% empty %}
+                                <option value="" disabled>Todos los equipos inscritos</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-custom-primary px-3 fs-7" {% if not equipos_no_asignados %}disabled{% endif %}>
+                            <i class="fa-solid fa-plus me-1"></i>Inscribir
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Listado de Equipos del Torneo -->
+                <div class="list-group list-group-flush border-top pt-2">
+                    {% for eq in equipos %}
+                        <div class="list-group-item px-0 py-2.5 d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center">
+                                {% if eq.logo %}
+                                    <img src="{{ eq.logo.url }}" class="rounded-circle me-2.5 border" style="width: 32px; height: 32px; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-light rounded-circle me-2.5 d-flex align-items-center justify-content-center text-secondary border font-bold" style="width: 32px; height: 32px; font-size: 0.8rem;">
+                                        {{ eq.nombre|slice:":2"|upper }}
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <div class="fw-semibold text-dark fs-7">{{ eq.nombre }}</div>
+                                    <div class="text-muted small fs-9">{{ eq.get_categoria_display }} | DT: {{ eq.entrenador|default:"Sin asignar" }}</div>
+                                </div>
+                            </div>
+                            <form method="POST" onsubmit="return confirm('¿Retirar al equipo {{ eq.nombre }} del torneo?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="quitar_equipo">
+                                <input type="hidden" name="equipo_id" value="{{ eq.id }}">
+                                <button type="submit" class="btn btn-link text-decoration-none text-danger p-0" title="Retirar del Torneo">
+                                    <i class="fa-solid fa-user-minus small"></i>
+                                </button>
+                            </form>
+                        </div>
+                    {% empty %}
+                        <div class="text-center py-4 text-muted small">
+                            <i class="fa-solid fa-users-slash d-block fa-2x mb-2 text-secondary-50"></i>
+                            No hay equipos inscritos en este torneo todavía.
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Acciones Rápidas de Fixture -->
+            <div class="card card-custom p-4 border-0 shadow-sm">
+                <h5 class="fw-bold mb-3"><i class="fa-solid fa-wand-magic-sparkles text-primary me-2"></i>Generación Automática</h5>
+                {% if torneo.tipo == 'liga' %}
+                    <p class="text-muted fs-8 mb-3">El sistema creará un fixture todos contra todos (Algoritmo de Berger) asignando árbitros, vocales y horarios rotativos.</p>
+                    <form method="POST" action="{% url 'generar_fixture_torneo' torneo.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="tipo_gen" value="liga">
+                        <div class="form-check mb-3 fs-8">
+                            <input class="form-check-input" type="checkbox" name="limpiar_existentes" id="cleanLiga" checked>
+                            <label class="form-check-label text-secondary fw-semibold" for="cleanLiga">
+                                Limpiar partidos programados existentes
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100 py-2 fw-bold text-uppercase fs-8" {% if equipos|length < 2 %}disabled{% endif %}>
+                            <i class="fa-solid fa-calendar-plus me-2"></i>Generar Calendario de Liga
+                        </button>
+                    </form>
+                {% else %}
+                    <!-- Copa de Grupos y Eliminatorias -->
+                    <p class="text-muted fs-8 mb-3">Puedes generar una Fase de Grupos todos contra todos seleccionando un grupo y los equipos que lo integran.</p>
+                    <button type="button" class="btn btn-custom-accent w-100 py-2 fw-bold text-uppercase fs-8 mb-2" data-bs-toggle="modal" data-bs-target="#modalGrupoFixture" {% if equipos|length < 2 %}disabled{% endif %}>
+                        <i class="fa-solid fa-people-roof me-2"></i>Generar Fixture de Grupo
+                    </button>
+                {% endif %}
+                {% if equipos|length < 2 %}
+                    <div class="text-danger small mt-2 fs-9"><i class="fa-solid fa-triangle-exclamation me-1"></i>Inscribe al menos 2 equipos para habilitar los fixtures automáticos.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Panel de Partidos y Fixtures -->
+        <div class="col-lg-8">
+            <div class="card card-custom p-4 border-0 shadow-sm">
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary-subtle text-primary rounded-circle p-2.5 me-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa-solid fa-calendar-days text-primary fs-5"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-bold mb-0">Partidos Programados</h4>
+                            <p class="text-muted mb-0 small">Calendario y resultados de la competencia.</p>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-custom-primary rounded-pill px-3 py-2 shadow-sm fs-8" data-bs-toggle="modal" data-bs-target="#modalCrearPartido">
+                        <i class="fa-solid fa-circle-plus me-1.5"></i>Programar Partido
+                    </button>
+                </div>
+
+                {% if torneo.tipo == 'liga' %}
+                    <!-- UI Liga: Agrupado por Jornada/Fecha -->
+                    {% if partidos_por_jornada %}
+                        <div class="accordion" id="accordionFixture">
+                            {% for jornada, lista_partidos in partidos_por_jornada %}
+                                <div class="accordion-item border-0 mb-3 rounded-3 overflow-hidden shadow-sm">
+                                    <h2 class="accordion-header" id="headingJornada{{ jornada }}">
+                                        <button class="accordion-button bg-light fw-bold text-dark fs-7 py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseJornada{{ jornada }}" aria-expanded="true" aria-controls="collapseJornada{{ jornada }}">
+                                            <i class="fa-solid fa-calendar-week text-success me-2 fs-6"></i>JORNADA / FECHA {{ jornada }} 
+                                            <span class="badge bg-secondary ms-3 fs-9 font-monospace">{{ lista_partidos|length }} Partidos</span>
+                                        </button>
+                                    </h2>
+                                    <div id="collapseJornada{{ jornada }}" class="accordion-collapse collapse show" aria-labelledby="headingJornada{{ jornada }}" data-bs-parent="#accordionFixture">
+                                        <div class="accordion-body bg-white p-0">
+                                            {% include 'matches/partials_torneo_partido_list.html' with matches_list=lista_partidos %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fa-regular fa-calendar-times fa-3x mb-3 text-secondary-50"></i>
+                            <p class="mb-0">No hay partidos programados para esta liga.</p>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <!-- UI Torneo: Pestañas de Fases -->
+                    <ul class="nav nav-pills nav-fill mb-4 p-1 bg-light rounded-3" id="tabFases" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active py-2 fs-8 fw-semibold" id="grupos-tab" data-bs-toggle="tab" data-bs-target="#grupos-pane" type="button" role="tab" aria-controls="grupos-pane" aria-selected="true">
+                                Grupos ({{ partidos_grupos.count }})
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-2 fs-8 fw-semibold" id="octavos-tab" data-bs-toggle="tab" data-bs-target="#octavos-pane" type="button" role="tab" aria-controls="octavos-pane" aria-selected="false">
+                                Octavos ({{ partidos_octavos.count }})
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-2 fs-8 fw-semibold" id="cuartos-tab" data-bs-toggle="tab" data-bs-target="#cuartos-pane" type="button" role="tab" aria-controls="cuartos-pane" aria-selected="false">
+                                Cuartos ({{ partidos_cuartos.count }})
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-2 fs-8 fw-semibold" id="semis-tab" data-bs-toggle="tab" data-bs-target="#semis-pane" type="button" role="tab" aria-controls="semis-pane" aria-selected="false">
+                                Semis ({{ partidos_semis.count }})
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link py-2 fs-8 fw-semibold" id="final-tab" data-bs-toggle="tab" data-bs-target="#final-pane" type="button" role="tab" aria-controls="final-pane" aria-selected="false">
+                                Final ({{ partidos_final.count }})
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="tabFasesContent">
+                        <div class="tab-pane fade show active" id="grupos-pane" role="tabpanel" aria-labelledby="grupos-tab" tabindex="0">
+                            {% if partidos_grupos %}
+                                {% regroup partidos_grupos by grupo as partidos_grupos_regrouped %}
+                                {% for g in partidos_grupos_regrouped %}
+                                    <div class="mb-4">
+                                        <h5 class="fw-bold text-success border-bottom pb-2 mb-3">
+                                            <i class="fa-solid fa-circle-nodes me-2"></i>{{ g.grouper|default:"Fase de Grupos" }}
+                                        </h5>
+                                        {% include 'matches/partials_torneo_partido_list.html' with matches_list=g.list %}
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-4 text-muted">
+                                    <p class="mb-0">No hay partidos de fase de grupos programados.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="tab-pane fade" id="octavos-pane" role="tabpanel" aria-labelledby="octavos-tab" tabindex="0">
+                            {% include 'matches/partials_torneo_partido_list.html' with matches_list=partidos_octavos %}
+                        </div>
+                        <div class="tab-pane fade" id="cuartos-pane" role="tabpanel" aria-labelledby="cuartos-tab" tabindex="0">
+                            {% include 'matches/partials_torneo_partido_list.html' with matches_list=partidos_cuartos %}
+                        </div>
+                        <div class="tab-pane fade" id="semis-pane" role="tabpanel" aria-labelledby="semis-tab" tabindex="0">
+                            {% include 'matches/partials_torneo_partido_list.html' with matches_list=partidos_semis %}
+                        </div>
+                        <div class="tab-pane fade" id="final-pane" role="tabpanel" aria-labelledby="final-tab" tabindex="0">
+                            {% include 'matches/partials_torneo_partido_list.html' with matches_list=partidos_final %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Programar Partido Manual -->
+<div class="modal fade" id="modalCrearPartido" tabindex="-1" aria-labelledby="modalCrearPartidoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white py-3">
+                <h5 class="modal-title fw-bold" id="modalCrearPartidoLabel"><i class="fa-solid fa-calendar-plus me-2"></i>Programar Partido</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'crear_partido_torneo' torneo.id %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <!-- Local -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary mb-1">Equipo Local</label>
+                        <select name="equipo_local" class="form-select py-2 fs-7" required>
+                            <option value="" disabled selected>Selecciona local...</option>
+                            {% for eq in equipos %}
+                                <option value="{{ eq.id }}">{{ eq.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Visitante -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary mb-1">Equipo Visitante</label>
+                        <select name="equipo_visitante" class="form-select py-2 fs-7" required>
+                            <option value="" disabled selected>Selecciona visitante...</option>
+                            {% for eq in equipos %}
+                                <option value="{{ eq.id }}">{{ eq.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <!-- Fecha y Hora -->
+                        <div class="col-6 mb-3">
+                            <label class="form-label small fw-bold text-secondary mb-1">Fecha y Hora</label>
+                            <input type="datetime-local" name="fecha_hora" class="form-control py-2 fs-7" required>
+                        </div>
+                        
+                        <!-- Estadio -->
+                        <div class="col-6 mb-3">
+                            <label class="form-label small fw-bold text-secondary mb-1">Estadio/Campo</label>
+                            <input type="text" name="estadio" class="form-control py-2 fs-7" placeholder="Ej. Campo Central" value="Campo Central" required>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Vocal -->
+                        <div class="col-6 mb-3">
+                            <label class="form-label small fw-bold text-secondary mb-1">Vocal de Mesa</label>
+                            <select name="vocal" class="form-select py-2 fs-7" required>
+                                <option value="" disabled selected>Vocal...</option>
+                                {% for v in todos_vocales %}
+                                    <option value="{{ v.id }}">{{ v.get_full_name|default:v.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Arbitro -->
+                        <div class="col-6 mb-3">
+                            <label class="form-label small fw-bold text-secondary mb-1">Árbitro</label>
+                            <select name="arbitro" class="form-select py-2 fs-7" required>
+                                <option value="" disabled selected>Árbitro...</option>
+                                {% for a in todos_arbitros %}
+                                    <option value="{{ a.id }}">{{ a.get_full_name|default:a.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Fase -->
+                        <div class="col-6 mb-3">
+                            <label class="form-label small fw-bold text-secondary mb-1">Fase del Torneo</label>
+                            <select name="fase" id="selectFasePartido" class="form-select py-2 fs-7" required>
+                                {% if torneo.tipo == 'liga' %}
+                                    <option value="regular" selected>Liga Regular</option>
+                                {% else %}
+                                    <option value="grupos" selected>Fase de Grupos</option>
+                                    <option value="octavos">Octavos de Final</option>
+                                    <option value="cuartos">Cuartos de Final</option>
+                                    <option value="semifinal">Semifinal</option>
+                                    <option value="final">Final</option>
+                                {% endif %}
+                            </select>
+                        </div>
+
+                        <!-- Jornada/Fecha -->
+                        <div class="col-6 mb-3">
+                            <label class="form-label small fw-bold text-secondary mb-1">Jornada/Fecha Nº</label>
+                            <input type="number" name="jornada" class="form-control py-2 fs-7" min="1" value="1" required>
+                        </div>
+                    </div>
+
+                    {% if torneo.tipo != 'liga' %}
+                    <div class="mb-3" id="divGrupoManual" style="display: none;">
+                        <label class="form-label small fw-bold text-secondary mb-1">Grupo (Fase de Grupos)</label>
+                        <input type="text" name="grupo" id="inputGrupoManual" class="form-control py-2 fs-7" placeholder="Ej. Grupo A" value="Grupo A">
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer bg-light p-3">
+                    <button type="button" class="btn btn-light fs-8 py-2" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-custom-primary fs-8 py-2 px-3">
+                        <i class="fa-solid fa-floppy-disk me-1.5"></i>Programar Encuentro
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if torneo.tipo != 'liga' %}
+<!-- Modal: Generar Grupo Fixture -->
+<div class="modal fade" id="modalGrupoFixture" tabindex="-1" aria-labelledby="modalGrupoFixtureLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white py-3">
+                <h5 class="modal-title fw-bold" id="modalGrupoFixtureLabel"><i class="fa-solid fa-calendar-week me-2"></i>Generar Fixture de Grupo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'generar_fixture_torneo' torneo.id %}" method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="tipo_gen" value="grupos">
+                <div class="modal-body p-4">
+                    <!-- Nombre del Grupo -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary mb-1">Nombre del Grupo</label>
+                        <input type="text" name="grupo_nombre" class="form-control py-2 fs-7" placeholder="Ej. Grupo A" value="Grupo A" required>
+                    </div>
+
+                    <!-- Equipos Participantes -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary mb-2 d-block">Selecciona los equipos del grupo</label>
+                        <div class="border rounded p-3 bg-light" style="max-height: 200px; overflow-y: auto;">
+                            {% for eq in equipos %}
+                                <div class="form-check mb-2 fs-7">
+                                    <input class="form-check-input" type="checkbox" name="equipos_grupo" value="{{ eq.id }}" id="chkEq{{ eq.id }}">
+                                    <label class="form-check-label text-dark" for="chkEq{{ eq.id }}">
+                                        {{ eq.nombre }} ({{ eq.get_categoria_display }})
+                                    </label>
+                                </div>
+                            {% empty %}
+                                <p class="text-muted small mb-0">Inscribe equipos primero</p>
+                            {% endfor %}
+                        </div>
+                        <div class="form-text fs-9 text-muted mt-1">El sistema generará partidos todos contra todos sólo entre los equipos seleccionados.</div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light p-3">
+                    <button type="button" class="btn btn-light fs-8 py-2" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success fs-8 py-2 px-3">
+                        <i class="fa-solid fa-wand-magic-sparkles me-1.5"></i>Generar Calendario de Grupo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectFase = document.getElementById('selectFasePartido');
+    const divGrupo = document.getElementById('divGrupoManual');
+    const inputGrupo = document.getElementById('inputGrupoManual');
+    
+    if (selectFase && divGrupo && inputGrupo) {
+        function toggleGrupo() {
+            if (selectFase.value === 'grupos') {
+                divGrupo.style.display = 'block';
+                inputGrupo.setAttribute('required', 'required');
+            } else {
+                divGrupo.style.display = 'none';
+                inputGrupo.removeAttribute('required');
+            }
+        }
+        selectFase.addEventListener('change', toggleGrupo);
+        toggleGrupo(); // Ejecutar inicialmente
+    }
+});
+</script>
+{% endblock %}

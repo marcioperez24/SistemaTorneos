@@ -1,0 +1,24 @@
+{% extends 'teams/base.html' %}
+{% block title %}Error de Registro - Sistema Deportivo{% endblock %}
+
+{% block content %}
+<div class="container my-5 py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7 text-center">
+            <div class="card card-custom p-5">
+                <div class="mb-4 text-danger">
+                    <i class="fa-solid fa-triangle-exclamation fa-5x"></i>
+                </div>
+                <h2 class="fw-bold mb-3">Enlace Inválido o Expirado</h2>
+                <p class="lead text-secondary mb-4">{{ error }}</p>
+                <div class="alert alert-secondary border-0 py-3 shadow-sm mb-4">
+                    <i class="fa-regular fa-lightbulb me-2 text-warning"></i>
+                    Los enlaces de invitación de jugadores generados por los dirigentes de club tienen una validez estricta de 48 horas debido a políticas de seguridad y registro oportuno.
+                </div>
+                <p class="text-muted">Por favor, comunícate con el dirigente de tu club y solicítale que genere un nuevo enlace de registro.</p>
+                <a href="{% url 'login' %}" class="btn btn-secondary mt-2 px-5 py-2.5">Regresar al Inicio</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

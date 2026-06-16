@@ -1,0 +1,53 @@
+{% extends 'teams/base.html' %}
+{% block title %}Registrar Nuevo Equipo - Sistema Deportivo{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="card card-custom p-4">
+                <div class="d-flex align-items-center mb-4">
+                    <a href="{% url 'club_portal' %}" class="btn btn-outline-secondary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </a>
+                    <div>
+                        <h3 class="fw-bold mb-0">Registrar Nuevo Equipo</h3>
+                        <p class="text-muted mb-0">Completa los datos para inscribir un nuevo club en la liga.</p>
+                    </div>
+                </div>
+
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    {% for field in form %}
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold text-secondary d-flex justify-content-between">
+                                <span>{{ field.label }}</span>
+                                {% if not field.field.required %}
+                                    <span class="text-muted font-monospace fs-8">(Opcional)</span>
+                                {% endif %}
+                            </label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <div class="form-text text-muted small">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% if field.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ field.errors|first }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <div class="d-flex gap-3 mt-4">
+                        <a href="{% url 'club_portal' %}" class="btn btn-light flex-grow-1 py-2.5">Cancelar</a>
+                        <button type="submit" class="btn btn-custom-primary flex-grow-1 py-2.5">
+                            <i class="fa-solid fa-floppy-disk me-2"></i>Guardar Equipo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

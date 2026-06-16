@@ -1,0 +1,47 @@
+{% extends 'teams/base.html' %}
+{% block title %}Generar Fixture del Torneo - Sistema Deportivo{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card card-custom p-4">
+                <div class="d-flex align-items-center mb-4">
+                    <a href="{% url 'partidos_lista' %}" class="btn btn-outline-secondary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </a>
+                    <div>
+                        <h3 class="fw-bold mb-0">Generar Fixture del Torneo</h3>
+                        <p class="text-muted mb-0">Motor de calendarios automáticos todos contra todos.</p>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning border-0 shadow-sm mb-4">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>
+                    <strong>Nota Importante:</strong> Al generar el fixture para una categoría, se eliminarán los partidos que estén actualmente programados (no jugados) de esa misma categoría para evitar duplicidades.
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-secondary">Categoría del Torneo</label>
+                        <select name="categoria" class="form-select py-2.5">
+                            <option value="senior">Senior / Libre</option>
+                            <option value="master">Máster (Mayores de 40)</option>
+                            <option value="supermaster">Supermáster (Mayores de 50)</option>
+                            <option value="juvenil">Juvenil (Sub-18)</option>
+                            <option value="femenino">Femenino Libre</option>
+                        </select>
+                        <div class="form-text text-muted">Se tomarán todos los equipos creados en esta categoría y se programará el calendario completo de partidos de forma secuencial.</div>
+                    </div>
+
+                    <button type="submit" class="btn btn-custom-accent w-100 py-3 text-uppercase fw-bold shadow">
+                        <i class="fa-solid fa-wand-magic-sparkles me-2"></i>Generar Calendario Ahora
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'teams/base.html' %}
+{% block title %}Registro Exitoso - Sistema Deportivo{% endblock %}
+
+{% block content %}
+<div class="container my-5 py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7 text-center">
+            <div class="card card-custom p-5">
+                <div class="mb-4 text-success">
+                    <i class="fa-solid fa-circle-check fa-5x"></i>
+                </div>
+                <h2 class="fw-bold mb-3">¡Registro Completado con Éxito!</h2>
+                <p class="lead text-secondary mb-4">Tu ficha de jugador y documentación han sido cargadas exitosamente y enviadas a la Secretaría de la Liga.</p>
+                <div class="alert alert-warning border-0 py-3 shadow-sm mb-4">
+                    <i class="fa-solid fa-clock me-2"></i>
+                    <strong>Estado actual: Pendiente de Validación.</strong><br>
+                    La comisión técnica revisará tu selfie y cédula. Una vez aprobados, tu dirigente podrá descargar tu carnet digital con código QR para habilitarte en los partidos.
+                </div>
+                <p class="text-muted small">Ya puedes cerrar esta ventana o regresar al inicio.</p>
+                <a href="{% url 'login' %}" class="btn btn-custom-primary mt-2 px-5 py-2.5">Ir al Portal de Acceso</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

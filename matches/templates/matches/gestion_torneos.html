@@ -1,0 +1,144 @@
+{% extends 'teams/base.html' %}
+{% block title %}Gestión de Torneos y Ligas - Sistema Deportivo{% endblock %}
+
+{% block content %}
+<div class="gradient-header text-center py-5 shadow-sm">
+    <div class="container">
+        <h1 class="fw-bold mb-1 display-5"><i class="fa-solid fa-trophy text-warning me-2 animate__animated animate__pulse animate__infinite"></i>Gestión de Torneos y Ligas</h1>
+        <p class="text-white-50 mb-0 fs-5">Configura campeonatos, genera fixtures automáticos de ligas o administra fases eliminatorias.</p>
+    </div>
+</div>
+
+<div class="container my-5">
+    <div class="row">
+        <!-- Lista de Torneos -->
+        <div class="col-lg-8 mb-4">
+            <div class="card card-custom p-4 border-0 shadow-sm h-100">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="bg-primary-subtle text-primary rounded-circle p-3 me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="fa-solid fa-table-list fa-lg text-primary"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-0">Campeonatos Activos</h4>
+                        <p class="text-muted mb-0 small">Listado de ligas de todos contra todos y torneos de fases de grupos.</p>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle table-borderless">
+                        <thead class="table-light text-secondary uppercase font-monospace" style="font-size: 0.85rem;">
+                            <tr>
+                                <th class="py-3 px-3" style="border-radius: 8px 0 0 8px;">Torneo / Liga</th>
+                                <th class="py-3">Formato</th>
+                                <th class="py-3">Temporada</th>
+                                <th class="py-3">Equipos</th>
+                                <th class="py-3 text-end px-3" style="border-radius: 0 8px 8px 0;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in torneos %}
+                                <tr style="border-bottom: 1px solid rgba(0,0,0,0.04); transition: var(--transition);">
+                                    <td class="py-3 px-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-light text-primary rounded-3 me-3 d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-weight: bold; border: 1px solid rgba(0,0,0,0.05);">
+                                                {% if t.tipo == 'liga' %}
+                                                    <i class="fa-solid fa-ranking-star text-success"></i>
+                                                {% else %}
+                                                    <i class="fa-solid fa-sitemap text-warning"></i>
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-dark fs-6">{{ t.nombre }}</div>
+                                                <div class="text-muted fs-8">Creado el {{ t.fecha_creacion|date:"d/m/Y" }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3">
+                                        {% if t.tipo == 'liga' %}
+                                            <span class="badge bg-success-light text-success px-2.5 py-1.5 rounded-pill fs-8"><i class="fa-solid fa-list-ol me-1"></i>Liga (Fechas)</span>
+                                        {% else %}
+                                            <span class="badge bg-warning-light text-warning px-2.5 py-1.5 rounded-pill fs-8"><i class="fa-solid fa-network-wired me-1"></i>Torneo (Copa)</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="text-dark fw-semibold fs-7">{{ t.temporada }}</span>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="badge bg-secondary px-2.5 py-1.5 rounded-pill fs-8"><i class="fa-solid fa-users-rectangle me-1"></i>{{ t.equipos.count }} Equipos</span>
+                                    </td>
+                                    <td class="py-3 text-end px-3">
+                                        <div class="d-flex justify-content-end gap-2">
+                                            <a href="{% url 'detalle_torneo' t.id %}" class="btn btn-sm btn-custom-primary rounded-pill px-3 py-1.5 align-middle shadow-sm fs-8">
+                                                <i class="fa-solid fa-gears me-1"></i>Gestionar
+                                            </a>
+                                            <form method="POST" action="{% url 'eliminar_torneo' t.id %}" onsubmit="return confirm('¿Estás seguro de que deseas eliminar permanentemente el torneo {{ t.nombre }}? Todos los partidos asociados y estadísticas se borrarán para siempre.');" class="d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle p-2 d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="Eliminar Torneo">
+                                                    <i class="fa-solid fa-trash-can fs-8"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-5 text-muted">
+                                        <i class="fa-solid fa-folder-open d-block fa-3x mb-3 text-secondary-50"></i>
+                                        Aún no hay torneos o ligas configuradas. ¡Crea el primero usando el formulario lateral derecho!
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario de Creación -->
+        <div class="col-lg-4 mb-4">
+            <div class="card card-custom p-4 border-0 shadow-sm h-100">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="bg-success-subtle text-success rounded-circle p-3 me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                        <i class="fa-solid fa-trophy fa-lg text-success"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-0">Crear Competencia</h4>
+                        <p class="text-muted mb-0 small">Registrar una nueva liga o copa eliminatoria.</p>
+                    </div>
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    {% for field in form %}
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-secondary d-flex justify-content-between mb-1 fs-7">
+                                <span>{{ field.label }}</span>
+                                {% if not field.field.required %}
+                                    <span class="text-muted font-monospace fs-8">(Opcional)</span>
+                                {% endif %}
+                            </label>
+                            
+                            {{ field }}
+                            
+                            {% if field.help_text %}
+                                <div class="form-text text-muted small mt-1 fs-8"><i class="fa-solid fa-circle-info me-1"></i>{{ field.help_text }}</div>
+                            {% endif %}
+                            
+                            {% if field.errors %}
+                                {% for error in field.errors %}
+                                    <div class="text-danger small mt-1 fs-8"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <button type="submit" class="btn btn-custom-accent w-100 py-2.5 text-uppercase fw-bold shadow mt-2">
+                        <i class="fa-solid fa-circle-plus me-2"></i>Crear Competencia
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

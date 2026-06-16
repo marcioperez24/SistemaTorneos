@@ -1,0 +1,461 @@
+{% extends 'teams/base.html' %}
+{% block title %}Calendario y Posiciones - Sistema Deportivo{% endblock %}
+
+{% block content %}
+<div class="gradient-header text-center">
+    <div class="container">
+        <h1 class="fw-bold"><i class="fa-solid fa-ranking-star me-2 text-warning"></i>Resultados y Posiciones</h1>
+        <p class="lead mb-3 text-white-50">Consulta el calendario de encuentros, resultados de partidos en vivo y la tabla de posiciones en tiempo real.</p>
+        
+        <!-- Filtro de Torneo -->
+        {% if torneos.exists %}
+            <div class="d-flex justify-content-center align-items-center gap-2 flex-wrap">
+                <label class="text-white fw-semibold me-2 fs-6"><i class="fa-solid fa-filter me-1 text-warning"></i>Competencia:</label>
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle rounded-pill px-4 fw-bold shadow-sm text-primary" type="button" id="dropdownTorneos" data-bs-toggle="dropdown" aria-expanded="false">
+                        {{ selected_torneo.nombre|default:"Todos los Torneos" }}
+                    </button>
+                    <ul class="dropdown-menu shadow" aria-labelledby="dropdownTorneos">
+                        {% for tor in torneos %}
+                            <li>
+                                <a class="dropdown-item {% if tor.id == selected_torneo.id %}active bg-primary text-white{% endif %}" href="?torneo={{ tor.id }}">
+                                    {% if tor.tipo == 'liga' %}
+                                        <i class="fa-solid fa-ranking-star me-2 text-success"></i>
+                                    {% else %}
+                                        <i class="fa-solid fa-sitemap me-2 text-warning"></i>
+                                    {% endif %}
+                                    {{ tor.nombre }} ({{ tor.temporada }})
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="container mb-5">
+    
+    <!-- Pestañas de Navegación -->
+    <ul class="nav nav-pills flex-column flex-sm-row nav-fill bg-white p-2 rounded-4 shadow-sm mb-4 gap-2 gap-sm-0" id="pills-tab" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active rounded-pill fw-semibold py-2.5 w-100" id="tab-calendario" data-bs-toggle="pill" data-bs-target="#pane-calendario" type="button">
+                <i class="fa-solid fa-calendar-days me-2"></i>Calendario y Fixture
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link rounded-pill fw-semibold py-2.5 w-100" id="tab-posiciones" data-bs-toggle="pill" data-bs-target="#pane-posiciones" type="button">
+                <i class="fa-solid fa-list-ol me-2"></i>Tabla de Posiciones
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="pills-tabContent">
+        <!-- Panel 1: Calendario -->
+        <div class="tab-pane fade show active" id="pane-calendario">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+                <h3 class="fw-bold text-secondary mb-0"><i class="fa-solid fa-gamepad me-2 text-primary"></i>Cronograma de Encuentros</h3>
+                
+                {% if user.role in 'superadmin,comision' %}
+                    <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-start justify-content-md-end">
+                        {% if selected_torneo %}
+                            <a href="{% url 'detalle_torneo' selected_torneo.id %}" class="btn btn-custom-accent py-2 px-3 flex-grow-1 flex-md-grow-0">
+                                <i class="fa-solid fa-gears me-1.5"></i>Gestionar este Torneo
+                            </a>
+                        {% endif %}
+                        <a href="{% url 'gestion_torneos' %}" class="btn btn-light py-2 px-3 flex-grow-1 flex-md-grow-0 text-primary border">
+                            <i class="fa-solid fa-trophy me-1.5"></i>Ver todos los Torneos
+                        </a>
+                        <a href="{% url 'vocalia_dashboard' %}" class="btn btn-custom-primary py-2 px-3 flex-grow-1 flex-md-grow-0">
+                            <i class="fa-solid fa-clipboard-list me-1.5"></i>Panel Vocal
+                        </a>
+                    </div>
+                {% elif user.role == 'vocal' %}
+                    <a href="{% url 'vocalia_dashboard' %}" class="btn btn-custom-primary py-2 px-3 w-100 w-md-auto">
+                        <i class="fa-solid fa-clipboard-list me-1.5"></i>Mi Panel de Vocalía
+                    </a>
+                {% endif %}
+            </div>
+
+            {% if not partidos %}
+                <div class="card card-custom p-5 text-center my-4">
+                    <div class="text-muted mb-3"><i class="fa-solid fa-circle-exclamation fa-4x"></i></div>
+                    <h3>No hay partidos programados aún</h3>
+                    <p class="text-secondary mb-0">Los organizadores aún no han generado el fixture del torneo.</p>
+                </div>
+            {% else %}
+                <!-- Agrupador por Jornadas -->
+                {% regroup partidos by jornada as partidos_jornada %}
+                {% for grupo in partidos_jornada %}
+                    <div class="mb-5">
+                        <h4 class="fw-bold text-primary border-bottom pb-2 mb-3">
+                            <i class="fa-regular fa-star me-2"></i>Jornada / Fecha {{ grupo.grouper }}
+                        </h4>
+                        
+                        <div class="row g-3">
+                            {% for partido in grupo.list %}
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="card card-custom h-100 p-3 bg-white">
+                                        <div class="d-flex justify-content-between align-items-center mb-2.5">
+                                            <span class="badge bg-light text-secondary font-monospace border">
+                                                {% if partido.torneo %}
+                                                    {{ partido.torneo.nombre }} - {{ partido.get_fase_display }}
+                                                {% else %}
+                                                    {{ partido.temporada }}
+                                                {% endif %}
+                                            </span>
+                                            {% if partido.estado == 'finalizado' %}
+                                                <span class="badge bg-secondary py-1.5 px-2.5 rounded-pill text-uppercase fs-9"><i class="fa-solid fa-circle-check me-1"></i>Finalizado</span>
+                                            {% elif partido.estado == 'en_curso' %}
+                                                <span class="badge bg-danger py-1.5 px-2.5 rounded-pill text-uppercase fs-9 animate-pulse"><i class="fa-solid fa-circle-dot me-1"></i>En Vivo</span>
+                                            {% else %}
+                                                <span class="badge bg-primary py-1.5 px-2.5 rounded-pill text-uppercase fs-9"><i class="fa-solid fa-clock me-1"></i>Programado</span>
+                                            {% endif %}
+                                        </div>
+
+                                        <!-- Marcador de Equipos -->
+                                        <div class="row align-items-center text-center my-3">
+                                            <div class="col-4">
+                                                {% if partido.equipo_local.logo %}
+                                                    <img src="{{ partido.equipo_local.logo.url }}" alt="{{ partido.equipo_local.nombre }}" class="rounded-circle border mb-2 shadow-sm" style="width: 50px; height: 50px; object-fit: cover;">
+                                                {% else %}
+                                                    <div class="bg-primary text-white rounded-circle mx-auto mb-2 shadow-sm d-flex align-items-center justify-content-center fw-bold" style="width: 50px; height: 50px;">
+                                                        {{ partido.equipo_local.nombre|slice:":2"|upper }}
+                                                    </div>
+                                                {% endif %}
+                                                <h6 class="fw-bold text-dark text-truncate mb-0 fs-7" style="max-width: 100%;">{{ partido.equipo_local.nombre }}</h6>
+                                            </div>
+                                            
+                                            <div class="col-4">
+                                                {% if partido.estado == 'programado' %}
+                                                    <span class="fw-extrabold text-muted fs-4">VS</span>
+                                                {% else %}
+                                                    <span class="fw-extrabold text-primary fs-3">{{ partido.goles_local }} - {{ partido.goles_visitante }}</span>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <div class="col-4">
+                                                {% if partido.equipo_visitante.logo %}
+                                                    <img src="{{ partido.equipo_visitante.logo.url }}" alt="{{ partido.equipo_visitante.nombre }}" class="rounded-circle border mb-2 shadow-sm" style="width: 50px; height: 50px; object-fit: cover;">
+                                                {% else %}
+                                                    <div class="bg-primary text-white rounded-circle mx-auto mb-2 shadow-sm d-flex align-items-center justify-content-center fw-bold" style="width: 50px; height: 50px;">
+                                                        {{ partido.equipo_visitante.nombre|slice:":2"|upper }}
+                                                    </div>
+                                                {% endif %}
+                                                <h6 class="fw-bold text-dark text-truncate mb-0 fs-7" style="max-width: 100%;">{{ partido.equipo_visitante.nombre }}</h6>
+                                            </div>
+                                        </div>
+
+                                        <div class="border-top pt-2.5 mt-2 fs-8 text-secondary">
+                                            <div class="mb-1"><i class="fa-regular fa-calendar me-1.5"></i>{{ partido.fecha_hora|date:"d/m/Y H:i" }}</div>
+                                            <div class="mb-1"><i class="fa-solid fa-map-location-dot me-1.5"></i>{{ partido.estadio }}</div>
+                                            <div class="mb-1"><i class="fa-solid fa-bullhorn me-1.5 text-warning"></i>Árbitro: <strong>{{ partido.arbitro.get_full_name|default:"Sin asignar" }}</strong></div>
+                                            <div class="mb-1"><i class="fa-solid fa-clipboard-user me-1.5 text-info"></i>Vocal: <strong>{{ partido.vocal.get_full_name|default:"Sin asignar" }}</strong></div>
+                                        </div>
+
+                                        <div class="mt-3 text-center border-top pt-2.5 d-flex flex-wrap gap-2">
+                                            {% if partido.estado == 'finalizado' %}
+                                                <a href="{% url 'detalle_partido' partido.id %}" class="btn btn-success btn-sm flex-grow-1">
+                                                    <i class="fa-solid fa-file-contract me-1"></i>Ver Acta
+                                                </a>
+                                            {% endif %}
+
+                                            {% if user.role in 'superadmin,comision' %}
+                                                {% if partido.estado != 'finalizado' %}
+                                                    <a href="{% url 'editar_partido' partido.id %}" class="btn btn-outline-primary btn-sm flex-grow-1">
+                                                        <i class="fa-solid fa-gear me-1"></i>Ajustar
+                                                    </a>
+                                                    <button type="button" class="btn btn-outline-success btn-sm flex-grow-1" data-bs-toggle="modal" data-bs-target="#notificarModal{{ partido.id }}">
+                                                        <i class="fa-brands fa-whatsapp me-1"></i>Notificar
+                                                    </button>
+                                                {% endif %}
+                                                
+                                                {% if partido.estado == 'en_curso' %}
+                                                    <a href="{% url 'match_day' partido.id %}" class="btn btn-danger btn-sm flex-grow-1">
+                                                        <i class="fa-solid fa-gamepad me-1"></i>Abrir Mesa
+                                                    </a>
+                                                {% elif partido.estado == 'programado' %}
+                                                    <a href="{% url 'match_day' partido.id %}" class="btn btn-primary btn-sm flex-grow-1">
+                                                        <i class="fa-solid fa-play me-1"></i>Iniciar Partido
+                                                    </a>
+                                                {% endif %}
+                                            {% elif user.role == 'vocal' and partido.vocal == user %}
+                                                {% if partido.estado == 'en_curso' %}
+                                                    <a href="{% url 'match_day' partido.id %}" class="btn btn-danger btn-sm flex-grow-1">
+                                                        <i class="fa-solid fa-gamepad me-1"></i>Abrir Mesa
+                                                    </a>
+                                                {% elif partido.estado == 'programado' %}
+                                                    <a href="{% url 'match_day' partido.id %}" class="btn btn-primary btn-sm flex-grow-1">
+                                                        <i class="fa-solid fa-play me-1"></i>Iniciar Partido
+                                                    </a>
+                                                {% endif %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Modal de Notificación de WhatsApp para Partido {{ partido.id }} -->
+                                <div class="modal fade" id="notificarModal{{ partido.id }}" tabindex="-1" aria-labelledby="notificarModalLabel{{ partido.id }}" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+                                            <div class="modal-header bg-success text-white py-3" style="border-radius: 16px 16px 0 0;">
+                                                <h5 class="modal-title fw-bold" id="notificarModalLabel{{ partido.id }}">
+                                                    <i class="fa-brands fa-whatsapp me-2"></i>Notificaciones por WhatsApp
+                                                </h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body p-4">
+                                                <div class="mb-4 text-center">
+                                                    <span class="badge bg-light text-success border border-success-subtle px-3 py-2 rounded-pill fs-7 mb-2">
+                                                        {{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }}
+                                                    </span>
+                                                    <p class="text-muted small mb-0">Selecciona el destinatario de la notificación. Se abrirá una pestaña de WhatsApp con el mensaje redactado.</p>
+                                                </div>
+
+                                                <div class="d-flex flex-column gap-3">
+                                                    <!-- Árbitro -->
+                                                    <div class="p-3 border rounded-3 bg-light d-flex align-items-center justify-content-between">
+                                                        <div class="text-start">
+                                                            <span class="badge bg-warning text-dark mb-1">Árbitro</span>
+                                                            <h6 class="fw-bold mb-0 text-dark fs-7">{{ partido.arbitro.get_full_name|default:"Sin asignar" }}</h6>
+                                                            <small class="text-muted">
+                                                                {% if partido.arbitro.telefono %}
+                                                                    <i class="fa-solid fa-phone me-1 text-success"></i>{{ partido.arbitro.telefono }}
+                                                                {% else %}
+                                                                    <i class="fa-solid fa-triangle-exclamation me-1 text-danger"></i>Sin teléfono
+                                                                {% endif %}
+                                                            </small>
+                                                        </div>
+                                                        <button onclick="enviarWhatsApp('{{ partido.arbitro.telefono }}', 'Recordatorio: Tienes asignado el partido {{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }} el {{ partido.fecha_hora|date:'d/m/Y' }} a las {{ partido.fecha_hora|date:'H:i' }} en {{ partido.estadio }}. Por favor, confirma tu asistencia.')" 
+                                                                class="btn btn-success btn-sm rounded-pill px-3 {% if not partido.arbitro.telefono %}disabled{% endif %}">
+                                                            <i class="fa-brands fa-whatsapp me-1"></i>Enviar
+                                                        </button>
+                                                    </div>
+
+                                                    <!-- Vocal de Mesa -->
+                                                    <div class="p-3 border rounded-3 bg-light d-flex align-items-center justify-content-between">
+                                                        <div class="text-start">
+                                                            <span class="badge bg-info text-white mb-1">Vocal de Mesa</span>
+                                                            <h6 class="fw-bold mb-0 text-dark fs-7">{{ partido.vocal.get_full_name|default:"Sin asignar" }}</h6>
+                                                            <small class="text-muted">
+                                                                {% if partido.vocal.telefono %}
+                                                                    <i class="fa-solid fa-phone me-1 text-success"></i>{{ partido.vocal.telefono }}
+                                                                {% else %}
+                                                                    <i class="fa-solid fa-triangle-exclamation me-1 text-danger"></i>Sin teléfono
+                                                                {% endif %}
+                                                            </small>
+                                                        </div>
+                                                        <button onclick="enviarWhatsApp('{{ partido.vocal.telefono }}', 'Recordatorio: Tienes asignado el control de mesa digital del partido {{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }} el {{ partido.fecha_hora|date:'d/m/Y' }} a las {{ partido.fecha_hora|date:'H:i' }} en {{ partido.estadio }}. Por favor, confirma tu asistencia.')" 
+                                                                class="btn btn-success btn-sm rounded-pill px-3 {% if not partido.vocal.telefono %}disabled{% endif %}">
+                                                            <i class="fa-brands fa-whatsapp me-1"></i>Enviar
+                                                        </button>
+                                                    </div>
+
+                                                    <!-- Entrenador Local -->
+                                                    <div class="p-3 border rounded-3 bg-light d-flex align-items-center justify-content-between">
+                                                        <div class="text-start">
+                                                            <span class="badge bg-secondary text-white mb-1">DT Local - {{ partido.equipo_local.nombre }}</span>
+                                                            <h6 class="fw-bold mb-0 text-dark fs-7">{{ partido.equipo_local.entrenador|default:"Sin entrenador" }}</h6>
+                                                            <small class="text-muted">
+                                                                {% if partido.equipo_local.telefono_entrenador %}
+                                                                    <i class="fa-solid fa-phone me-1 text-success"></i>{{ partido.equipo_local.telefono_entrenador }}
+                                                                {% else %}
+                                                                    <i class="fa-solid fa-triangle-exclamation me-1 text-danger"></i>Sin teléfono
+                                                                {% endif %}
+                                                            </small>
+                                                        </div>
+                                                        <button onclick="enviarWhatsApp('{{ partido.equipo_local.telefono_entrenador }}', 'Recordatorio: Su equipo {{ partido.equipo_local.nombre }} tiene programado el partido contra {{ partido.equipo_visitante.nombre }} el {{ partido.fecha_hora|date:'d/m/Y' }} a las {{ partido.fecha_hora|date:'H:i' }} en el estadio {{ partido.estadio }}.')" 
+                                                                class="btn btn-success btn-sm rounded-pill px-3 {% if not partido.equipo_local.telefono_entrenador %}disabled{% endif %}">
+                                                            <i class="fa-brands fa-whatsapp me-1"></i>Enviar
+                                                        </button>
+                                                    </div>
+
+                                                    <!-- Entrenador Visitante -->
+                                                    <div class="p-3 border rounded-3 bg-light d-flex align-items-center justify-content-between">
+                                                        <div class="text-start">
+                                                            <span class="badge bg-secondary text-white mb-1">DT Vis. - {{ partido.equipo_visitante.nombre }}</span>
+                                                            <h6 class="fw-bold mb-0 text-dark fs-7">{{ partido.equipo_visitante.entrenador|default:"Sin entrenador" }}</h6>
+                                                            <small class="text-muted">
+                                                                {% if partido.equipo_visitante.telefono_entrenador %}
+                                                                    <i class="fa-solid fa-phone me-1 text-success"></i>{{ partido.equipo_visitante.telefono_entrenador }}
+                                                                {% else %}
+                                                                    <i class="fa-solid fa-triangle-exclamation me-1 text-danger"></i>Sin teléfono
+                                                                {% endif %}
+                                                            </small>
+                                                        </div>
+                                                        <button onclick="enviarWhatsApp('{{ partido.equipo_visitante.telefono_entrenador }}', 'Recordatorio: Su equipo {{ partido.equipo_visitante.nombre }} tiene programado el partido contra {{ partido.equipo_local.nombre }} el {{ partido.fecha_hora|date:'d/m/Y' }} a las {{ partido.fecha_hora|date:'H:i' }} en el estadio {{ partido.estadio }}.')" 
+                                                                class="btn btn-success btn-sm rounded-pill px-3 {% if not partido.equipo_visitante.telefono_entrenador %}disabled{% endif %}">
+                                                            <i class="fa-brands fa-whatsapp me-1"></i>Enviar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer bg-light py-2.5">
+                                                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <!-- Panel 2: Tabla de Posiciones -->
+        <div class="tab-pane fade" id="pane-posiciones">
+            {% if tabla_tipo == 'grupos' %}
+                <h3 class="fw-bold text-secondary mb-4"><i class="fa-solid fa-people-roof me-2 text-primary"></i>Fase de Grupos - Tabla de Posiciones</h3>
+                
+                <div class="row g-4">
+                    {% for grupo_data in tablas_grupos %}
+                        <div class="col-lg-6">
+                            <div class="card card-custom p-4 bg-white shadow-sm h-100">
+                                <h4 class="fw-bold text-primary mb-3"><i class="fa-solid fa-circle-nodes me-2"></i>{{ grupo_data.grupo }}</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead class="table-light text-uppercase fs-9 tracking-wider">
+                                            <tr>
+                                                <th style="width: 40px;">Pos</th>
+                                                <th>Equipo</th>
+                                                <th class="text-center">PJ</th>
+                                                <th class="text-center">PG</th>
+                                                <th class="text-center">PE</th>
+                                                <th class="text-center">PP</th>
+                                                <th class="text-center">GF</th>
+                                                <th class="text-center">GC</th>
+                                                <th class="text-center">GD</th>
+                                                <th class="text-center fw-bold bg-light">PTS</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for fila in grupo_data.tabla %}
+                                                <tr {% if forloop.first %}class="table-success-light"{% endif %}>
+                                                    <td class="fw-bold font-monospace">{{ forloop.counter }}</td>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            {% if fila.equipo.logo %}
+                                                                <img src="{{ fila.equipo.logo.url }}" alt="{{ fila.equipo.nombre }}" class="rounded-circle border me-2" style="width: 28px; height: 28px; object-fit: cover;">
+                                                            {% else %}
+                                                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-2" style="width: 28px; height: 28px; font-size: 11px;">
+                                                                    {{ fila.equipo.nombre|slice:":2"|upper }}
+                                                                </div>
+                                                            {% endif %}
+                                                            <div class="text-truncate" style="max-width: 120px;">
+                                                                <span class="fw-bold text-dark fs-7" title="{{ fila.equipo.nombre }}">{{ fila.equipo.nombre }}</span>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-center font-monospace fs-8">{{ fila.pj }}</td>
+                                                    <td class="text-center font-monospace fs-8 text-success">{{ fila.pg }}</td>
+                                                    <td class="text-center font-monospace fs-8 text-warning">{{ fila.pe }}</td>
+                                                    <td class="text-center font-monospace fs-8 text-danger">{{ fila.pp }}</td>
+                                                    <td class="text-center font-monospace fs-8 text-secondary">{{ fila.gf }}</td>
+                                                    <td class="text-center font-monospace fs-8 text-secondary">{{ fila.gc }}</td>
+                                                    <td class="text-center font-monospace fs-8 fw-semibold {% if fila.gd >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                                        {% if fila.gd > 0 %}+{% endif %}{{ fila.gd }}
+                                                    </td>
+                                                    <td class="text-center fw-bold font-monospace bg-light fs-7 text-primary">{{ fila.pts }}</td>
+                                                </tr>
+                                            {% empty %}
+                                                <tr>
+                                                    <td colspan="10" class="text-center py-3 text-muted small">No hay equipos registrados o no han disputado partidos en este grupo.</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="col-12">
+                            <div class="card card-custom p-5 text-center bg-white shadow-sm">
+                                <div class="text-muted mb-3"><i class="fa-solid fa-users-slash fa-3x"></i></div>
+                                <h4>No hay grupos generados aún</h4>
+                                <p class="text-secondary mb-0">Los grupos del torneo y sus fixtures no se han creado todavía.</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <h3 class="fw-bold text-secondary mb-4"><i class="fa-solid fa-table me-2 text-primary"></i>Tabla General de Posiciones</h3>
+                
+                <div class="card card-custom p-4 bg-white">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light text-uppercase fs-8 tracking-wider">
+                                <tr>
+                                    <th style="width: 50px;">Pos</th>
+                                    <th>Club / Equipo</th>
+                                    <th class="text-center">PJ</th>
+                                    <th class="text-center">PG</th>
+                                    <th class="text-center">PE</th>
+                                    <th class="text-center">PP</th>
+                                    <th class="text-center">GF</th>
+                                    <th class="text-center">GC</th>
+                                    <th class="text-center">GD</th>
+                                    <th class="text-center fw-bold bg-light">PTS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for fila in tabla %}
+                                    <tr {% if forloop.first %}class="table-success-light"{% endif %}>
+                                        <td class="fw-bold font-monospace">{{ forloop.counter }}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                {% if fila.equipo.logo %}
+                                                    <img src="{{ fila.equipo.logo.url }}" alt="{{ fila.equipo.nombre }}" class="rounded-circle border me-2.5" style="width: 35px; height: 35px; object-fit: cover;">
+                                                {% else %}
+                                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-2.5" style="width: 35px; height: 35px; font-size: 13px;">
+                                                        {{ fila.equipo.nombre|slice:":2"|upper }}
+                                                    </div>
+                                                {% endif %}
+                                                <div>
+                                                    <span class="fw-bold text-dark">{{ fila.equipo.nombre }}</span>
+                                                    <small class="text-muted d-block fs-9">{{ fila.equipo.get_categoria_display }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center font-monospace">{{ fila.pj }}</td>
+                                        <td class="text-center font-monospace text-success">{{ fila.pg }}</td>
+                                        <td class="text-center font-monospace text-warning">{{ fila.pe }}</td>
+                                        <td class="text-center font-monospace text-danger">{{ fila.pp }}</td>
+                                        <td class="text-center font-monospace text-secondary">{{ fila.gf }}</td>
+                                        <td class="text-center font-monospace text-secondary">{{ fila.gc }}</td>
+                                        <td class="text-center font-monospace fw-semibold {% if fila.gd >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {% if fila.gd > 0 %}+{% endif %}{{ fila.gd }}
+                                        </td>
+                                        <td class="text-center fw-bold font-monospace bg-light fs-6 text-primary">{{ fila.pts }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="10" class="text-center py-4 text-muted">No hay estadísticas de juego cargadas. Registra partidos y finalízalos para calcular posiciones.</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function enviarWhatsApp(telefono, mensaje) {
+        if (!telefono || telefono === 'None' || telefono.trim() === '') {
+            alert('Este destinatario no tiene un número de teléfono registrado.');
+            return;
+        }
+        // Limpiar el teléfono dejando solo números
+        let cleanPhone = telefono.replace(/\D/g, '');
+        
+        let url = 'https://api.whatsapp.com/send?phone=' + cleanPhone + '&text=' + encodeURIComponent(mensaje);
+        window.open(url, '_blank');
+    }
+</script>
+{% endblock %}

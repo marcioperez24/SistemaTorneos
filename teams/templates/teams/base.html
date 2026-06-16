@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Torneos Deportivos{% endblock %}</title>
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5.3 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            --accent-color: #f39c12;
+            --bg-color: #f4f6f9;
+            --card-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar-custom {
+            background: var(--primary-gradient);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-custom .navbar-brand {
+            color: #fff;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .navbar-custom .nav-link {
+            color: rgba(255, 255, 255, 0.85) !important;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .navbar-custom .nav-link:hover {
+            color: #fff !important;
+            transform: translateY(-2px);
+        }
+
+        .btn-custom-primary {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: var(--transition);
+            box-shadow: 0 4px 10px rgba(30, 60, 114, 0.2);
+        }
+
+        .btn-custom-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(30, 60, 114, 0.3);
+            color: white;
+        }
+
+        .btn-custom-accent {
+            background: linear-gradient(135deg, #f39c12 0%, #d35400 100%);
+            color: white;
+            border: none;
+            font-weight: 600;
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+
+        .btn-custom-accent:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+            color: white;
+        }
+
+        .card-custom {
+            border: none;
+            border-radius: 16px;
+            background: white;
+            box-shadow: var(--card-shadow);
+            transition: var(--transition);
+            overflow: hidden;
+        }
+
+        .card-custom:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .gradient-header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 40px;
+            border-radius: 0 0 24px 24px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        footer {
+            margin-top: auto;
+            background-color: #212529;
+            color: rgba(255,255,255,0.7);
+            padding: 20px 0;
+        }
+
+        /* Dropdown styling */
+        .navbar-custom .dropdown-menu {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            background: #ffffff;
+            display: block;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transform: translateY(10px);
+            transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        
+        .navbar-custom .dropdown-menu.show {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transform: translateY(0);
+        }
+
+        .navbar-custom .dropdown-item {
+            color: #333 !important;
+            font-weight: 500;
+            padding: 10px 20px;
+            transition: var(--transition);
+        }
+
+        .navbar-custom .dropdown-item:hover {
+            background-color: rgba(30, 60, 114, 0.08) !important;
+            color: #1e3c72 !important;
+            padding-left: 24px;
+        }
+
+        .navbar-custom .dropdown-header {
+            padding: 12px 20px 8px;
+        }
+
+        /* Glassmorphism for inputs focus */
+        .form-control:focus, .form-select:focus {
+            border-color: #2a5298;
+            box-shadow: 0 0 0 0.25rem rgba(42, 82, 152, 0.15);
+        }
+
+        /* Form icons styling */
+        .shadow-sm-hover {
+            transition: var(--transition);
+        }
+        .shadow-sm-hover:focus-within {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08) !important;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+    <!-- Navbar -->
+    {% if not hide_navbar %}
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom py-3">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'club_portal' %}">
+                <i class="fa-solid fa-trophy me-2 text-warning"></i>SISTEMA DEPORTIVO
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'partidos_lista' %}">
+                            <i class="fa-solid fa-calendar-days me-1.5 text-warning"></i>Partidos y Resultados
+                        </a>
+                    </li>
+                    {% if user.is_authenticated %}
+                        {% if user.role in 'dirigente,superadmin' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'club_portal' %}">
+                                    <i class="fa-solid fa-shield-halved me-1.5"></i>Portal del Club
+                                </a>
+                            </li>
+                        {% endif %}
+                        {% if user.role in 'vocal,superadmin' %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'vocalia_dashboard' %}">
+                                    <i class="fa-solid fa-clipboard-list me-1.5 text-warning"></i>Vocalía de Campo
+                                </a>
+                            </li>
+                        {% endif %}
+                        {% if user.role in 'comision,superadmin,tesoreria' %}
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownAdmin" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fa-solid fa-gears me-1.5 text-warning"></i>Administración
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-lg-start" aria-labelledby="navbarDropdownAdmin">
+                                    {% if user.role in 'comision,superadmin' %}
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'secretaria_dashboard' %}">
+                                                <i class="fa-solid fa-user-check me-2 text-primary"></i>Secretaría (Validación)
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'gestion_arbitros' %}">
+                                                <i class="fa-solid fa-bullhorn me-2 text-primary"></i>Gestionar Árbitros
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'gestion_vocales' %}">
+                                                <i class="fa-solid fa-clipboard-list me-2 text-primary"></i>Gestionar Vocales
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'gestion_torneos' %}">
+                                                <i class="fa-solid fa-trophy me-2 text-primary"></i>Gestionar Torneos/Ligas
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    {% if user.role in 'tesoreria,superadmin' %}
+                                        {% if user.role in 'comision,superadmin' %}
+                                            <li><hr class="dropdown-divider"></li>
+                                        {% endif %}
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'resumen_financiero' %}">
+                                                <i class="fa-solid fa-file-invoice-dollar me-2 text-success"></i>Tesorería y Caja
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    {% if user.role == 'superadmin' %}
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item text-danger" href="/admin/" target="_blank">
+                                                <i class="fa-solid fa-screwdriver-wrench me-2"></i>Panel Django (Admin)
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </li>
+                        {% endif %}
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav ms-auto align-items-center">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="btn btn-outline-light btn-sm dropdown-toggle rounded-pill px-3 py-1.5 d-flex align-items-center" href="#" id="navbarDropdownUser" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-regular fa-circle-user me-2 text-warning fs-5"></i>
+                                <span class="fw-semibold">{{ user.username }}</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end mt-2" aria-labelledby="navbarDropdownUser">
+                                <li class="dropdown-header text-dark">
+                                    <div class="fw-bold">{{ user.get_full_name|default:user.username }}</div>
+                                    <span class="badge bg-secondary mt-1">{{ user.get_role_display }}</span>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="{% url 'logout' %}">
+                                        <i class="fa-solid fa-sign-out-alt me-2"></i>Cerrar Sesión
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="btn btn-outline-light btn-sm rounded-pill px-3" href="{% url 'login' %}">
+                                <i class="fa-solid fa-sign-in-alt me-1"></i>Iniciar Sesión
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main>
+        {% if messages %}
+            <div class="container mt-3">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center">
+        <div class="container">
+            <p class="mb-0">&copy; 2026 Torneos Deportivos. Diseñado para un rendimiento premium.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

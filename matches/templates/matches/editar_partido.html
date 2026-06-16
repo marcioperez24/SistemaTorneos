@@ -1,0 +1,82 @@
+{% extends 'teams/base.html' %}
+{% block title %}Editar Partido - Sistema Deportivo{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card card-custom p-4">
+                <div class="d-flex align-items-center mb-4">
+                    <a href="{% url 'partidos_lista' %}" class="btn btn-outline-secondary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </a>
+                    <div>
+                        <h3 class="fw-bold mb-0">Configuración de Partido</h3>
+                        <p class="text-muted mb-0">Asigna fecha, estadio y autoridades oficiales.</p>
+                    </div>
+                </div>
+
+                <!-- Resumen del Partido -->
+                <div class="row align-items-center text-center my-3 bg-light rounded-3 py-3 mx-1 mb-4 border">
+                    <div class="col-5 text-end">
+                        <span class="fw-bold text-dark fs-6 d-block">{{ partido.equipo_local.nombre }}</span>
+                        <small class="text-muted">Local</small>
+                    </div>
+                    <div class="col-2">
+                        <span class="fw-extrabold text-muted fs-4">VS</span>
+                    </div>
+                    <div class="col-5 text-start">
+                        <span class="fw-bold text-dark fs-6 d-block">{{ partido.equipo_visitante.nombre }}</span>
+                        <small class="text-muted">Visitante</small>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <span class="badge bg-secondary font-monospace">Jornada {{ partido.jornada }} | {{ partido.temporada }}</span>
+                    </div>
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary">Fecha y Hora</label>
+                        <input type="datetime-local" name="fecha_hora" class="form-control" value="{{ partido.fecha_hora|date:'Y-m-d\TH:i' }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary">Estadio o Cancha</label>
+                        <input type="text" name="estadio" class="form-control" value="{{ partido.estadio }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary">Árbitro Asignado</label>
+                        <select name="arbitro" class="form-select">
+                            <option value="">-- Sin asignar --</option>
+                            {% for a in arbitros %}
+                                <option value="{{ a.id }}" {% if partido.arbitro and partido.arbitro.id == a.id %}selected{% endif %}>
+                                    {{ a.get_full_name|default:a.username }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold text-secondary">Vocal de Mesa Asignado</label>
+                        <select name="vocal" class="form-select">
+                            <option value="">-- Sin asignar --</option>
+                            {% for v in vocales %}
+                                <option value="{{ v.id }}" {% if partido.vocal and partido.vocal.id == v.id %}selected{% endif %}>
+                                    {{ v.get_full_name|default:v.username }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-custom-primary w-100 py-3 fw-bold shadow">
+                        <i class="fa-solid fa-floppy-disk me-2"></i>Guardar Cambios
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

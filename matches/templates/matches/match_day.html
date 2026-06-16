@@ -1,0 +1,425 @@
+{% extends 'teams/base.html' %}
+{% block title %}Vocalía Digital - En Vivo{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Interfaz de Control de Campo */
+    .score-panel {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+    .player-card-vocal {
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+    }
+    .player-card-vocal:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .timeline-log {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <!-- Marcador En Vivo -->
+    <div class="score-panel p-4 mb-4 text-center">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge bg-danger rounded-pill px-3 py-1.5 text-uppercase animate-pulse tracking-wide fs-9"><i class="fa-solid fa-circle-dot me-1"></i>En Vivo / Match Day</span>
+            <span class="badge bg-light text-dark font-monospace border">Jornada {{ partido.jornada }} | {{ partido.temporada }}</span>
+        </div>
+        
+        <div class="row align-items-center justify-content-center py-3 g-2">
+            <div class="col-4 text-end px-1 px-sm-3">
+                <h3 class="fw-extrabold mb-0 tracking-wide text-truncate fs-6 fs-sm-5 fs-md-3">{{ partido.equipo_local.nombre|upper }}</h3>
+                <span class="text-white-50 small d-none d-sm-block">{{ partido.equipo_local.get_categoria_display }}</span>
+            </div>
+            
+            <div class="col-4 text-center px-0 px-sm-2">
+                <div class="d-inline-block bg-white text-dark fw-black rounded-4 px-2 px-sm-4 py-1.5 py-sm-2 shadow-lg fs-4 fs-sm-2 fs-md-1 font-monospace text-nowrap">
+                    {{ partido.goles_local }} - {{ partido.goles_visitante }}
+                </div>
+            </div>
+            
+            <div class="col-4 text-start px-1 px-sm-3">
+                <h3 class="fw-extrabold mb-0 tracking-wide text-truncate fs-6 fs-sm-5 fs-md-3">{{ partido.equipo_visitante.nombre|upper }}</h3>
+                <span class="text-white-50 small d-none d-sm-block">{{ partido.equipo_visitante.get_categoria_display }}</span>
+            </div>
+        </div>
+        
+        <div class="border-top border-white-10 pt-2.5 mt-2 fs-8 text-white-50">
+            <i class="fa-solid fa-map-location-dot me-1"></i>Estadio: <strong>{{ partido.estadio }}</strong> | <i class="fa-solid fa-bullhorn me-1"></i>Árbitro: <strong>{{ partido.arbitro.get_full_name|default:"Sin asignar" }}</strong>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Alineaciones y Control de Eventos -->
+        <div class="col-lg-8">
+            <!-- Pestañas Local vs Visitante -->
+            <ul class="nav nav-tabs nav-fill bg-white p-1 rounded-3 border mb-3" id="teamTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active fw-bold text-dark" id="local-tab" data-bs-toggle="tab" data-bs-target="#pane-local" type="button">
+                        <i class="fa-solid fa-home me-2 text-primary"></i>{{ partido.equipo_local.nombre }} (Local)
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-bold text-dark" id="visitante-tab" data-bs-toggle="tab" data-bs-target="#pane-visitante" type="button">
+                        <i class="fa-solid fa-plane me-2 text-success"></i>{{ partido.equipo_visitante.nombre }} (Visitante)
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="teamTabsContent">
+                <!-- Plantilla Local -->
+                <div class="tab-pane fade show active" id="pane-local">
+                    <div class="row g-3">
+                        {% for j in jugadores_local %}
+                            <div class="col-md-6 col-xxl-4">
+                                <div class="card player-card-vocal p-2.5 border rounded-3 bg-white" data-bs-toggle="modal" data-bs-target="#modalEvento" data-jugador-id="{{ j.user.id }}" data-jugador-nombre="{{ j.user.get_full_name }}" data-equipo-id="{{ partido.equipo_local.id }}" data-equipo-nombre="{{ partido.equipo_local.nombre }}">
+                                    <div class="d-flex align-items-center">
+                                        {% if j.foto %}
+                                            <img src="{{ j.foto.url }}" class="rounded shadow-sm me-2.5 border" style="width: 45px; height: 45px; object-fit: cover;" alt="Selfie">
+                                        {% else %}
+                                            <div class="bg-secondary rounded shadow-sm me-2.5 text-white d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+                                                <i class="fa-regular fa-user"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div class="flex-grow-1 text-truncate">
+                                            <span class="fw-bold d-block text-dark text-truncate fs-7" style="line-height: 1.2;">{{ j.user.get_full_name|upper }}</span>
+                                            <small class="text-success font-semibold fs-9"><i class="fa-solid fa-circle-check me-1"></i>Habilitado | Sangre: {{ j.tipo_sangre }}</small>
+                                        </div>
+                                        <div class="text-end text-primary ps-2">
+                                            <i class="fa-solid fa-circle-plus fa-lg"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="col-12 py-4 text-center text-muted card bg-white">No hay jugadores registrados y aprobados para este equipo. Deben registrarse y ser aprobados por secretaría.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Plantilla Visitante -->
+                <div class="tab-pane fade" id="pane-visitante">
+                    <div class="row g-3">
+                        {% for j in jugadores_visitante %}
+                            <div class="col-md-6 col-xxl-4">
+                                <div class="card player-card-vocal p-2.5 border rounded-3 bg-white" data-bs-toggle="modal" data-bs-target="#modalEvento" data-jugador-id="{{ j.user.id }}" data-jugador-nombre="{{ j.user.get_full_name }}" data-equipo-id="{{ partido.equipo_visitante.id }}" data-equipo-nombre="{{ partido.equipo_visitante.nombre }}">
+                                    <div class="d-flex align-items-center">
+                                        {% if j.foto %}
+                                            <img src="{{ j.foto.url }}" class="rounded shadow-sm me-2.5 border" style="width: 45px; height: 45px; object-fit: cover;" alt="Selfie">
+                                        {% else %}
+                                            <div class="bg-secondary rounded shadow-sm me-2.5 text-white d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+                                                <i class="fa-regular fa-user"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div class="flex-grow-1 text-truncate">
+                                            <span class="fw-bold d-block text-dark text-truncate fs-7" style="line-height: 1.2;">{{ j.user.get_full_name|upper }}</span>
+                                            <small class="text-success font-semibold fs-9"><i class="fa-solid fa-circle-check me-1"></i>Habilitado | Sangre: {{ j.tipo_sangre }}</small>
+                                        </div>
+                                        <div class="text-end text-success ps-2">
+                                            <i class="fa-solid fa-circle-plus fa-lg"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="col-12 py-4 text-center text-muted card bg-white">No hay jugadores registrados y aprobados para este equipo. Deben registrarse y ser aprobados por secretaría.</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bitácora del Encuentro en Vivo y Cierre -->
+        <div class="col-lg-4">
+            <!-- Bitácora -->
+            <h4 class="fw-bold mb-3 text-secondary"><i class="fa-solid fa-book me-2 text-primary"></i>Bitácora de Eventos</h4>
+            <div class="card card-custom p-3 bg-white mb-4">
+                <div class="timeline-log list-group list-group-flush pr-1">
+                    {% for ev in eventos %}
+                        <div class="list-group-item px-0 py-2.5 d-flex align-items-center justify-content-between fs-8">
+                            <div>
+                                <span class="badge bg-dark font-monospace text-warning me-1.5">{{ ev.minuto }}'</span>
+                                <span class="fw-bold text-dark">{{ ev.jugador.get_full_name|default:ev.jugador.username }}</span>
+                                <span class="text-muted">({{ ev.equipo.nombre }})</span>
+                            </div>
+                            <div>
+                                {% if ev.tipo == 'gol' %}
+                                    <span class="badge bg-success py-1 px-2 rounded-pill"><i class="fa-solid fa-futbol me-1"></i>Gol</span>
+                                {% elif ev.tipo == 'amarilla' %}
+                                    <span class="badge bg-warning text-dark py-1 px-2 rounded-pill"><i class="fa-solid fa-square-full me-1"></i>Amarilla</span>
+                                {% elif ev.tipo == 'roja' %}
+                                    <span class="badge bg-danger py-1 px-2 rounded-pill"><i class="fa-solid fa-square-full me-1"></i>Roja</span>
+                                {% else %}
+                                    <span class="badge bg-info text-dark py-1 px-2 rounded-pill"><i class="fa-solid fa-right-left me-1"></i>Cambio</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p class="text-muted text-center py-4 mb-0">No se han registrado eventos en este encuentro.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Cierre de Acta de Partido -->
+            <h4 class="fw-bold mb-3 text-secondary"><i class="fa-solid fa-signature me-2 text-success"></i>Cerrar Acta de Partido</h4>
+            <div class="card card-custom p-4 bg-white">
+                <form action="{% url 'cerrar_partido' partido.id %}" method="POST" id="form-cierre">
+                    {% csrf_token %}
+                    <p class="text-muted fs-8 mb-4">Verifica todos los eventos registrados antes de proceder al cierre digital bajo juramento.</p>
+                    
+                    <!-- Firma del Vocal -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label fw-bold text-secondary mb-0 fs-7">
+                                <i class="fa-solid fa-clipboard-user me-1 text-primary"></i>Firma del Vocal ({{ partido.vocal.get_full_name|default:"Vocal" }})
+                            </label>
+                            <button type="button" class="btn btn-link btn-sm text-decoration-none p-0 text-danger fs-8" id="canvas_vocal_clear">
+                                <i class="fa-solid fa-eraser me-1"></i>Borrar
+                            </button>
+                        </div>
+                        <div class="signature-container border rounded bg-light" style="position: relative; height: 110px;">
+                            <canvas id="canvas_vocal" class="w-100 h-100" style="touch-action: none; cursor: crosshair;"></canvas>
+                        </div>
+                        <input type="hidden" name="firma_vocal_data" id="input_vocal" required>
+                    </div>
+
+                    <!-- Firma del Árbitro -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label fw-bold text-secondary mb-0 fs-7">
+                                <i class="fa-solid fa-gavel me-1 text-warning"></i>Firma del Árbitro ({{ partido.arbitro.get_full_name|default:"Árbitro" }})
+                            </label>
+                            <button type="button" class="btn btn-link btn-sm text-decoration-none p-0 text-danger fs-8" id="canvas_arbitro_clear">
+                                <i class="fa-solid fa-eraser me-1"></i>Borrar
+                            </button>
+                        </div>
+                        <div class="signature-container border rounded bg-light" style="position: relative; height: 110px;">
+                            <canvas id="canvas_arbitro" class="w-100 h-100" style="touch-action: none; cursor: crosshair;"></canvas>
+                        </div>
+                        <input type="hidden" name="firma_arbitro_data" id="input_arbitro" required>
+                    </div>
+
+                    <!-- Firma Entrenador Local -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label fw-bold text-secondary mb-0 fs-7">
+                                <i class="fa-solid fa-signature me-1 text-success"></i>DT / Representante Local ({{ partido.equipo_local.entrenador|default:partido.equipo_local.nombre }})
+                            </label>
+                            <button type="button" class="btn btn-link btn-sm text-decoration-none p-0 text-danger fs-8" id="canvas_local_clear">
+                                <i class="fa-solid fa-eraser me-1"></i>Borrar
+                            </button>
+                        </div>
+                        <div class="signature-container border rounded bg-light" style="position: relative; height: 110px;">
+                            <canvas id="canvas_local" class="w-100 h-100" style="touch-action: none; cursor: crosshair;"></canvas>
+                        </div>
+                        <input type="hidden" name="firma_local_data" id="input_local" required>
+                    </div>
+
+                    <!-- Firma Entrenador Visitante -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label fw-bold text-secondary mb-0 fs-7">
+                                <i class="fa-solid fa-signature me-1 text-success"></i>DT / Representante Visitante ({{ partido.equipo_visitante.entrenador|default:partido.equipo_visitante.nombre }})
+                            </label>
+                            <button type="button" class="btn btn-link btn-sm text-decoration-none p-0 text-danger fs-8" id="canvas_visitante_clear">
+                                <i class="fa-solid fa-eraser me-1"></i>Borrar
+                            </button>
+                        </div>
+                        <div class="signature-container border rounded bg-light" style="position: relative; height: 110px;">
+                            <canvas id="canvas_visitante" class="w-100 h-100" style="touch-action: none; cursor: crosshair;"></canvas>
+                        </div>
+                        <input type="hidden" name="firma_visitante_data" id="input_visitante" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100 py-2.5 text-uppercase fw-bold shadow">
+                        <i class="fa-solid fa-file-signature me-2"></i>Cerrar y Firmar Acta
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Registrar Evento -->
+<div class="modal fade" id="modalEvento" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-clock-rotate-left text-primary me-2"></i>Registrar Incidencia</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{% url 'registrar_evento' partido.id %}" method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="jugador_id" id="evt-jugador-id">
+                <input type="hidden" name="equipo_id" id="evt-equipo-id">
+                
+                <div class="modal-body">
+                    <div class="mb-3 bg-light p-3 rounded-3">
+                        <div class="row fs-7 text-secondary">
+                            <div class="col-6">Jugador: <strong class="text-dark d-block" id="evt-jugador-lbl">JUGADOR</strong></div>
+                            <div class="col-6 text-end">Equipo: <strong class="text-dark d-block" id="evt-equipo-lbl">EQUIPO</strong></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary">Minuto de la incidencia</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-stopwatch"></i></span>
+                            <input type="number" class="form-control" name="minuto" min="1" max="120" placeholder="Ej. 42" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold text-secondary">Tipo de Incidencia</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="radio" class="btn-check" name="tipo" id="t-gol" value="gol" required checked>
+                                <label class="btn btn-outline-success w-100 py-2" for="t-gol">
+                                    <i class="fa-solid fa-futbol me-1"></i>Gol
+                                </label>
+                            </div>
+                            <div class="col-6">
+                                <input type="radio" class="btn-check" name="tipo" id="t-amarilla" value="amarilla">
+                                <label class="btn btn-outline-warning text-dark w-100 py-2" for="t-amarilla">
+                                    <i class="fa-solid fa-square-full me-1"></i>Amonestación
+                                </label>
+                            </div>
+                            <div class="col-6">
+                                <input type="radio" class="btn-check" name="tipo" id="t-roja" value="roja">
+                                <label class="btn btn-outline-danger w-100 py-2" for="t-roja">
+                                    <i class="fa-solid fa-square-full me-1"></i>Expulsión
+                                </label>
+                            </div>
+                            <div class="col-6">
+                                <input type="radio" class="btn-check" name="tipo" id="t-cambio" value="cambio">
+                                <label class="btn btn-outline-info text-dark w-100 py-2" for="t-cambio">
+                                    <i class="fa-solid fa-right-left me-1"></i>Sustitución
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-custom-primary px-4">Guardar Registro</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Dinamismo del modal para prellenar datos del jugador seleccionado
+    const modal = document.getElementById('modalEvento');
+    modal.addEventListener('show.bs.modal', function (event) {
+        const trigger = event.relatedTarget;
+        const jugadorId = trigger.getAttribute('data-jugador-id');
+        const jugadorNombre = trigger.getAttribute('data-jugador-nombre');
+        const equipoId = trigger.getAttribute('data-equipo-id');
+        const equipoNombre = trigger.getAttribute('data-equipo-nombre');
+
+        modal.querySelector('#evt-jugador-id').value = jugadorId;
+        modal.querySelector('#evt-equipo-id').value = equipoId;
+        modal.querySelector('#evt-jugador-lbl').textContent = jugadorNombre.toUpperCase();
+        modal.querySelector('#evt-equipo-lbl').textContent = equipoNombre.toUpperCase();
+    });
+
+    // Initialize Signature Pads
+    window.addEventListener('DOMContentLoaded', () => {
+        setupSignaturePad('canvas_vocal', 'input_vocal');
+        setupSignaturePad('canvas_arbitro', 'input_arbitro');
+        setupSignaturePad('canvas_local', 'input_local');
+        setupSignaturePad('canvas_visitante', 'input_visitante');
+    });
+    
+    function setupSignaturePad(canvasId, inputId) {
+        const canvas = document.getElementById(canvasId);
+        const input = document.getElementById(inputId);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            ctx.strokeStyle = '#1e3c72';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        let drawing = false;
+        
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+        
+        function startDrawing(e) {
+            drawing = true;
+            const pos = getPos(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            e.preventDefault();
+        }
+        
+        function draw(e) {
+            if (!drawing) return;
+            const pos = getPos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            e.preventDefault();
+        }
+        
+        function stopDrawing() {
+            if (drawing) {
+                drawing = false;
+                input.value = canvas.toDataURL();
+            }
+        }
+        
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseleave', stopDrawing);
+        
+        canvas.addEventListener('touchstart', startDrawing, { passive: false });
+        canvas.addEventListener('touchmove', draw, { passive: false });
+        canvas.addEventListener('touchend', stopDrawing);
+        
+        const clearBtn = document.getElementById(canvasId + '_clear');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                input.value = '';
+            });
+        }
+    }
+
+    document.getElementById('form-cierre').addEventListener('submit', function(e) {
+        const vocal = document.getElementById('input_vocal').value;
+        const arbitro = document.getElementById('input_arbitro').value;
+        const local = document.getElementById('input_local').value;
+        const visitante = document.getElementById('input_visitante').value;
+        
+        if (!vocal || !arbitro || !local || !visitante) {
+            e.preventDefault();
+            alert('Por favor, ingresa todas las firmas digitales antes de cerrar el acta del partido.');
+        }
+    });
+</script>
+{% endblock %}

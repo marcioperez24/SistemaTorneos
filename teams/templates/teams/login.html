@@ -1,0 +1,44 @@
+{% extends 'teams/base.html' %}
+{% block title %}Iniciar Sesión - Sistema Deportivo{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card card-custom p-4 mt-5">
+                <div class="text-center mb-4">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-gradient text-white rounded-circle mb-3" style="width: 60px; height: 60px;">
+                        <i class="fa-solid fa-lock fa-xl"></i>
+                    </div>
+                    <h3 class="fw-bold">Ingreso al Sistema</h3>
+                    <p class="text-muted">Acceso para Directivos y Organizadores</p>
+                </div>
+                
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary">{{ field.label }}</label>
+                            {{ field }}
+                            {% if field.errors %}
+                                <div class="text-danger small mt-1">
+                                    {{ field.errors|first }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    
+                    <button type="submit" class="btn btn-custom-primary w-100 py-2.5 mt-3 text-uppercase tracking-wider">
+                        <i class="fa-solid fa-right-to-bracket me-2"></i>Entrar
+                    </button>
+                </form>
+                
+                <div class="text-center mt-4">
+                    <small class="text-muted">¿Eres un jugador? Pídele a tu dirigente el enlace de invitación de tu equipo para registrarte directamente.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

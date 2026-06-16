@@ -1,0 +1,162 @@
+{% extends 'teams/base.html' %}
+{% block title %}Auto-Registro de Jugador - {{ equipo.nombre }}{% endblock %}
+
+{% block content %}
+<div class="gradient-header text-center py-5">
+    <div class="container d-flex flex-column align-items-center">
+        {% if equipo.logo %}
+            <img src="{{ equipo.logo.url }}" alt="{{ equipo.nombre }}" class="rounded-circle border mb-3 shadow" style="width: 90px; height: 90px; object-fit: cover; border-color: #fff !important; border-width: 3px !important;">
+        {% else %}
+            <div class="bg-white text-primary rounded-circle border mb-3 shadow d-flex align-items-center justify-content-center fw-bold" style="width: 90px; height: 90px; font-size: 2.2rem; border-color: #fff !important; border-width: 3px !important;">
+                {{ equipo.nombre|slice:":2"|upper }}
+            </div>
+        {% endif %}
+        <h1 class="fw-bold fs-2"><i class="fa-solid fa-file-signature me-2 text-warning"></i>Auto-Registro de Jugador</h1>
+        <p class="lead mb-0 text-white-50">Estás inscribiéndote para el club <strong class="text-white">{{ equipo.nombre }}</strong> en la categoría <strong>{{ equipo.get_categoria_display }}</strong>.</p>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-9">
+            <div class="card card-custom p-4 shadow-lg border-top border-primary border-4">
+                
+                <div class="alert alert-info border-0 shadow-sm mb-4">
+                    <i class="fa-solid fa-circle-info me-2 text-info"></i>
+                    <strong>Atención:</strong> Por favor, completa toda tu información de forma precisa. Las imágenes de tu cédula deben ser legibles y tu selfie debe tener una iluminación adecuada para que el carnet digital sea aprobado rápidamente por secretaría.
+                </div>
+
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <h4 class="fw-bold mb-3 text-primary border-bottom pb-2">
+                        <i class="fa-solid fa-key me-2"></i>1. Datos de Acceso y Cuenta
+                    </h4>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Nombres Completos</label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}
+                                <div class="text-danger small mt-1">{{ form.first_name.errors|first }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Apellidos Completos</label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}
+                                <div class="text-danger small mt-1">{{ form.last_name.errors|first }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Nombre de Usuario (Único)</label>
+                            {{ form.username }}
+                            {% if form.username.errors %}
+                                <div class="text-danger small mt-1">{{ form.username.errors|first }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Correo Electrónico</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger small mt-1">{{ form.email.errors|first }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-12 mb-4">
+                            <label class="form-label fw-semibold text-secondary">Contraseña para tu cuenta</label>
+                            {{ form.password }}
+                            {% if form.password.errors %}
+                                <div class="text-danger small mt-1">{{ form.password.errors|first }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <h4 class="fw-bold mb-3 text-primary border-bottom pb-2 mt-3">
+                        <i class="fa-solid fa-id-card me-2"></i>2. Carga de Documentos (Cédula y Selfie)
+                    </h4>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Foto / Selfie (para Carnet)</label>
+                            {{ form.foto }}
+                            <div class="form-text text-muted small">Sube una selfie clara, de frente, con fondo claro.</div>
+                            {% if form.foto.errors %}
+                                <div class="text-danger small mt-1">{{ form.foto.errors|first }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Cédula Frontal</label>
+                            {{ form.cedula_frontal }}
+                            <div class="form-text text-muted small">Imagen clara del frente de tu cédula.</div>
+                            {% if form.cedula_frontal.errors %}
+                                <div class="text-danger small mt-1">{{ form.cedula_frontal.errors|first }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Cédula Posterior</label>
+                            {{ form.cedula_posterior }}
+                            <div class="form-text text-muted small">Imagen clara del reverso de tu cédula.</div>
+                            {% if form.cedula_posterior.errors %}
+                                <div class="text-danger small mt-1">{{ form.cedula_posterior.errors|first }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <h4 class="fw-bold mb-3 text-primary border-bottom pb-2 mt-4">
+                        <i class="fa-solid fa-suitcase-medical me-2"></i>3. Información de Salud y Emergencia
+                    </h4>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Tipo de Sangre</label>
+                            {{ form.tipo_sangre }}
+                            {% if form.tipo_sangre.errors %}
+                                <div class="text-danger small mt-1">{{ form.tipo_sangre.errors|first }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Contacto de Emergencia</label>
+                            {{ form.contacto_emergencia }}
+                            {% if form.contacto_emergencia.errors %}
+                                <div class="text-danger small mt-1">{{ form.contacto_emergencia.errors|first }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Teléfono de Emergencia</label>
+                            {{ form.telefono_emergencia }}
+                            {% if form.telefono_emergencia.errors %}
+                                <div class="text-danger small mt-1">{{ form.telefono_emergencia.errors|first }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <h4 class="fw-bold mb-3 text-primary border-bottom pb-2 mt-4">
+                        <i class="fa-solid fa-pen-nib me-2"></i>4. Declaración Jurada y Firma
+                    </h4>
+                    
+                    <div class="card bg-light border-0 p-3 mb-3">
+                        <h6 class="fw-bold mb-2">Aceptación de Responsabilidad y Salud</h6>
+                        <p class="small text-secondary mb-0" style="text-align: justify; line-height: 1.5;">
+                            Declaro bajo juramento que me encuentro en perfectas condiciones físicas y mentales para participar en el torneo organizado por esta liga. Eximo de toda responsabilidad médica, legal o civil a la organización del torneo, a mi club y a los propietarios de los estadios y canchas ante cualquier eventual lesión, accidente o percance de salud que ocurra durante o derivado de la actividad deportiva del torneo.
+                        </p>
+                    </div>
+                    
+                    <div class="form-check mb-4">
+                        {{ form.firma_digital }}
+                        <label class="form-check-label fw-semibold text-danger ms-2" for="id_firma_digital">
+                            Acepto y Firmo Digitalmente esta declaración bajo juramento. (Obligatorio)
+                        </label>
+                        {% if form.firma_digital.errors %}
+                            <div class="text-danger small mt-1">{{ form.firma_digital.errors|first }}</div>
+                        {% endif %}
+                    </div>
+
+                    <button type="submit" class="btn btn-custom-primary w-100 py-3 text-uppercase fw-bold shadow">
+                        <i class="fa-solid fa-paper-plane me-2"></i>Enviar Ficha e Inscribirse
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
