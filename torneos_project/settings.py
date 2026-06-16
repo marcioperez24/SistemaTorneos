@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-hf#8-!r-b(ns8-u@t*1js6y98azkc0*2f2vd6@!za5sac*v0_t
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['torneos.sysacadep.win']
 
 
 # Application definition
@@ -136,3 +136,4 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'club_portal'
 LOGOUT_REDIRECT_URL = 'login'
 
+CSRF_TRUSTED_ORIGINS = ['https://torneos.sysacadep.win']
