@@ -15,5 +15,10 @@ class CustomUser(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='espectador')
     telefono = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono")
 
+    def save(self, *args, **kwargs):
+        if self.is_superuser:
+            self.role = 'superadmin'
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"
