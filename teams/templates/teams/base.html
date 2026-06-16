@@ -155,19 +155,25 @@
             border-radius: 14px;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
             background: #ffffff;
-            display: block;
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-            transform: translateY(10px);
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
         
-        .navbar-custom .dropdown-menu.show {
-            opacity: 1;
-            visibility: visible;
-            pointer-events: auto;
-            transform: translateY(0);
+        /* Custom Dropdown animation styling only on Desktop */
+        @media (min-width: 992px) {
+            .navbar-custom .dropdown-menu {
+                display: block;
+                opacity: 0;
+                visibility: hidden;
+                pointer-events: none;
+                transform: translateY(10px);
+                transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+            
+            .navbar-custom .dropdown-menu.show {
+                opacity: 1;
+                visibility: visible;
+                pointer-events: auto;
+                transform: translateY(0);
+            }
         }
 
         .navbar-custom .dropdown-item {
