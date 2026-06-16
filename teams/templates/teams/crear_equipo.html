@@ -1,5 +1,5 @@
 {% extends 'teams/base.html' %}
-{% block title %}Registrar Nuevo Equipo - Sistema Deportivo{% endblock %}
+{% block title %}{% if edit_mode %}Editar Equipo: {{ equipo.nombre }}{% else %}Registrar Nuevo Equipo{% endif %} - Sistema Deportivo{% endblock %}
 
 {% block content %}
 <div class="container my-5">
@@ -11,8 +11,8 @@
                         <i class="fa-solid fa-arrow-left"></i>
                     </a>
                     <div>
-                        <h3 class="fw-bold mb-0">Registrar Nuevo Equipo</h3>
-                        <p class="text-muted mb-0">Completa los datos para inscribir un nuevo club en la liga.</p>
+                        <h3 class="fw-bold mb-0">{% if edit_mode %}Editar Equipo{% else %}Registrar Nuevo Equipo{% endif %}</h3>
+                        <p class="text-muted mb-0">{% if edit_mode %}Actualiza los datos del club en la liga.{% else %}Completa los datos para inscribir un nuevo club en la liga.{% endif %}</p>
                     </div>
                 </div>
 
@@ -42,7 +42,7 @@
                     <div class="d-flex gap-3 mt-4">
                         <a href="{% url 'club_portal' %}" class="btn btn-light flex-grow-1 py-2.5">Cancelar</a>
                         <button type="submit" class="btn btn-custom-primary flex-grow-1 py-2.5">
-                            <i class="fa-solid fa-floppy-disk me-2"></i>Guardar Equipo
+                            <i class="fa-solid fa-floppy-disk me-2"></i>{% if edit_mode %}Actualizar Equipo{% else %}Guardar Equipo{% endif %}
                         </button>
                     </div>
                 </form>

@@ -38,8 +38,11 @@ def club_portal(request):
         messages.error(request, "No tienes permisos para acceder al Portal del Club.")
         return redirect('gestion_usuarios') if request.user.role == 'superadmin' else redirect('/login/')
 
-    # Equipos que administra
-    equipos = Equipo.objects.filter(dirigente=request.user)
+    # Equipos que administra: si es superadmin o superuser ve todos
+    if request.user.role == 'superadmin' or request.user.is_superuser:
+        equipos = Equipo.objects.all()
+    else:
+        equipos = Equipo.objects.filter(dirigente=request.user)
     
     # Obtener el nuevo enlace de la sesión y eliminarlo para que solo aparezca una vez
     nuevo_enlace = request.session.pop('nuevo_enlace', None)
@@ -70,8 +73,33 @@ def crear_equipo(request):
     return render(request, 'teams/crear_equipo.html', {'form': form})
 
 @login_required
+def editar_equipo(request, equipo_id):
+    if not request.user.has_module_access('equipos'):
+        messages.error(request, "No tienes permisos para acceder al Módulo de Equipos.")
+        return redirect('club_portal')
+        
+    # Obtener equipo. Permitir edición si es superadmin, superuser, o el dirigente del equipo
+    if request.user.role == 'superadmin' or request.user.is_superuser:
+        equipo = get_object_or_404(Equipo, id=equipo_id)
+    else:
+        equipo = get_object_or_404(Equipo, id=equipo_id, dirigente=request.user)
+        
+    if request.method == 'POST':
+        form = EquipoForm(request.POST, request.FILES, instance=equipo)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Equipo '{equipo.nombre}' actualizado exitosamente.")
+            return redirect('club_portal')
+    else:
+        form = EquipoForm(instance=equipo)
+    return render(request, 'teams/crear_equipo.html', {'form': form, 'edit_mode': True, 'equipo': equipo})
+
+@login_required
 def generar_invitacion(request, equipo_id):
-    equipo = get_object_or_404(Equipo, id=equipo_id, dirigente=request.user)
+    if request.user.role == 'superadmin' or request.user.is_superuser:
+        equipo = get_object_or_404(Equipo, id=equipo_id)
+    else:
+        equipo = get_object_or_404(Equipo, id=equipo_id, dirigente=request.user)
     
     # Desactivar invitaciones anteriores para este equipo
     InvitacionEquipo.objects.filter(equipo=equipo, activo=True).update(activo=False)
