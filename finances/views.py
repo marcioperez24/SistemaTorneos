@@ -10,7 +10,7 @@ from decimal import Decimal
 
 @login_required
 def resumen_financiero(request):
-    if request.user.role not in ['tesorero', 'superadmin']:
+    if request.user.role not in ['tesorero', 'tesoreria', 'superadmin']:
         messages.error(request, "No tienes autorización para acceder al Módulo de Tesorería.")
         return redirect('club_portal')
 
@@ -59,7 +59,7 @@ def resumen_financiero(request):
 
 @login_required
 def registrar_pago_inscripcion(request, pago_id):
-    if request.user.role not in ['tesorero', 'superadmin']:
+    if request.user.role not in ['tesorero', 'tesoreria', 'superadmin']:
         messages.error(request, "No autorizado.")
         return redirect('club_portal')
         
@@ -85,7 +85,7 @@ def registrar_pago_inscripcion(request, pago_id):
 
 @login_required
 def pagar_multa(request, multa_id):
-    if request.user.role not in ['tesorero', 'superadmin']:
+    if request.user.role not in ['tesorero', 'tesoreria', 'superadmin']:
         messages.error(request, "No autorizado.")
         return redirect('club_portal')
         
@@ -108,7 +108,7 @@ def pagar_multa(request, multa_id):
 
 @login_required
 def registrar_egreso(request):
-    if request.user.role not in ['tesorero', 'superadmin']:
+    if request.user.role not in ['tesorero', 'tesoreria', 'superadmin']:
         messages.error(request, "No autorizado.")
         return redirect('club_portal')
         
