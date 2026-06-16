@@ -149,7 +149,7 @@
                                 <!-- Ocultamos el select real pero lo mantenemos para que Django procese el POST -->
                                 <select name="{{ field.name }}" id="id_{{ field.name }}" multiple class="d-none">
                                     {% for team in field.field.queryset %}
-                                        <option value="{{ team.id }}">{{ team.nombre }}</option>
+                                        <option value="{{ team.id }}" {% if team.id|stringformat:"i" in field.value or team in field.value or team.id in field.value %}selected{% endif %}>{{ team.nombre }}</option>
                                     {% endfor %}
                                 </select>
                                 
