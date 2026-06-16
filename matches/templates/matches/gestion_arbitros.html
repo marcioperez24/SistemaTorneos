@@ -178,7 +178,10 @@
                         <label class="form-label fw-semibold text-secondary small mb-1">Contraseña</label>
                         <div class="input-group shadow-sm-hover">
                             <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 8px 0 0 8px;"><i class="fa-solid fa-lock"></i></span>
-                            <input type="password" name="password" class="form-control border-start-0 py-2.5" placeholder="Crea una contraseña segura" style="border-radius: 0 8px 8px 0;" required>
+                            <input type="password" name="password" class="form-control border-start-0 border-end-0 py-2.5" placeholder="Crea una contraseña segura" style="border-radius: 0;" required>
+                            <button class="btn btn-outline-secondary border-start-0" type="button" onclick="togglePasswordVisibility(this)" style="border-radius: 0 8px 8px 0; border-color: #cbd5e1; background-color: #fff; color: #94a3b8;" tabindex="-1">
+                                <i class="fa-regular fa-eye"></i>
+                            </button>
                         </div>
                         {% if form.password.errors %}
                             {% for error in form.password.errors %}

@@ -269,7 +269,12 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-semibold text-secondary">Contraseña Temporal</label>
-                            <input type="password" class="form-control" name="password" placeholder="Contraseña segura" required>
+                            <div class="input-group">
+                                <input type="password" class="form-control" name="password" placeholder="Contraseña segura" required>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility(this)" tabindex="-1">
+                                    <i class="fa-regular fa-eye"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="row">
@@ -353,7 +358,12 @@
                         </div>
                         <div class="mb-2">
                             <label class="form-label fw-semibold text-secondary">Contraseña (Dejar en blanco para no cambiar)</label>
-                            <input type="password" class="form-control" name="password" placeholder="Nueva contraseña segura">
+                            <div class="input-group">
+                                <input type="password" class="form-control" name="password" placeholder="Nueva contraseña segura">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility(this)" tabindex="-1">
+                                    <i class="fa-regular fa-eye"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer border-0 p-3 bg-light" style="border-radius: 0 0 16px 16px;">

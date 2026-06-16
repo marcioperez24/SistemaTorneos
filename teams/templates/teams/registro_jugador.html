@@ -64,7 +64,12 @@
                         </div>
                         <div class="col-md-12 mb-4">
                             <label class="form-label fw-semibold text-secondary">Contraseña para tu cuenta</label>
-                            {{ form.password }}
+                            <div class="input-group">
+                                {{ form.password }}
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility(this)" tabindex="-1">
+                                    <i class="fa-regular fa-eye"></i>
+                                </button>
+                            </div>
                             {% if form.password.errors %}
                                 <div class="text-danger small mt-1">{{ form.password.errors|first }}</div>
                             {% endif %}

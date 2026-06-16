@@ -497,6 +497,38 @@
 
     <!-- Bootstrap JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function togglePasswordVisibility(btn) {
+            const container = btn.closest('.input-group-custom') || btn.closest('.input-group') || btn.parentElement;
+            if (container) {
+                const input = container.querySelector('input[type="password"]') || container.querySelector('input[type="text"]');
+                const icon = btn.querySelector('i');
+                if (input && icon) {
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        icon.classList.remove('fa-eye');
+                        icon.classList.add('fa-eye-slash');
+                        
+                        // If it's a fontawesome eye-regular, swap to slash
+                        if (icon.classList.contains('fa-regular')) {
+                            icon.classList.remove('fa-eye');
+                            icon.classList.add('fa-eye-slash');
+                        }
+                    } else {
+                        input.type = 'password';
+                        icon.classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
+                        
+                        // If it's a fontawesome eye-regular, swap back
+                        if (icon.classList.contains('fa-regular')) {
+                            icon.classList.remove('fa-eye-slash');
+                            icon.classList.add('fa-eye');
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
