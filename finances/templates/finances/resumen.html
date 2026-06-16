@@ -20,7 +20,7 @@
                         <span class="text-secondary fw-semibold small uppercase tracking-wider">Caja Chica / Balance</span>
                         <h2 class="fw-bold mb-0 mt-1 {% if balance >= 0 %}text-success{% else %}text-danger{% endif %}">C$ {{ balance|floatformat:2 }}</h2>
                     </div>
-                    <div class="bg-primary-light text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                    <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
                         <i class="fa-solid fa-scale-balanced fa-xl"></i>
                     </div>
                 </div>
@@ -34,7 +34,7 @@
                         <span class="text-secondary fw-semibold small uppercase tracking-wider">Total Ingresos</span>
                         <h2 class="fw-bold text-success mb-0 mt-1">C$ {{ total_ingresos|floatformat:2 }}</h2>
                     </div>
-                    <div class="bg-success-light text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                    <div class="bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
                         <i class="fa-solid fa-circle-arrow-up fa-xl"></i>
                     </div>
                 </div>
@@ -48,7 +48,7 @@
                         <span class="text-secondary fw-semibold small uppercase tracking-wider">Total Egresos</span>
                         <h2 class="fw-bold text-danger mb-0 mt-1">C$ {{ total_egresos|floatformat:2 }}</h2>
                     </div>
-                    <div class="bg-danger-light text-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                    <div class="bg-danger-subtle text-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
                         <i class="fa-solid fa-circle-arrow-down fa-xl"></i>
                     </div>
                 </div>
@@ -112,9 +112,9 @@
                                     <td class="text-center font-monospace fw-semibold">C$ {{ pago.monto|floatformat:2 }}</td>
                                     <td class="text-center">
                                         {% if pago.estado == 'pagado' %}
-                                            <span class="badge bg-success-light text-success rounded-pill px-3 py-1.5"><i class="fa-solid fa-circle-check me-1"></i>Pagado</span>
+                                            <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1.5"><i class="fa-solid fa-circle-check me-1"></i>Pagado</span>
                                         {% else %}
-                                            <span class="badge bg-danger-light text-danger rounded-pill px-3 py-1.5"><i class="fa-solid fa-clock me-1"></i>Pendiente</span>
+                                            <span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-1.5"><i class="fa-solid fa-clock me-1"></i>Pendiente</span>
                                         {% endif %}
                                     </td>
                                     <td class="text-center text-capitalize">{{ pago.get_metodo_pago_display|default:"-" }}</td>
@@ -178,9 +178,9 @@
                                     <td class="text-center font-monospace fw-bold text-dark">C$ {{ multa.monto|floatformat:2 }}</td>
                                     <td class="text-center">
                                         {% if multa.estado == 'pagated' or multa.estado == 'pagado' %}
-                                            <span class="badge bg-success-light text-success rounded-pill px-3 py-1.5"><i class="fa-solid fa-check me-1"></i>Cobrado</span>
+                                            <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1.5"><i class="fa-solid fa-check me-1"></i>Cobrado</span>
                                         {% else %}
-                                            <span class="badge bg-danger-light text-danger rounded-pill px-3 py-1.5"><i class="fa-solid fa-clock me-1"></i>Cobro Pendiente</span>
+                                            <span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-1.5"><i class="fa-solid fa-clock me-1"></i>Cobro Pendiente</span>
                                         {% endif %}
                                     </td>
                                     <td class="text-center text-muted font-monospace fs-8">{{ multa.fecha_pago|date:"d/m/Y H:i"|default:"-" }}</td>
@@ -234,9 +234,9 @@
                                     <td>{{ mov.registrado_por.get_full_name|default:mov.registrado_por.username }}</td>
                                     <td class="text-center">
                                         {% if mov.tipo == 'ingreso' %}
-                                            <span class="badge bg-success-light text-success px-2.5 py-1.5 rounded-pill"><i class="fa-solid fa-plus me-1"></i>Ingreso</span>
+                                            <span class="badge bg-success-subtle text-success px-2.5 py-1.5 rounded-pill"><i class="fa-solid fa-plus me-1"></i>Ingreso</span>
                                         {% else %}
-                                            <span class="badge bg-danger-light text-danger px-2.5 py-1.5 rounded-pill"><i class="fa-solid fa-minus me-1"></i>Egreso</span>
+                                            <span class="badge bg-danger-subtle text-danger px-2.5 py-1.5 rounded-pill"><i class="fa-solid fa-minus me-1"></i>Egreso</span>
                                         {% endif %}
                                     </td>
                                     <td class="text-end font-monospace fw-bold {% if mov.tipo == 'ingreso' %}text-success{% else %}text-danger{% endif %}">
