@@ -1,42 +1,465 @@
 {% extends 'teams/base.html' %}
+{% load static %}
 {% block title %}Iniciar Sesión - Sistema Deportivo{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Full-screen configuration */
+    body {
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        overflow-x: hidden;
+        background-color: #0f172a;
+    }
+    
+    footer {
+        display: none !important;
+    }
+
+    .login-wrapper {
+        min-height: 100vh;
+        display: flex;
+    }
+
+    /* Left panel: Sports background & info */
+    .login-left {
+        flex: 1.2;
+        position: relative;
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 60, 114, 0.9) 100%), url('{% static "teams/images/login_sports_bg.png" %}');
+        background-size: cover;
+        background-position: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 3.5rem;
+        color: white;
+    }
+    
+    @media (max-width: 991px) {
+        .login-left {
+            display: none;
+        }
+    }
+
+    /* Branding logo and text */
+    .brand-container {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .brand-logo {
+        background: linear-gradient(135deg, #f39c12 0%, #d35400 100%);
+        width: 45px;
+        height: 45px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+    }
+
+    .brand-name {
+        font-size: 1.35rem;
+        font-weight: 800;
+        letter-spacing: 1.5px;
+    }
+
+    /* Left content middle section */
+    .left-content {
+        max-width: 550px;
+        margin-top: auto;
+        margin-bottom: auto;
+    }
+
+    .left-title {
+        font-size: 3rem;
+        font-weight: 800;
+        line-height: 1.2;
+        margin-bottom: 1.5rem;
+        background: linear-gradient(to right, #ffffff, #cbd5e1);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .left-subtitle {
+        font-size: 1.15rem;
+        color: #94a3b8;
+        line-height: 1.6;
+        margin-bottom: 2.5rem;
+    }
+
+    .feature-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+
+    .feature-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-weight: 500;
+        font-size: 1.05rem;
+        color: #e2e8f0;
+    }
+
+    .feature-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background-color: rgba(255, 255, 255, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #f39c12;
+        font-size: 0.95rem;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        flex-shrink: 0;
+    }
+
+    /* Left content bottom section: public button */
+    .left-footer {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 20px;
+        padding: 1.5rem 2rem;
+        backdrop-filter: blur(12px);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.5rem;
+        margin-top: auto;
+    }
+
+    .left-footer-text h6 {
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+        font-size: 1.05rem;
+    }
+
+    .left-footer-text p {
+        font-size: 0.9rem;
+        color: #94a3b8;
+        margin: 0;
+    }
+
+    /* Right panel: Login form */
+    .login-right {
+        flex: 0.8;
+        background-color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 5rem;
+        position: relative;
+    }
+
+    @media (max-width: 991px) {
+        .login-right {
+            flex: 1;
+            padding: 3rem 1.5rem;
+            background-color: #0f172a;
+            color: white;
+            min-height: 100vh;
+        }
+    }
+
+    .login-card {
+        width: 100%;
+        max-width: 420px;
+        margin: 0 auto;
+    }
+
+    .login-header {
+        margin-bottom: 3rem;
+    }
+
+    .login-header h2 {
+        font-size: 2.25rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 0.75rem;
+        letter-spacing: -0.5px;
+    }
+
+    @media (max-width: 991px) {
+        .login-header h2 {
+            color: #ffffff;
+        }
+    }
+
+    .login-header p {
+        color: #64748b;
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+
+    @media (max-width: 991px) {
+        .login-header p {
+            color: #94a3b8;
+        }
+    }
+
+    /* Form customization */
+    .form-group-custom {
+        margin-bottom: 1.5rem;
+        position: relative;
+    }
+
+    .form-label-custom {
+        display: block;
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #475569;
+        margin-bottom: 0.5rem;
+    }
+
+    @media (max-width: 991px) {
+        .form-label-custom {
+            color: #cbd5e1;
+        }
+    }
+
+    .input-group-custom {
+        position: relative;
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+        transition: color 0.3s ease;
+        z-index: 10;
+    }
+
+    /* Styles for Django form inputs */
+    .input-group-custom input {
+        width: 100%;
+        padding: 15px 16px 15px 50px !important;
+        font-size: 1rem;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 12px;
+        background-color: #f8fafc;
+        transition: all 0.3s ease;
+        outline: none;
+        color: #0f172a;
+    }
+
+    @media (max-width: 991px) {
+        .input-group-custom input {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+    }
+
+    .input-group-custom input:focus {
+        border-color: #1e3c72;
+        background-color: #ffffff;
+        box-shadow: 0 0 0 4px rgba(30, 60, 114, 0.12);
+    }
+
+    @media (max-width: 991px) {
+        .input-group-custom input:focus {
+            border-color: #f39c12;
+            background-color: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 4px rgba(243, 156, 18, 0.2);
+        }
+    }
+
+    .input-group-custom input:focus + .input-icon {
+        color: #1e3c72;
+    }
+
+    @media (max-width: 991px) {
+        .input-group-custom input:focus + .input-icon {
+            color: #f39c12;
+        }
+    }
+
+    .error-msg {
+        color: #ef4444;
+        font-size: 0.8rem;
+        margin-top: 0.5rem;
+        font-weight: 500;
+    }
+
+    /* Login button */
+    .btn-login {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        border: none;
+        font-weight: 700;
+        font-size: 1rem;
+        border-radius: 12px;
+        padding: 15px 24px;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        box-shadow: 0 4px 15px rgba(30, 60, 114, 0.25);
+        cursor: pointer;
+        width: 100%;
+        margin-top: 2rem;
+    }
+
+    .btn-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(30, 60, 114, 0.35);
+        background: linear-gradient(135deg, #1a3563 0%, #244785 100%);
+    }
+
+    .btn-login:active {
+        transform: translateY(0);
+    }
+
+    /* Bottom notice card */
+    .notice-card {
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
+        margin-top: 3rem;
+        text-align: center;
+    }
+
+    @media (max-width: 991px) {
+        .notice-card {
+            background-color: rgba(255, 255, 255, 0.02);
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+    }
+
+    .notice-card p {
+        margin: 0;
+        font-size: 0.875rem;
+        color: #64748b;
+        line-height: 1.5;
+    }
+
+    @media (max-width: 991px) {
+        .notice-card p {
+            color: #94a3b8;
+        }
+    }
+
+    .notice-card strong {
+        color: #0f172a;
+    }
+
+    @media (max-width: 991px) {
+        .notice-card strong {
+            color: #ffffff;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container my-5">
-    <div class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="card card-custom p-4 mt-5">
-                <div class="text-center mb-4">
-                    <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-gradient text-white rounded-circle mb-3" style="width: 60px; height: 60px;">
-                        <i class="fa-solid fa-lock fa-xl"></i>
+<div class="login-wrapper">
+    <!-- Left panel: branding & features (hidden on mobile) -->
+    <div class="login-left">
+        <div class="brand-container">
+            <div class="brand-logo">
+                <i class="fa-solid fa-trophy text-white fs-5"></i>
+            </div>
+            <div class="brand-name">SISTEMA DEPORTIVO</div>
+        </div>
+        
+        <div class="left-content">
+            <h1 class="left-title">Gestiona tus torneos a nivel profesional.</h1>
+            <p class="left-subtitle">Optimiza la administración de partidos, fixture, carnetización, cobro de multas y actas digitales desde cualquier dispositivo.</p>
+            
+            <div class="feature-list">
+                <div class="feature-item">
+                    <span class="feature-icon"><i class="fa-solid fa-calendar-check"></i></span>
+                    <span>Generación de Fixture y Fases Automatizado</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon"><i class="fa-solid fa-pen-nib"></i></span>
+                    <span>Actas Digitales con Firma Táctil</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon"><i class="fa-solid fa-wallet"></i></span>
+                    <span>Control de Pagos, Multas e Inscripciones</span>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-icon"><i class="fa-solid fa-qrcode"></i></span>
+                    <span>Validación Digital de Credenciales por QR</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="left-footer">
+            <div class="left-footer-text">
+                <h6>Acceso al Público General</h6>
+                <p>Consulta partidos, calendarios y posiciones actuales.</p>
+            </div>
+            <a href="{% url 'partidos_lista' %}" class="btn btn-custom-accent rounded-pill px-4 py-2.5">
+                <i class="fa-solid fa-calendar-days me-2"></i>Ver Partidos
+            </a>
+        </div>
+    </div>
+    
+    <!-- Right panel: login form -->
+    <div class="login-right">
+        <!-- Logo for mobile only -->
+        <div class="d-lg-none text-center mb-4">
+            <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-gradient text-white rounded-circle mb-2" style="width: 50px; height: 50px; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important;">
+                <i class="fa-solid fa-trophy text-warning fs-5"></i>
+            </div>
+            <h4 class="fw-bold tracking-wide text-white">SISTEMA DEPORTIVO</h4>
+        </div>
+
+        <div class="login-card">
+            <div class="login-header text-center text-lg-start">
+                <h2>Ingreso al Sistema</h2>
+                <p>Acceso restringido para directivos, organizadores y personal de campo.</p>
+            </div>
+            
+            <form method="POST">
+                {% csrf_token %}
+                
+                <div class="form-group-custom">
+                    <label for="{{ form.username.id_for_label }}" class="form-label-custom">Usuario</label>
+                    <div class="input-group-custom">
+                        <span class="input-icon"><i class="fa-solid fa-user"></i></span>
+                        {{ form.username }}
                     </div>
-                    <h3 class="fw-bold">Ingreso al Sistema</h3>
-                    <p class="text-muted">Acceso para Directivos y Organizadores</p>
+                    {% if form.username.errors %}
+                        <div class="error-msg">{{ form.username.errors|first }}</div>
+                    {% endif %}
                 </div>
                 
-                <form method="POST">
-                    {% csrf_token %}
-                    
-                    {% for field in form %}
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold text-secondary">{{ field.label }}</label>
-                            {{ field }}
-                            {% if field.errors %}
-                                <div class="text-danger small mt-1">
-                                    {{ field.errors|first }}
-                                </div>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
-                    
-                    <button type="submit" class="btn btn-custom-primary w-100 py-2.5 mt-3 text-uppercase tracking-wider">
-                        <i class="fa-solid fa-right-to-bracket me-2"></i>Entrar
-                    </button>
-                </form>
-                
-                <div class="text-center mt-4">
-                    <small class="text-muted">¿Eres un jugador? Pídele a tu dirigente el enlace de invitación de tu equipo para registrarte directamente.</small>
+                <div class="form-group-custom">
+                    <label for="{{ form.password.id_for_label }}" class="form-label-custom">Contraseña</label>
+                    <div class="input-group-custom">
+                        <span class="input-icon"><i class="fa-solid fa-lock"></i></span>
+                        {{ form.password }}
+                    </div>
+                    {% if form.password.errors %}
+                        <div class="error-msg">{{ form.password.errors|first }}</div>
+                    {% endif %}
                 </div>
+                
+                <button type="submit" class="btn-login">
+                    <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
+                </button>
+            </form>
+            
+            <div class="notice-card">
+                <p><strong>¿Eres un jugador?</strong> Pídele al dirigente de tu club el enlace de invitación para registrarte y carnetizarte en línea.</p>
+            </div>
+            
+            <div class="d-lg-none text-center mt-4">
+                <a href="{% url 'partidos_lista' %}" class="btn btn-custom-accent w-100 py-2.5 rounded-3">
+                    <i class="fa-solid fa-calendar-days me-2"></i>Ver Partidos General
+                </a>
             </div>
         </div>
     </div>

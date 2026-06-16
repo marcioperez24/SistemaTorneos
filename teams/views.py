@@ -25,7 +25,7 @@ def login_view(request):
             messages.error(request, "Usuario o contraseña incorrectos.")
     else:
         form = AuthenticationForm()
-    return render(request, 'teams/login.html', {'form': form})
+    return render(request, 'teams/login.html', {'form': form, 'hide_navbar': True})
 
 def logout_view(request):
     logout(request)
