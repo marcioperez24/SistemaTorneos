@@ -34,10 +34,9 @@ def logout_view(request):
 
 @login_required
 def club_portal(request):
-    # Solo dirigentes o superadmins pueden ver el portal del club
-    if request.user.role not in ['dirigente', 'superadmin']:
+    if not request.user.has_module_access('equipos'):
         messages.error(request, "No tienes permisos para acceder al Portal del Club.")
-        return redirect('admin:index') if request.user.is_staff else redirect('/login/')
+        return redirect('gestion_usuarios') if request.user.role == 'superadmin' else redirect('/login/')
 
     # Equipos que administra
     equipos = Equipo.objects.filter(dirigente=request.user)
@@ -55,7 +54,7 @@ def club_portal(request):
 
 @login_required
 def crear_equipo(request):
-    if request.user.role not in ['dirigente', 'superadmin']:
+    if not request.user.has_module_access('equipos'):
         return redirect('club_portal')
         
     if request.method == 'POST':
@@ -124,8 +123,7 @@ def registro_exito(request):
 
 @login_required
 def secretaria_dashboard(request):
-    # Validar rol
-    if request.user.role not in ['comision', 'superadmin']:
+    if not request.user.has_module_access('secretaria'):
         messages.error(request, "No tienes permisos para acceder al Módulo de Secretaría.")
         return redirect('club_portal')
         
@@ -140,7 +138,7 @@ def secretaria_dashboard(request):
 
 @login_required
 def aprobar_jugador(request, ficha_id):
-    if request.user.role not in ['comision', 'superadmin']:
+    if not request.user.has_module_access('secretaria'):
         messages.error(request, "No autorizado.")
         return redirect('club_portal')
         
@@ -153,7 +151,7 @@ def aprobar_jugador(request, ficha_id):
 
 @login_required
 def rechazar_jugador(request, ficha_id):
-    if request.user.role not in ['comision', 'superadmin']:
+    if not request.user.has_module_access('secretaria'):
         messages.error(request, "No autorizado.")
         return redirect('club_portal')
         

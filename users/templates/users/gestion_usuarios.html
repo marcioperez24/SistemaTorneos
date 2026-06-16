@@ -1,0 +1,366 @@
+{% extends 'teams/base.html' %}
+{% load users_filters %}
+{% block title %}Gestión de Usuarios y Roles - Sistema Deportivo{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Folders grid styling */
+    .folder-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        box-shadow: var(--card-shadow);
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .folder-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    /* Tab shape for the folder card */
+    .folder-tab {
+        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+        color: white;
+        padding: 14px 20px;
+        font-weight: 700;
+        font-size: 1.05rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        border-radius: 16px 16px 0 0;
+        position: relative;
+    }
+
+    /* Folder design accents */
+    .folder-tab::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 30px;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.1);
+        clip-path: polygon(100% 0, 0% 100%, 100% 100%);
+    }
+
+    .folder-body {
+        padding: 1.5rem;
+        flex-grow: 1;
+        background-color: #ffffff;
+    }
+
+    /* iOS Style Switch */
+    .form-switch .form-check-input {
+        width: 2.75em;
+        height: 1.5em;
+        margin-left: -2.5em;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23cbd5e1' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 10h8'/%3e%3c/svg%3e");
+        background-color: #e2e8f0;
+        border-color: #cbd5e1;
+        cursor: pointer;
+        transition: background-position .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+    }
+
+    .form-switch .form-check-input:focus {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%233b82f6' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 10h8'/%3e%3c/svg%3e");
+        box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.15);
+        border-color: #cbd5e1;
+    }
+
+    .form-switch .form-check-input:checked {
+        background-color: #10b981;
+        border-color: #10b981;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3 6-6'/%3e%3c/svg%3e");
+    }
+
+    .module-item {
+        padding: 10px 0;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .module-item:last-child {
+        border-bottom: none;
+    }
+
+    .module-label {
+        font-weight: 500;
+        font-size: 0.925rem;
+        color: #334155;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="gradient-header text-center text-md-start">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="fw-bold"><i class="fa-solid fa-users-gear me-3 text-warning"></i>Control de Usuarios y Roles</h1>
+                <p class="lead mb-0 text-white-50">Crea nuevos usuarios del sistema, edita sus perfiles y configura dinámicamente qué módulos puede ver cada rol.</p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <button type="button" class="btn btn-custom-accent py-2.5 px-4 shadow" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                    <i class="fa-solid fa-user-plus me-2"></i>Crear Nuevo Usuario
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-pills flex-column flex-sm-row nav-fill bg-white p-2 rounded-4 shadow-sm mb-4 gap-2 gap-sm-0" id="pills-tab" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active rounded-pill fw-semibold py-2.5 w-100" id="tab-usuarios" data-bs-toggle="pill" data-bs-target="#pane-usuarios" type="button">
+                <i class="fa-solid fa-users me-2"></i>Listado de Usuarios
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link rounded-pill fw-semibold py-2.5 w-100" id="tab-permisos" data-bs-toggle="pill" data-bs-target="#pane-permisos" type="button">
+                <i class="fa-solid fa-folder-open me-2"></i>Carpetas de Permisos por Rol
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="pills-tabContent">
+        <!-- TAB 1: USER LIST -->
+        <div class="tab-pane fade show active" id="pane-usuarios">
+            <div class="card card-custom p-4 bg-white">
+                <h4 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-address-book me-2 text-primary"></i>Usuarios Registrados</h4>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light text-uppercase fs-8">
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Nombres y Apellidos</th>
+                                <th>Email</th>
+                                <th>Teléfono</th>
+                                <th>Rol del Sistema</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in usuarios %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold me-2.5" style="width: 38px; height: 38px; font-size: 14px;">
+                                                {{ u.username|slice:":2"|upper }}
+                                            </div>
+                                            <div>
+                                                <span class="fw-bold text-dark fs-6">{{ u.username }}</span>
+                                                {% if u.is_superuser %}
+                                                    <span class="badge bg-danger ms-1 text-uppercase fs-9 py-0.5 px-1.5">Superadmin</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="fw-semibold">{{ u.get_full_name|default:"-" }}</td>
+                                    <td>{{ u.email|default:"-" }}</td>
+                                    <td class="font-monospace text-secondary">{{ u.telefono|default:"-" }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary py-1.5 px-3 rounded-pill text-dark">
+                                            {{ u.get_role_display }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-inline-flex gap-2">
+                                            <button type="button" class="btn btn-outline-primary btn-sm px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#editUserModal{{ u.id }}">
+                                                <i class="fa-solid fa-user-pen me-1"></i>Editar
+                                            </button>
+                                            
+                                            {% if u != user %}
+                                                <form action="{% url 'eliminar_usuario' u.id %}" method="POST" onsubmit="return confirm('¿Estás seguro de que deseas eliminar permanentemente al usuario {{ u.username }}? Esta acción no se puede deshacer.');" class="m-0">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm px-3 rounded-pill">
+                                                        <i class="fa-solid fa-trash me-1"></i>Eliminar
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- MODAL EDITAR USUARIO (Para cada usuario) -->
+                                <div class="modal fade" id="editUserModal{{ u.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content rounded-4 border-0 shadow-lg">
+                                            <div class="modal-header bg-primary text-white py-3">
+                                                <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-pen me-2 text-warning"></i>Editar Usuario: {{ u.username }}</h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <form action="{% url 'editar_usuario' u.id %}" method="POST">
+                                                {% csrf_token %}
+                                                <div class="modal-body p-4">
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label fw-semibold text-secondary">Nombres</label>
+                                                            <input type="text" class="form-control" name="first_name" value="{{ u.first_name }}" required>
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label fw-semibold text-secondary">Apellidos</label>
+                                                            <input type="text" class="form-control" name="last_name" value="{{ u.last_name }}" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-semibold text-secondary">Correo Electrónico</label>
+                                                        <input type="email" class="form-control" name="email" value="{{ u.email }}">
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label fw-semibold text-secondary">Teléfono</label>
+                                                            <input type="text" class="form-control" name="telefono" value="{{ u.telefono|default:'' }}" placeholder="Ej. +50588888888">
+                                                        </div>
+                                                        <div class="col-md-6 mb-3">
+                                                            <label class="form-label fw-semibold text-secondary">Rol Asignado</label>
+                                                            <select class="form-select" name="role" required>
+                                                                {% for key, val in role_choices %}
+                                                                    <option value="{{ key }}" {% if u.role == key %}selected{% endif %}>{{ val }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="mb-2">
+                                                        <label class="form-label fw-semibold text-secondary">Contraseña (Dejar en blanco para no cambiar)</label>
+                                                        <input type="password" class="form-control" name="password" placeholder="Nueva contraseña segura">
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer border-0 p-3 bg-light" style="border-radius: 0 0 16px 16px;">
+                                                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                                    <button type="submit" class="btn btn-custom-primary rounded-pill px-4">Actualizar Datos</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">No se registran usuarios en el sistema.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: ROLE FOLDERS AND PERMISSIONS -->
+        <div class="tab-pane fade" id="pane-permisos">
+            <form action="{% url 'guardar_permisos' %}" method="POST">
+                {% csrf_token %}
+                <div class="alert alert-info border-0 shadow-sm mb-4 d-flex align-items-center">
+                    <i class="fa-solid fa-circle-info fa-lg me-3"></i>
+                    <div>
+                        <strong>Mapeo de Acceso por Roles (Carpetas):</strong> Aquí puedes activar o desactivar el acceso a los módulos principales para cada rol. Los superadministradores siempre tienen acceso completo.
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    {% for r_code, r_name in role_choices %}
+                        {% if r_code != 'superadmin' %}
+                            <div class="col-md-6 col-lg-4">
+                                <div class="folder-card h-100">
+                                    <div class="folder-tab">
+                                        <i class="fa-solid fa-folder-closed"></i>
+                                        <span>Rol: {{ r_name }}</span>
+                                    </div>
+                                    <div class="folder-body">
+                                        <div class="text-muted small mb-3 border-bottom pb-2">Habilitar carpetas/módulos para este rol:</div>
+                                        
+                                        {% for m_code, m_name in modules %}
+                                            <div class="module-item">
+                                                <span class="module-label">{{ m_name }}</span>
+                                                <div class="form-check form-switch m-0">
+                                                    <!-- Generamos el input del switch con la configuración actual -->
+                                                    <input class="form-check-input" type="checkbox" role="switch" 
+                                                           name="perm_{{ r_code }}_{{ m_code }}" 
+                                                           id="switch_{{ r_code }}_{{ m_code }}"
+                                                           {% if permisos_roles|dict_key:r_code|dict_key:m_code %}checked{% endif %}>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+
+                <div class="card card-custom p-3 text-center bg-white shadow-sm mb-5">
+                    <button type="submit" class="btn btn-custom-accent py-3 px-5 rounded-pill fw-bold text-uppercase tracking-wider">
+                        <i class="fa-solid fa-floppy-disk me-2"></i>Guardar Permisos de Roles (Carpetas)
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CREAR USUARIO -->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white py-3">
+                <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-2 text-warning"></i>Crear Nuevo Usuario</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{% url 'crear_usuario' %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Nombre de Usuario (Único)</label>
+                            <input type="text" class="form-control" name="username" placeholder="Ej. marciop" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Contraseña Temporal</label>
+                            <input type="password" class="form-control" name="password" placeholder="Contraseña segura" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Nombres</label>
+                            <input type="text" class="form-control" name="first_name" placeholder="Nombres" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Apellidos</label>
+                            <input type="text" class="form-control" name="last_name" placeholder="Apellidos" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary">Correo Electrónico</label>
+                        <input type="email" class="form-control" name="email" placeholder="ejemplo@correo.com">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Teléfono</label>
+                            <input type="text" class="form-control" name="telefono" placeholder="Ej. +50588888888">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold text-secondary">Rol del Sistema</label>
+                            <select class="form-select" name="role" required>
+                                {% for key, val in role_choices %}
+                                    <option value="{{ key }}" {% if key == 'espectador' %}selected{% endif %}>{{ val }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-3 bg-light" style="border-radius: 0 0 16px 16px;">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-custom-primary rounded-pill px-4">Crear Usuario</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

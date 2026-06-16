@@ -374,27 +374,27 @@
                         </a>
                     </li>
                     {% if user.is_authenticated %}
-                        {% if user.role in 'dirigente,superadmin' %}
+                        {% if user_perms.equipos %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'club_portal' %}">
                                     <i class="fa-solid fa-shield-halved me-1.5"></i>Portal del Club
                                 </a>
                             </li>
                         {% endif %}
-                        {% if user.role in 'vocal,superadmin' %}
+                        {% if user_perms.vocalia %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'vocalia_dashboard' %}">
                                     <i class="fa-solid fa-clipboard-list me-1.5 text-warning"></i>Vocalía de Campo
                                 </a>
                             </li>
                         {% endif %}
-                        {% if user.role in 'comision,superadmin,tesoreria' %}
+                        {% if user_perms.secretaria or user_perms.tesoreria %}
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownAdmin" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="fa-solid fa-gears me-1.5 text-warning"></i>Administración
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end dropdown-menu-lg-start" aria-labelledby="navbarDropdownAdmin">
-                                    {% if user.role in 'comision,superadmin' %}
+                                    {% if user_perms.secretaria %}
                                         <li>
                                             <a class="dropdown-item" href="{% url 'secretaria_dashboard' %}">
                                                 <i class="fa-solid fa-user-check me-2 text-primary"></i>Secretaría (Validación)
@@ -416,8 +416,8 @@
                                             </a>
                                         </li>
                                     {% endif %}
-                                    {% if user.role in 'tesoreria,superadmin' %}
-                                        {% if user.role in 'comision,superadmin' %}
+                                    {% if user_perms.tesoreria %}
+                                        {% if user_perms.secretaria %}
                                             <li><hr class="dropdown-divider"></li>
                                         {% endif %}
                                         <li>
@@ -429,8 +429,8 @@
                                     {% if user.role == 'superadmin' %}
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
-                                            <a class="dropdown-item text-danger" href="/admin/" target="_blank">
-                                                <i class="fa-solid fa-screwdriver-wrench me-2"></i>Panel Django (Admin)
+                                            <a class="dropdown-item" href="{% url 'gestion_usuarios' %}">
+                                                <i class="fa-solid fa-users-gear me-2 text-danger"></i>Control de Usuarios
                                             </a>
                                         </li>
                                     {% endif %}
