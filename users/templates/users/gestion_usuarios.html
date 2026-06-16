@@ -187,61 +187,7 @@
                                                 </form>
                                             {% endif %}
                                         </div>
-                                    </td>
                                 </tr>
-
-                                <!-- MODAL EDITAR USUARIO (Para cada usuario) -->
-                                <div class="modal fade" id="editUserModal{{ u.id }}" tabindex="-1" aria-hidden="true">
-                                    <div class="modal-dialog modal-dialog-centered">
-                                        <div class="modal-content rounded-4 border-0 shadow-lg">
-                                            <div class="modal-header bg-primary text-white py-3">
-                                                <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-pen me-2 text-warning"></i>Editar Usuario: {{ u.username }}</h5>
-                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                            </div>
-                                            <form action="{% url 'editar_usuario' u.id %}" method="POST">
-                                                {% csrf_token %}
-                                                <div class="modal-body p-4">
-                                                    <div class="row">
-                                                        <div class="col-md-6 mb-3">
-                                                            <label class="form-label fw-semibold text-secondary">Nombres</label>
-                                                            <input type="text" class="form-control" name="first_name" value="{{ u.first_name }}" required>
-                                                        </div>
-                                                        <div class="col-md-6 mb-3">
-                                                            <label class="form-label fw-semibold text-secondary">Apellidos</label>
-                                                            <input type="text" class="form-control" name="last_name" value="{{ u.last_name }}" required>
-                                                        </div>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label class="form-label fw-semibold text-secondary">Correo Electrónico</label>
-                                                        <input type="email" class="form-control" name="email" value="{{ u.email }}">
-                                                    </div>
-                                                    <div class="row">
-                                                        <div class="col-md-6 mb-3">
-                                                            <label class="form-label fw-semibold text-secondary">Teléfono</label>
-                                                            <input type="text" class="form-control" name="telefono" value="{{ u.telefono|default:'' }}" placeholder="Ej. +50588888888">
-                                                        </div>
-                                                        <div class="col-md-6 mb-3">
-                                                            <label class="form-label fw-semibold text-secondary">Rol Asignado</label>
-                                                            <select class="form-select" name="role" required>
-                                                                {% for key, val in role_choices %}
-                                                                    <option value="{{ key }}" {% if u.role == key %}selected{% endif %}>{{ val }}</option>
-                                                                {% endfor %}
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <div class="mb-2">
-                                                        <label class="form-label fw-semibold text-secondary">Contraseña (Dejar en blanco para no cambiar)</label>
-                                                        <input type="password" class="form-control" name="password" placeholder="Nueva contraseña segura">
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer border-0 p-3 bg-light" style="border-radius: 0 0 16px 16px;">
-                                                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-                                                    <button type="submit" class="btn btn-custom-primary rounded-pill px-4">Actualizar Datos</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
                             {% empty %}
                                 <tr>
                                     <td colspan="6" class="text-center py-4 text-muted">No se registran usuarios en el sistema.</td>
@@ -363,4 +309,60 @@
         </div>
     </div>
 </div>
+
+<!-- EDIT USER MODALS CONTAINER (Outside table to prevent flickering) -->
+{% for u in usuarios %}
+    <!-- MODAL EDITAR USUARIO (Para cada usuario) -->
+    <div class="modal fade" id="editUserModal{{ u.id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white py-3">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-pen me-2 text-warning"></i>Editar Usuario: {{ u.username }}</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{% url 'editar_usuario' u.id %}" method="POST">
+                    {% csrf_token %}
+                    <div class="modal-body p-4">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold text-secondary">Nombres</label>
+                                <input type="text" class="form-control" name="first_name" value="{{ u.first_name }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold text-secondary">Apellidos</label>
+                                <input type="text" class="form-control" name="last_name" value="{{ u.last_name }}" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary">Correo Electrónico</label>
+                            <input type="email" class="form-control" name="email" value="{{ u.email }}">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold text-secondary">Teléfono</label>
+                                <input type="text" class="form-control" name="telefono" value="{{ u.telefono|default:'' }}" placeholder="Ej. +50588888888">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold text-secondary">Rol Asignado</label>
+                                <select class="form-select" name="role" required>
+                                    {% for key, val in role_choices %}
+                                        <option value="{{ key }}" {% if u.role == key %}selected{% endif %}>{{ val }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold text-secondary">Contraseña (Dejar en blanco para no cambiar)</label>
+                            <input type="password" class="form-control" name="password" placeholder="Nueva contraseña segura">
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 p-3 bg-light" style="border-radius: 0 0 16px 16px;">
+                        <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-custom-primary rounded-pill px-4">Actualizar Datos</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endfor %}
 {% endblock %}
