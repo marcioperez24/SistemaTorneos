@@ -155,6 +155,25 @@
     .sub-item-card:hover {
         box-shadow: 0 4px 8px rgba(0,0,0,0.05);
     }
+    /* DT visual representation on soccer pitch */
+    .coach-bench-area {
+        position: absolute;
+        bottom: 8px;
+        left: 8px;
+        background: rgba(0, 0, 0, 0.75);
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 6px;
+        padding: 4px 8px;
+        font-size: 0.72rem;
+        font-weight: bold;
+        z-index: 12;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        max-width: 140px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 </style>
 {% endblock %}
 
@@ -216,9 +235,19 @@
                                 <h3 class="h4 fw-bold mb-0 text-primary">{{ equipo.nombre }}</h3>
                                 <i class="fa-solid fa-chevron-down text-muted fs-6 collapse-arrow" style="transition: transform 0.2s;"></i>
                             </div>
-                            <span class="badge bg-secondary px-3 py-1.5 rounded-pill mt-1" style="font-size: 0.8rem;">
-                                <i class="fa-solid fa-tags me-1"></i>{{ equipo.get_categoria_display }}
-                            </span>
+                            <div class="d-flex flex-wrap gap-2 mt-1">
+                                <span class="badge bg-secondary px-3 py-1.5 rounded-pill" style="font-size: 0.8rem;">
+                                    <i class="fa-solid fa-tags me-1"></i>{{ equipo.get_categoria_display }}
+                                </span>
+                                {% if equipo.entrenador %}
+                                <span class="badge bg-dark-subtle text-dark border px-3 py-1.5 rounded-pill" style="font-size: 0.8rem;">
+                                    <i class="fa-solid fa-user-tie me-1.5 text-primary"></i>DT: <strong>{{ equipo.entrenador }}</strong>
+                                    {% if equipo.telefono_entrenador %}
+                                    <span class="text-secondary font-monospace ms-1">({{ equipo.telefono_entrenador }})</span>
+                                    {% endif %}
+                                </span>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                     
@@ -373,6 +402,13 @@
                                     <div class="pitch-center-circle"></div>
                                     <div class="pitch-penalty-area-top"></div>
                                     <div class="pitch-penalty-area-bottom"></div>
+                                    
+                                    {% if equipo.entrenador %}
+                                    <!-- DT en la banca -->
+                                    <div class="coach-bench-area" title="Director Técnico">
+                                        <i class="fa-solid fa-user-tie text-warning me-1"></i>DT: {{ equipo.entrenador }}
+                                    </div>
+                                    {% endif %}
                                     
                                     <!-- Posición 1 (GK) -->
                                     <div class="player-node" id="node_{{ equipo.id }}_0" onclick="openLineupSelector({{ equipo.id }}, 0, 'Arquero')">
