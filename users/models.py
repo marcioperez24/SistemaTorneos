@@ -6,6 +6,7 @@ class CustomUser(AbstractUser):
         ('superadmin', 'Super Admin / Organizador'),
         ('dirigente', 'Dirigente / Representante'),
         ('jugador', 'Jugador'),
+        ('dt', 'Director Técnico / Staff'),
         ('arbitro', 'Árbitro'),
         ('espectador', 'Espectador'),
         ('tesoreria', 'Tesorería'),

@@ -287,8 +287,14 @@
                                 
                                 <div class="row g-1 mb-1">
                                     <div class="col-7">
-                                        <span class="carnet-label">Categoría</span>
-                                        <span class="carnet-value" style="font-size: 6pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 28mm;">{{ ficha.equipo.get_categoria_display }}</span>
+                                        <span class="carnet-label">Categoría / Rol</span>
+                                        <span class="carnet-value" style="font-size: 6pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 28mm;">
+                                            {% if tipo == 'dt' %}
+                                                <span class="badge bg-warning text-dark px-1.5 py-0.5" style="font-size: 5.5pt; font-weight: bold; border: none;">DIRECTOR TÉCNICO</span>
+                                            {% else %}
+                                                {{ ficha.equipo.get_categoria_display }}
+                                            {% endif %}
+                                        </span>
                                     </div>
                                     <div class="col-5">
                                         <span class="carnet-label">Grupo Sangre</span>
@@ -340,12 +346,14 @@
                                         <span class="carnet-value font-monospace" style="font-size: 6.5pt;">{{ ficha.nro_cedula|default:"-" }}</span>
                                     </div>
                                     <div class="col-6">
-                                        <span class="carnet-label">Camiseta</span>
-                                        <span class="carnet-value font-monospace text-warning fw-bold" style="font-size: 7pt;">#{{ ficha.numero_camiseta|default:"-" }}</span>
+                                        <span class="carnet-label">Rol</span>
+                                        <span class="carnet-value font-monospace text-warning fw-bold" style="font-size: 6.2pt; white-space: nowrap;">
+                                            {% if tipo == 'dt' %}DT/STAFF{% else %}#{{ ficha.numero_camiseta|default:"-" }}{% endif %}
+                                        </span>
                                     </div>
                                 </div>
                                 <div class="mb-1.5">
-                                    <span class="carnet-label">Teléfono Deportista</span>
+                                    <span class="carnet-label">Teléfono Registro</span>
                                     <span class="carnet-value font-monospace text-info fw-semibold" style="font-size: 6.5pt;">{{ ficha.user.telefono|default:"-" }}</span>
                                 </div>
                                 <div class="row g-1">

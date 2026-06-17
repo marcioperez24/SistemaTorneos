@@ -4,8 +4,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta
-from .models import Equipo, InvitacionEquipo, FichaJugador
-from .forms import EquipoForm, PlayerRegistrationForm
+from .models import Equipo, InvitacionEquipo, FichaJugador, FichaDT
+from .forms import EquipoForm, PlayerRegistrationForm, DTRegistrationForm
 from django.contrib.auth.forms import AuthenticationForm
 
 def login_view(request):
@@ -119,19 +119,25 @@ def generar_invitacion(request, equipo_id):
     else:
         equipo = get_object_or_404(Equipo, id=equipo_id, dirigente=request.user)
     
-    # Desactivar invitaciones anteriores para este equipo
-    InvitacionEquipo.objects.filter(equipo=equipo, activo=True).update(activo=False)
+    tipo = request.GET.get('tipo', 'jugador')
+    if tipo not in ['jugador', 'dt']:
+        tipo = 'jugador'
+        
+    # Desactivar invitaciones anteriores para este equipo de este tipo
+    InvitacionEquipo.objects.filter(equipo=equipo, tipo=tipo, activo=True).update(activo=False)
     
     # Crear nueva invitación válida por 48 horas
     expira = timezone.now() + timedelta(hours=48)
     invitacion = InvitacionEquipo.objects.create(
         equipo=equipo,
+        tipo=tipo,
         expira_en=expira
     )
     
     # Construir URL absoluta del enlace
     enlace = request.build_absolute_uri(f"/invitacion/{invitacion.token}/")
-    messages.success(request, f"¡Enlace de invitación generado con éxito! Válido por 48 horas.")
+    tipo_display = "Director Técnico" if tipo == 'dt' else "Jugador"
+    messages.success(request, f"¡Enlace de invitación para {tipo_display} generado con éxito! Válido por 48 horas.")
     
     # Guardamos en la sesión para poder mostrarlo fácilmente en la redirección
     request.session['nuevo_enlace'] = enlace
@@ -147,18 +153,28 @@ def registro_jugador(request, token):
             'hide_navbar': True
         })
         
+    tipo = invitacion.tipo
+    
     if request.method == 'POST':
-        form = PlayerRegistrationForm(request.POST, request.FILES)
+        if tipo == 'dt':
+            form = DTRegistrationForm(request.POST, request.FILES)
+        else:
+            form = PlayerRegistrationForm(request.POST, request.FILES)
+            
         if form.is_valid():
             ficha = form.save(equipo=invitacion.equipo)
-            # Inscribimos al jugador firmando digitalmente con la fecha actual
+            # Firmando digitalmente con la fecha actual
             ficha.fecha_firma = timezone.now()
             ficha.save()
             return redirect('registro_exito')
     else:
-        form = PlayerRegistrationForm()
-        
-    return render(request, 'teams/registro_jugador.html', {
+        if tipo == 'dt':
+            form = DTRegistrationForm()
+        else:
+            form = PlayerRegistrationForm()
+            
+    template_name = 'teams/registro_dt.html' if tipo == 'dt' else 'teams/registro_jugador.html'
+    return render(request, template_name, {
         'form': form,
         'equipo': invitacion.equipo,
         'hide_navbar': True
@@ -173,8 +189,35 @@ def secretaria_dashboard(request):
         messages.error(request, "No tienes permisos para acceder al Módulo de Secretaría.")
         return redirect('club_portal')
         
-    pendientes = FichaJugador.objects.filter(estado_validacion='pendiente').select_related('user', 'equipo')
-    historial = FichaJugador.objects.exclude(estado_validacion='pendiente').select_related('user', 'equipo').order_by('-id')[:50] # Traer últimos 50
+    pendientes_jugadores = FichaJugador.objects.filter(estado_validacion='pendiente').select_related('user', 'equipo')
+    pendientes_dt = FichaDT.objects.filter(estado_validacion='pendiente').select_related('user', 'equipo')
+    
+    # Combinar listas de pendientes con un tag para identificar el tipo
+    pendientes = []
+    for pj in pendientes_jugadores:
+        pj.es_dt = False
+        pendientes.append(pj)
+    for pdt in pendientes_dt:
+        pdt.es_dt = True
+        pendientes.append(pdt)
+        
+    # Ordenar por fecha_firma o fecha de registro (o id)
+    # FichaDT no tiene fecha_firma en la base de datos pero sí firma_digital, usemos el ID
+    pendientes.sort(key=lambda x: x.id)
+
+    historial_jugadores = FichaJugador.objects.exclude(estado_validacion='pendiente').select_related('user', 'equipo')
+    historial_dt = FichaDT.objects.exclude(estado_validacion='pendiente').select_related('user', 'equipo')
+    
+    historial = []
+    for hj in historial_jugadores:
+        hj.es_dt = False
+        historial.append(hj)
+    for hdt in historial_dt:
+        hdt.es_dt = True
+        historial.append(hdt)
+        
+    historial.sort(key=lambda x: x.id, reverse=True)
+    historial = historial[:50]
     
     context = {
         'pendientes': pendientes,
@@ -188,13 +231,20 @@ def aprobar_jugador(request, ficha_id):
         messages.error(request, "No autorizado.")
         return redirect('club_portal')
         
-    ficha = get_object_or_404(FichaJugador, id=ficha_id)
+    tipo = request.GET.get('tipo', 'jugador')
+    if tipo == 'dt':
+        ficha = get_object_or_404(FichaDT, id=ficha_id)
+    else:
+        ficha = get_object_or_404(FichaJugador, id=ficha_id)
+        
     ficha.estado_validacion = 'aprobado'
     ficha.motivo_rechazo = None
     ficha.fecha_aprobacion = timezone.now()
     ficha.aprobado_por = request.user
     ficha.save()
-    messages.success(request, f"El carnet de {ficha.user.get_full_name() or ficha.user.username} ha sido Aprobado y Habilitado.")
+    
+    rol_str = "Director Técnico" if tipo == 'dt' else "Jugador"
+    messages.success(request, f"El carnet de {ficha.user.get_full_name() or ficha.user.username} ({rol_str}) ha sido Aprobado y Habilitado.")
     return redirect('secretaria_dashboard')
 
 @login_required
@@ -203,18 +253,28 @@ def rechazar_jugador(request, ficha_id):
         messages.error(request, "No autorizado.")
         return redirect('club_portal')
         
-    ficha = get_object_or_404(FichaJugador, id=ficha_id)
+    tipo = request.GET.get('tipo', 'jugador')
+    if tipo == 'dt':
+        ficha = get_object_or_404(FichaDT, id=ficha_id)
+    else:
+        ficha = get_object_or_404(FichaJugador, id=ficha_id)
+        
     if request.method == 'POST':
         motivo = request.POST.get('motivo_rechazo', 'Documentación ilegible o incompleta.')
         ficha.estado_validacion = 'rechazado'
         ficha.motivo_rechazo = motivo
         ficha.save()
-        messages.warning(request, f"El carnet de {ficha.user.get_full_name() or ficha.user.username} ha sido Rechazado.")
+        rol_str = "Director Técnico" if tipo == 'dt' else "Jugador"
+        messages.warning(request, f"El carnet de {ficha.user.get_full_name() or ficha.user.username} ({rol_str}) ha sido Rechazado.")
     return redirect('secretaria_dashboard')
 
 @login_required
 def ver_carnet(request, ficha_id):
-    ficha = get_object_or_404(FichaJugador, id=ficha_id)
+    tipo = request.GET.get('tipo', 'jugador')
+    if tipo == 'dt':
+        ficha = get_object_or_404(FichaDT, id=ficha_id)
+    else:
+        ficha = get_object_or_404(FichaJugador, id=ficha_id)
     
     # Validar permisos para ver el carnet
     es_propietario = request.user == ficha.user
@@ -222,7 +282,7 @@ def ver_carnet(request, ficha_id):
     es_comision_o_admin = request.user.role in ['comision', 'superadmin']
     
     if not (es_propietario or es_su_dirigente or es_comision_o_admin):
-        messages.error(request, "No tienes permisos para ver el carnet de este jugador.")
+        messages.error(request, "No tienes permisos para ver el carnet de esta persona.")
         return redirect('club_portal')
         
     if ficha.estado_validacion != 'aprobado':
@@ -230,38 +290,49 @@ def ver_carnet(request, ficha_id):
         return redirect('club_portal')
         
     # URL de verificación pública
-    verif_url = request.build_absolute_uri(f"/verificar/jugador/{ficha.id}/")
+    verif_url = request.build_absolute_uri(f"/verificar/jugador/{ficha.id}/?tipo={tipo}")
     # Generamos la URL del código QR dinámico
     qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={verif_url}"
     
     context = {
         'ficha': ficha,
-        'qr_url': qr_url
+        'qr_url': qr_url,
+        'tipo': tipo
     }
     return render(request, 'teams/carnet.html', context)
 
 def verificar_jugador(request, ficha_id):
-    ficha = get_object_or_404(FichaJugador, id=ficha_id)
+    tipo = request.GET.get('tipo', 'jugador')
+    if tipo == 'dt':
+        ficha = get_object_or_404(FichaDT, id=ficha_id)
+    else:
+        ficha = get_object_or_404(FichaJugador, id=ficha_id)
     
     context = {
         'ficha': ficha,
+        'tipo': tipo
     }
     return render(request, 'teams/verificar_jugador.html', context)
 
 @login_required
 def ver_ficha(request, ficha_id):
-    ficha = get_object_or_404(FichaJugador, id=ficha_id)
+    tipo = request.GET.get('tipo', 'jugador')
+    if tipo == 'dt':
+        ficha = get_object_or_404(FichaDT, id=ficha_id)
+    else:
+        ficha = get_object_or_404(FichaJugador, id=ficha_id)
     
     es_propietario = request.user == ficha.user
     es_su_dirigente = ficha.equipo and request.user == ficha.equipo.dirigente
     es_comision_o_admin = request.user.role in ['comision', 'superadmin'] or request.user.is_superuser
     
     if not (es_propietario or es_su_dirigente or es_comision_o_admin):
-        messages.error(request, "No tienes permisos para ver la ficha de este jugador.")
+        messages.error(request, "No tienes permisos para ver la ficha de esta persona.")
         return redirect('club_portal')
         
     context = {
         'ficha': ficha,
+        'tipo': tipo
     }
     return render(request, 'teams/ficha_jugador_print.html', context)
 

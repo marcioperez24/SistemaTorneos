@@ -187,7 +187,9 @@
         <div class="row">
             <!-- Columna de Datos de Identificación -->
             <div class="col-md-8">
-                <div class="ficha-section-title">1. Datos del Deportista</div>
+                <div class="ficha-section-title">
+                    {% if tipo == 'dt' %}1. Datos del Director Técnico / Cuerpo Técnico{% else %}1. Datos del Deportista{% endif %}
+                </div>
                 <div class="row">
                     <div class="col-sm-6">
                         <div class="ficha-label">Nombre Completo</div>
@@ -206,11 +208,13 @@
                         <div class="ficha-value">{{ ficha.equipo.get_categoria_display }}</div>
                     </div>
                     <div class="col-sm-6">
-                        <div class="ficha-label">Número de Camiseta</div>
-                        <div class="ficha-value font-monospace">#{{ ficha.numero_camiseta|default:"-" }}</div>
+                        <div class="ficha-label">Rol de Registro</div>
+                        <div class="ficha-value font-monospace text-uppercase fw-bold text-success">
+                            {% if tipo == 'dt' %}DIRECTOR TÉCNICO{% else %}JUGADOR (#{{ ficha.numero_camiseta|default:"-" }}){% endif %}
+                        </div>
                     </div>
                     <div class="col-sm-6">
-                        <div class="ficha-label">Teléfono del Deportista</div>
+                        <div class="ficha-label">Teléfono de Registro</div>
                         <div class="ficha-value font-monospace">{{ ficha.user.telefono|default:"-" }}</div>
                     </div>
                     <div class="col-sm-6">
@@ -276,7 +280,7 @@
         <div class="row mt-2">
             <div class="col-12">
                 <div class="bg-light p-3 border rounded text-secondary mb-4" style="font-size: 0.8rem; text-align: justify; line-height: 1.4;">
-                    <strong>DECLARACIÓN BAJO JURAMENTO:</strong> Declaro que me encuentro en perfectas condiciones físicas y mentales para participar en el torneo de fútbol organizado por la Liga Deportiva. Eximo de toda responsabilidad médica, legal o civil a los organizadores del torneo, a mi club deportivo y a los propietarios de los estadios y canchas ante cualquier eventual percance de salud, lesión o accidente que ocurra durante o derivado de la actividad del torneo.
+                    <strong>DECLARACIÓN BAJO JURAMENTO:</strong> Declaro que me encuentro en perfectas condiciones físicas y mentales para participar en el torneo de fútbol organizado por la Liga Deportiva. Eximo de toda responsabilidad médica, legal o civil a los organizadores del torneo, a mi club deportivo y a los propietarios de los estadios y canchas ante cualquier eventual percance de salud, lesión o accidente que ocurra durante o derivado de la actividad del torneo o ejerciendo mis funciones de Director Técnico o Auxiliar.
                 </div>
             </div>
         </div>
@@ -286,13 +290,13 @@
             <div class="col-6">
                 <div class="signature-display">
                     {% if ficha.firma_imagen %}
-                        <img src="{{ ficha.firma_imagen }}" class="signature-img" alt="Firma Jugador">
+                        <img src="{{ ficha.firma_imagen }}" class="signature-img" alt="Firma">
                     {% else %}
                         <div class="py-3 text-muted" style="font-size: 0.85rem;">[FIRMADO DIGITALMENTE]</div>
                     {% endif %}
                 </div>
                 <span class="fw-bold d-block text-uppercase" style="font-size: 0.8rem;">{{ ficha.user.get_full_name }}</span>
-                <span class="text-muted d-block small" style="font-size: 0.72rem;">Firma del Deportista</span>
+                <span class="text-muted d-block small" style="font-size: 0.72rem;">{% if tipo == 'dt' %}Firma del Director Técnico{% else %}Firma del Deportista{% endif %}</span>
                 {% if ficha.fecha_firma %}
                     <span class="text-muted d-block" style="font-size: 0.65rem;">Fecha de Firma: {{ ficha.fecha_firma|date:"d/m/Y H:i" }}</span>
                 {% endif %}
