@@ -95,6 +95,8 @@
                                     <tr>
                                         <th>Foto</th>
                                         <th>Nombre Completo</th>
+                                        <th>Cédula</th>
+                                        <th>Camiseta</th>
                                         <th>Tipo Sangre</th>
                                         <th>Contacto Emergencia</th>
                                         <th>Firma Salud</th>
@@ -115,7 +117,16 @@
                                             </td>
                                             <td>
                                                 <div class="fw-bold">{{ jugador.user.get_full_name }}</div>
-                                                <small class="text-muted">{{ jugador.user.email }}</small>
+                                                <small class="text-muted d-block">{{ jugador.user.email }}</small>
+                                                {% if jugador.user.telefono %}
+                                                    <small class="text-primary d-block fw-semibold mt-0.5"><i class="fa-solid fa-phone me-1 fs-9"></i>{{ jugador.user.telefono }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td class="font-monospace text-secondary">{{ jugador.nro_cedula|default:"-" }}</td>
+                                            <td>
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace fw-bold px-2.5 py-1.5" style="font-size: 0.85rem;">
+                                                    #{{ jugador.numero_camiseta|default:"-" }}
+                                                </span>
                                             </td>
                                             <td>
                                                 <span class="badge bg-light text-dark font-monospace border">{{ jugador.tipo_sangre|default:"-" }}</span>

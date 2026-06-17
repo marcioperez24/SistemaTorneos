@@ -23,12 +23,14 @@ class PlayerRegistrationForm(forms.ModelForm):
     email = forms.EmailField(widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'ejemplo@correo.com'}))
     first_name = forms.CharField(max_length=150, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tus nombres'}))
     last_name = forms.CharField(max_length=150, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tus apellidos'}))
+    telefono = forms.CharField(max_length=20, label="Teléfono de Contacto", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. +593987654321'}))
     password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Crea una contraseña segura'}))
 
     class Meta:
         model = FichaJugador
         fields = [
             'foto', 'cedula_frontal', 'cedula_posterior', 
+            'nro_cedula', 'numero_camiseta',
             'tipo_sangre', 'contacto_emergencia', 'telefono_emergencia', 
             'firma_digital'
         ]
@@ -36,6 +38,8 @@ class PlayerRegistrationForm(forms.ModelForm):
             'foto': forms.ClearableFileInput(attrs={'class': 'form-control', 'required': True}),
             'cedula_frontal': forms.ClearableFileInput(attrs={'class': 'form-control', 'required': True}),
             'cedula_posterior': forms.ClearableFileInput(attrs={'class': 'form-control', 'required': True}),
+            'nro_cedula': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. 1712345678', 'required': True}),
+            'numero_camiseta': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej. 10', 'required': True}),
             'tipo_sangre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. O+'}),
             'contacto_emergencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de un familiar'}),
             'telefono_emergencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Número del familiar'}),
@@ -64,6 +68,8 @@ class PlayerRegistrationForm(forms.ModelForm):
             last_name=self.cleaned_data['last_name'],
             role='jugador'
         )
+        user.telefono = self.cleaned_data['telefono']
+        user.save()
         
         # 2. Crear la FichaJugador
         ficha = super().save(commit=False)

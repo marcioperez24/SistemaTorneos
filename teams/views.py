@@ -34,12 +34,25 @@ def logout_view(request):
 
 @login_required
 def club_portal(request):
+    # Redireccionar jugadores a su carnet o estado de validación
+    if request.user.role == 'jugador':
+        try:
+            ficha = request.user.ficha_jugador
+            if ficha.estado_validacion == 'aprobado':
+                return redirect('ver_carnet', ficha_id=ficha.id)
+            else:
+                return render(request, 'teams/registro_exito.html', {'ficha': ficha, 'hide_navbar': False})
+        except FichaJugador.DoesNotExist:
+            messages.error(request, "No tienes una ficha de registro asociada a tu cuenta.")
+            logout(request)
+            return redirect('login')
+
     if not request.user.has_module_access('equipos'):
         messages.error(request, "No tienes permisos para acceder al Portal del Club.")
         return redirect('gestion_usuarios') if request.user.role == 'superadmin' else redirect('/login/')
 
-    # Equipos que administra: si es superadmin o superuser ve todos
-    if request.user.role == 'superadmin' or request.user.is_superuser:
+    # Equipos que administra: si es superadmin, comision o superuser ve todos
+    if request.user.role in ['superadmin', 'comision'] or request.user.is_superuser:
         equipos = Equipo.objects.all()
     else:
         equipos = Equipo.objects.filter(dirigente=request.user)
@@ -173,6 +186,8 @@ def aprobar_jugador(request, ficha_id):
     ficha = get_object_or_404(FichaJugador, id=ficha_id)
     ficha.estado_validacion = 'aprobado'
     ficha.motivo_rechazo = None
+    ficha.fecha_aprobacion = timezone.now()
+    ficha.aprobado_por = request.user
     ficha.save()
     messages.success(request, f"El carnet de {ficha.user.get_full_name() or ficha.user.username} ha sido Aprobado y Habilitado.")
     return redirect('secretaria_dashboard')

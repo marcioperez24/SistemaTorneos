@@ -78,6 +78,8 @@ class FichaJugador(models.Model):
     foto = models.ImageField(upload_to='jugadores/selfies/', null=True, blank=True, verbose_name="Foto / Selfie Carnet")
     cedula_frontal = models.ImageField(upload_to='jugadores/cedulas/', null=True, blank=True, verbose_name="Cédula Frontal")
     cedula_posterior = models.ImageField(upload_to='jugadores/cedulas/', null=True, blank=True, verbose_name="Cédula Posterior")
+    nro_cedula = models.CharField(max_length=20, blank=True, null=True, verbose_name="Número de Cédula")
+    numero_camiseta = models.IntegerField(blank=True, null=True, verbose_name="Número de Camiseta")
     
     # Validación (Secretaría / Tinder-like validation)
     estado_validacion = models.CharField(
@@ -87,6 +89,15 @@ class FichaJugador(models.Model):
         verbose_name="Estado de Carnet"
     )
     motivo_rechazo = models.TextField(blank=True, null=True, verbose_name="Motivo de Rechazo")
+    fecha_aprobacion = models.DateTimeField(blank=True, null=True, verbose_name="Fecha de Aprobación")
+    aprobado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        blank=True, 
+        null=True, 
+        related_name='fichas_aprobadas', 
+        verbose_name="Aprobado Por"
+    )
     
     # Datos Médicos / Emergencia
     tipo_sangre = models.CharField(max_length=10, blank=True, null=True, verbose_name="Tipo de Sangre")

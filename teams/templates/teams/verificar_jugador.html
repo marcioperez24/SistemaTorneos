@@ -40,6 +40,14 @@
                             <span class="text-secondary small d-block uppercase tracking-wider fs-9">Categoría</span>
                             <span class="fw-bold text-dark fs-6">{{ ficha.equipo.get_categoria_display }}</span>
                         </div>
+                        <div class="col-sm-6 mb-2">
+                            <span class="text-secondary small d-block uppercase tracking-wider fs-9">Nro. Cédula</span>
+                            <span class="fw-bold text-dark font-monospace fs-6">{{ ficha.nro_cedula|default:"-" }}</span>
+                        </div>
+                        <div class="col-sm-6 mb-2">
+                            <span class="text-secondary small d-block uppercase tracking-wider fs-9">Nro. Camiseta</span>
+                            <span class="fw-bold text-dark font-monospace fs-6">#{{ ficha.numero_camiseta|default:"-" }}</span>
+                        </div>
                         <div class="col-sm-6 mb-2 mb-sm-0">
                             <span class="text-secondary small d-block uppercase tracking-wider fs-9">Tipo de Sangre</span>
                             <span class="fw-bold text-dark font-monospace fs-6">{{ ficha.tipo_sangre|default:"-" }}</span>
