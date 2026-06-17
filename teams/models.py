@@ -106,6 +106,7 @@ class FichaJugador(models.Model):
     
     # Firma / Aceptación
     firma_digital = models.BooleanField(default=False, verbose_name="Aceptación de Responsabilidad y Salud")
+    firma_imagen = models.TextField(blank=True, null=True, verbose_name="Firma Dibujada (Base64)")
     fecha_firma = models.DateTimeField(null=True, blank=True)
 
     class Meta:

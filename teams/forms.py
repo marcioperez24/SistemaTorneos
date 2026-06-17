@@ -32,7 +32,7 @@ class PlayerRegistrationForm(forms.ModelForm):
             'foto', 'cedula_frontal', 'cedula_posterior', 
             'nro_cedula', 'numero_camiseta',
             'tipo_sangre', 'contacto_emergencia', 'telefono_emergencia', 
-            'firma_digital'
+            'firma_digital', 'firma_imagen'
         ]
         widgets = {
             'foto': forms.ClearableFileInput(attrs={'class': 'form-control', 'required': True}),
@@ -44,6 +44,7 @@ class PlayerRegistrationForm(forms.ModelForm):
             'contacto_emergencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de un familiar'}),
             'telefono_emergencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Número del familiar'}),
             'firma_digital': forms.CheckboxInput(attrs={'class': 'form-check-input', 'required': True}),
+            'firma_imagen': forms.HiddenInput(),
         }
 
     def clean_username(self):

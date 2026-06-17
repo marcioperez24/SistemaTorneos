@@ -169,8 +169,28 @@
                             Declaro bajo juramento que me encuentro en perfectas condiciones físicas y mentales para participar en el torneo organizado por esta liga. Eximo de toda responsabilidad médica, legal o civil a la organización del torneo, a mi club y a los propietarios de los estadios y canchas ante cualquier eventual lesión, accidente o percance de salud que ocurra durante o derivado de la actividad deportiva del torneo.
                         </p>
                     </div>
+
+                    <!-- Pizarrita de Firma -->
+                    <div class="d-flex flex-column align-items-center mb-4 p-3 bg-light rounded-3 border">
+                        <button type="button" class="btn btn-dark btn-lg px-4 mb-2 shadow-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#signatureModal">
+                            <i class="fa-solid fa-pen-fancy text-warning"></i>
+                            <span>Dibujar Firma en Pizarrita</span>
+                        </button>
+                        
+                        <div id="firma_preview_container" style="display: none;" class="text-center mt-2 animate-fade-in">
+                            <span class="text-muted d-block small mb-1">Tu firma registrada:</span>
+                            <div class="p-2 border rounded bg-white shadow-sm d-inline-block">
+                                <img id="firma_preview_img" src="" alt="Firma del Jugador" style="max-height: 80px; width: auto; display: block; filter: invert(0);">
+                            </div>
+                        </div>
+                        
+                        {{ form.firma_imagen }}
+                        {% if form.firma_imagen.errors %}
+                            <div class="text-danger small mt-1">{{ form.firma_imagen.errors|first }}</div>
+                        {% endif %}
+                    </div>
                     
-                    <div class="form-check mb-4">
+                    <div class="form-check mb-4 d-none">
                         {{ form.firma_digital }}
                         <label class="form-check-label fw-semibold text-danger ms-2" for="id_firma_digital">
                             Acepto y Firmo Digitalmente esta declaración bajo juramento. (Obligatorio)
@@ -188,4 +208,158 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para Dibujar Firma (Pizarrita) -->
+<div class="modal fade" id="signatureModal" data-bs-backdrop="static" tabindex="-1" aria-labelledby="signatureModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-dark text-white rounded-top-4 py-3">
+                <h5 class="modal-title fw-bold" id="signatureModalLabel">
+                    <i class="fa-solid fa-signature text-warning me-2"></i>Pizarrita de Firma Digital
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center bg-light p-4">
+                <p class="small text-muted mb-3">Dibuja tu firma oficial con tu dedo en la pantalla táctil o usando el cursor del mouse.</p>
+                <div class="canvas-container border border-3 border-dark rounded-3 overflow-hidden shadow-sm mx-auto" style="max-width: 100%; width: 400px; height: 200px; background-color: #1e1e1e; position: relative;">
+                    <canvas id="signatureCanvas" width="400" height="200" style="cursor: crosshair; display: block;"></canvas>
+                    <div style="position: absolute; bottom: 20px; left: 10%; right: 10%; border-top: 1px dashed rgba(255,255,255,0.2); pointer-events: none;"></div>
+                    <span style="position: absolute; bottom: 5px; left: 10%; font-size: 8px; color: rgba(255,255,255,0.4); pointer-events: none; font-family: sans-serif;">LÍNEA DE FIRMA</span>
+                </div>
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="button" class="btn btn-outline-secondary py-2 px-3 rounded-pill" id="clearCanvasBtn">
+                        <i class="fa-solid fa-eraser me-1"></i>Limpiar Pizarra
+                    </button>
+                    <button type="button" class="btn btn-success py-2 px-4 fw-bold rounded-pill shadow-sm" id="saveSignatureBtn">
+                        <i class="fa-solid fa-check me-1"></i>Confirmar Firma
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const canvas = document.getElementById('signatureCanvas');
+    const ctx = canvas.getContext('2d');
+    const clearBtn = document.getElementById('clearCanvasBtn');
+    const saveBtn = document.getElementById('saveSignatureBtn');
+    const hiddenInput = document.getElementById('id_firma_imagen');
+    const previewContainer = document.getElementById('firma_preview_container');
+    const previewImg = document.getElementById('firma_preview_img');
+    const form = document.querySelector('form');
+    const signatureModalEl = document.getElementById('signatureModal');
+    const signatureModal = new bootstrap.Modal(signatureModalEl);
+
+    let drawing = false;
+
+    // Configuración de trazo blanco sobre pizarra negra
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    function getMousePos(canvasDom, touchOrMouseEvent) {
+        const rect = canvasDom.getBoundingClientRect();
+        // Ajustamos la escala para pantallas de alta densidad de pixeles o redimensionamientos
+        const scaleX = canvasDom.width / rect.width;
+        const scaleY = canvasDom.height / rect.height;
+        
+        let clientX, clientY;
+        if (touchOrMouseEvent.touches && touchOrMouseEvent.touches.length > 0) {
+            clientX = touchOrMouseEvent.touches[0].clientX;
+            clientY = touchOrMouseEvent.touches[0].clientY;
+        } else {
+            clientX = touchOrMouseEvent.clientX;
+            clientY = touchOrMouseEvent.clientY;
+        }
+        
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
+    }
+
+    function startDrawing(e) {
+        drawing = true;
+        const pos = getMousePos(canvas, e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+        e.preventDefault();
+    }
+
+    function draw(e) {
+        if (!drawing) return;
+        const pos = getMousePos(canvas, e);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        e.preventDefault();
+    }
+
+    function stopDrawing() {
+        drawing = false;
+    }
+
+    // Eventos de ratón
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseleave', stopDrawing);
+
+    // Eventos táctiles para móviles y tablets
+    canvas.addEventListener('touchstart', startDrawing, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    canvas.addEventListener('touchend', stopDrawing);
+
+    // Limpiar pizarra
+    clearBtn.addEventListener('click', function() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    // Guardar firma
+    saveBtn.addEventListener('click', function() {
+        // Verificar si el canvas tiene trazos
+        const buffer = new Uint32Array(ctx.getImageData(0, 0, canvas.width, canvas.height).data.buffer);
+        const hasDrawn = buffer.some(color => color !== 0);
+        
+        if (!hasDrawn) {
+            alert('Por favor, dibuja tu firma sobre la pizarrita antes de confirmar.');
+            return;
+        }
+
+        // Obtener Base64 de la firma
+        const dataURL = canvas.toDataURL('image/png');
+        hiddenInput.value = dataURL;
+        previewImg.src = dataURL;
+        previewContainer.style.display = 'block';
+        
+        // Auto-aceptar la firma digital
+        const checkbox = document.getElementById('id_firma_digital');
+        if (checkbox) {
+            checkbox.checked = true;
+        }
+        
+        signatureModal.hide();
+    });
+
+    // Limpiar el canvas cuando se abre el modal para evitar problemas de escalado de renderizado
+    signatureModalEl.addEventListener('shown.bs.modal', function () {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+    });
+
+    // Validar en el envío del formulario
+    form.addEventListener('submit', function(e) {
+        if (!hiddenInput.value) {
+            e.preventDefault();
+            alert('Debes dibujar y guardar tu firma en la pizarrita para poder inscribirte.');
+            signatureModal.show();
+        }
+    });
+});
+</script>
 {% endblock %}
