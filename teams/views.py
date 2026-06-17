@@ -243,3 +243,20 @@ def verificar_jugador(request, ficha_id):
     }
     return render(request, 'teams/verificar_jugador.html', context)
 
+@login_required
+def ver_ficha(request, ficha_id):
+    ficha = get_object_or_404(FichaJugador, id=ficha_id)
+    
+    es_propietario = request.user == ficha.user
+    es_su_dirigente = ficha.equipo and request.user == ficha.equipo.dirigente
+    es_comision_o_admin = request.user.role in ['comision', 'superadmin'] or request.user.is_superuser
+    
+    if not (es_propietario or es_su_dirigente or es_comision_o_admin):
+        messages.error(request, "No tienes permisos para ver la ficha de este jugador.")
+        return redirect('club_portal')
+        
+    context = {
+        'ficha': ficha,
+    }
+    return render(request, 'teams/ficha_jugador_print.html', context)
+

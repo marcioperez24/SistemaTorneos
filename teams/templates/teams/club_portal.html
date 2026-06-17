@@ -130,6 +130,7 @@
                                         <th>Contacto Emergencia</th>
                                         <th>Firma Salud</th>
                                         <th>Estado Carnet</th>
+                                        <th class="text-center">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -181,6 +182,18 @@
                                                         <i class="fa-solid fa-triangle-exclamation me-1"></i>Rechazado
                                                     </span>
                                                 {% endif %}
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="d-flex flex-column gap-1 align-items-center">
+                                                    <a href="{% url 'ver_ficha' jugador.id %}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1.5 fs-8 fw-semibold w-100" style="min-width: 85px;">
+                                                        <i class="fa-solid fa-print me-1"></i>Ficha
+                                                    </a>
+                                                    {% if jugador.estado_validacion == 'aprobado' %}
+                                                        <a href="{% url 'ver_carnet' jugador.id %}" target="_blank" class="btn btn-sm btn-outline-success rounded-pill px-2.5 py-1.5 fs-8 fw-semibold w-100" style="min-width: 85px;">
+                                                            <i class="fa-solid fa-id-card me-1"></i>Carnet
+                                                        </a>
+                                                    {% endif %}
+                                                </div>
                                             </td>
                                         </tr>
                                     {% endfor %}

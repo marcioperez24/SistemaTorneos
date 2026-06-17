@@ -21,7 +21,8 @@ def auto_uppercase_fields(sender, instance, **kwargs):
                 exclude_fields = [
                     'password', 'email', 'token', 'username',
                     'firma_vocal_img', 'firma_arbitro_img', 
-                    'firma_entrenador_local_img', 'firma_entrenador_visitante_img'
+                    'firma_entrenador_local_img', 'firma_entrenador_visitante_img',
+                    'firma_imagen'
                 ]
                 if field.name not in exclude_fields and not field.name.endswith('_hash'):
                     setattr(instance, field.name, val.upper())

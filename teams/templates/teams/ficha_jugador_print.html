@@ -1,0 +1,326 @@
+{% extends 'teams/base.html' %}
+{% block title %}Ficha de Registro Oficial - {{ ficha.user.get_full_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Estilos Premium para Impresión de Ficha A4 */
+    .ficha-container {
+        background: white;
+        color: #333;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        max-width: 800px;
+        margin: 0 auto;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    .ficha-header-logo {
+        height: 65px;
+        width: auto;
+        object-fit: contain;
+    }
+
+    .ficha-title {
+        color: #0f2027;
+        font-size: 1.35rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 2px;
+    }
+
+    .ficha-subtitle {
+        color: #6c757d;
+        font-size: 0.85rem;
+        font-weight: 500;
+        letter-spacing: 1px;
+    }
+
+    .ficha-section-title {
+        background-color: #f8f9fa;
+        color: #2c5364;
+        font-size: 0.9rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 6px 12px;
+        border-left: 4px solid #ffc107;
+        border-radius: 0 4px 4px 0;
+        margin-top: 25px;
+        margin-bottom: 15px;
+        letter-spacing: 0.5px;
+    }
+
+    .ficha-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #888;
+        text-transform: uppercase;
+        margin-bottom: 2px;
+        letter-spacing: 0.3px;
+    }
+
+    .ficha-value {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #222;
+        margin-bottom: 10px;
+    }
+
+    .ficha-photo-box {
+        width: 130px;
+        height: 165px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 2px solid #ddd;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.05);
+    }
+
+    .doc-preview-img {
+        max-height: 140px;
+        width: 100%;
+        object-fit: contain;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        background: #f8f9fa;
+        padding: 4px;
+    }
+
+    .signature-display {
+        border-bottom: 2px solid #333;
+        width: 100%;
+        max-width: 250px;
+        margin: 15px auto 5px auto;
+        text-align: center;
+        padding-bottom: 5px;
+    }
+
+    .signature-img {
+        max-height: 70px;
+        width: auto;
+        display: block;
+        margin: 0 auto;
+    }
+
+    .stamp-display {
+        border: 2px dashed #ffc107;
+        border-radius: 10px;
+        padding: 10px;
+        text-align: center;
+        background: #fffdf5;
+        max-width: 160px;
+        margin: 0 auto;
+    }
+
+    /* Estilos de Impresión */
+    @media print {
+        body {
+            background: white !important;
+            color: black !important;
+        }
+        .no-print {
+            display: none !important;
+        }
+        .ficha-container {
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+        }
+        .ficha-section-title {
+            background-color: #f1f3f5 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .doc-preview-img {
+            border: 1px solid #bbb !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .stamp-display {
+            border: 2px dashed #999 !important;
+            background: none !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Barra de Control (Oculta al imprimir) -->
+    <div class="row justify-content-center mb-4 no-print">
+        <div class="col-md-9 d-flex justify-content-between align-items-center">
+            <a href="{% url 'club_portal' %}" class="btn btn-outline-secondary">
+                <i class="fa-solid fa-arrow-left me-2"></i>Volver al Portal
+            </a>
+            <button onclick="window.print()" class="btn btn-success px-4 py-2 fw-bold shadow">
+                <i class="fa-solid fa-print me-2"></i>Imprimir Ficha Oficial
+            </button>
+        </div>
+    </div>
+
+    <!-- Contenedor de la Ficha (A4) -->
+    <div class="ficha-container">
+        <!-- Encabezado de la Ficha -->
+        <div class="row align-items-center pb-3 mb-3 border-bottom">
+            <div class="col-8 d-flex align-items-center">
+                {% if ficha.equipo.logo %}
+                    <img src="{{ ficha.equipo.logo.url }}" class="ficha-header-logo me-3" alt="Logo">
+                {% endif %}
+                <div>
+                    <h1 class="ficha-title">Ficha Oficial de Registro</h1>
+                    <span class="ficha-subtitle">LIGA DEPORTIVA Y COMISIÓN TÉCNICA</span>
+                </div>
+            </div>
+            <div class="col-4 text-end">
+                <div class="font-monospace fw-bold" style="font-size: 0.9rem; color: #2c5364;">
+                    FICHA ID: #{{ ficha.id }}
+                </div>
+                <div class="small text-muted">Temp: 2026</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Columna de Datos de Identificación -->
+            <div class="col-md-8">
+                <div class="ficha-section-title">1. Datos del Deportista</div>
+                <div class="row">
+                    <div class="col-sm-6">
+                        <div class="ficha-label">Nombre Completo</div>
+                        <div class="ficha-value">{{ ficha.user.get_full_name|upper }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="ficha-label">Número de Cédula</div>
+                        <div class="ficha-value font-monospace">{{ ficha.nro_cedula|default:"-" }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="ficha-label">Equipo / Club</div>
+                        <div class="ficha-value text-primary fw-bold">{{ ficha.equipo.nombre }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="ficha-label">Categoría</div>
+                        <div class="ficha-value">{{ ficha.equipo.get_categoria_display }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="ficha-label">Número de Camiseta</div>
+                        <div class="ficha-value font-monospace">#{{ ficha.numero_camiseta|default:"-" }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="ficha-label">Teléfono del Deportista</div>
+                        <div class="ficha-value font-monospace">{{ ficha.user.telefono|default:"-" }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="ficha-label">Correo Electrónico</div>
+                        <div class="ficha-value">{{ ficha.user.email }}</div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="ficha-label">Grupo Sanguíneo</div>
+                        <div class="ficha-value font-monospace">{{ ficha.tipo_sangre|default:"-" }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Foto de Perfil -->
+            <div class="col-md-4 text-center mt-3 mt-md-0 d-flex flex-column align-items-center justify-content-center">
+                {% if ficha.foto %}
+                    <img src="{{ ficha.foto.url }}" class="ficha-photo-box" alt="Foto Perfil">
+                {% else %}
+                    <div class="ficha-photo-box bg-light d-flex align-items-center justify-content-center text-muted">
+                        <i class="fa-solid fa-user fa-3x"></i>
+                    </div>
+                {% endif %}
+                <span class="text-muted d-block small mt-2">Fotografía Oficial</span>
+            </div>
+        </div>
+
+        <!-- Sección de Emergencias -->
+        <div class="ficha-section-title">2. Contacto de Emergencia y Salud</div>
+        <div class="row">
+            <div class="col-sm-6">
+                <div class="ficha-label">Contacto Responsable (Familiar)</div>
+                <div class="ficha-value">{{ ficha.contacto_emergencia|default:"-" }}</div>
+            </div>
+            <div class="col-sm-6">
+                <div class="ficha-label">Teléfono de Emergencia</div>
+                <div class="ficha-value font-monospace">{{ ficha.telefono_emergencia|default:"-" }}</div>
+            </div>
+        </div>
+
+        <!-- Documentos Adjuntos -->
+        <div class="ficha-section-title">3. Documentación Cargada (Cédula de Identidad)</div>
+        <div class="row text-center">
+            <div class="col-6">
+                {% if ficha.cedula_frontal %}
+                    <img src="{{ ficha.cedula_frontal.url }}" class="doc-preview-img border shadow-sm" alt="Cédula Frontal">
+                {% else %}
+                    <div class="p-4 border bg-light text-muted small">Cédula Frontal no disponible</div>
+                {% endif %}
+                <span class="text-muted d-block small mt-1">Cédula (Frente)</span>
+            </div>
+            <div class="col-6">
+                {% if ficha.cedula_posterior %}
+                    <img src="{{ ficha.cedula_posterior.url }}" class="doc-preview-img border shadow-sm" alt="Cédula Reverso">
+                {% else %}
+                    <div class="p-4 border bg-light text-muted small">Cédula Reverso no disponible</div>
+                {% endif %}
+                <span class="text-muted d-block small mt-1">Cédula (Atrás)</span>
+            </div>
+        </div>
+
+        <!-- Declaración y Firmas -->
+        <div class="ficha-section-title">4. Declaración Jurada y Validación</div>
+        <div class="row mt-2">
+            <div class="col-12">
+                <div class="bg-light p-3 border rounded text-secondary mb-4" style="font-size: 0.8rem; text-align: justify; line-height: 1.4;">
+                    <strong>DECLARACIÓN BAJO JURAMENTO:</strong> Declaro que me encuentro en perfectas condiciones físicas y mentales para participar en el torneo de fútbol organizado por la Liga Deportiva. Eximo de toda responsabilidad médica, legal o civil a los organizadores del torneo, a mi club deportivo y a los propietarios de los estadios y canchas ante cualquier eventual percance de salud, lesión o accidente que ocurra durante o derivado de la actividad del torneo.
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-3 align-items-center text-center">
+            <!-- Firma del Jugador -->
+            <div class="col-6">
+                <div class="signature-display">
+                    {% if ficha.firma_imagen %}
+                        <img src="{{ ficha.firma_imagen }}" class="signature-img" alt="Firma Jugador">
+                    {% else %}
+                        <div class="py-3 text-muted" style="font-size: 0.85rem;">[FIRMADO DIGITALMENTE]</div>
+                    {% endif %}
+                </div>
+                <span class="fw-bold d-block text-uppercase" style="font-size: 0.8rem;">{{ ficha.user.get_full_name }}</span>
+                <span class="text-muted d-block small" style="font-size: 0.72rem;">Firma del Deportista</span>
+                {% if ficha.fecha_firma %}
+                    <span class="text-muted d-block" style="font-size: 0.65rem;">Fecha de Firma: {{ ficha.fecha_firma|date:"d/m/Y H:i" }}</span>
+                {% endif %}
+            </div>
+
+            <!-- Validación de Comisión -->
+            <div class="col-6">
+                <div class="stamp-display">
+                    <span class="d-block text-warning fw-bold font-monospace" style="font-size: 0.75rem; letter-spacing: 0.5px;">APROBADO</span>
+                    <span class="d-block text-dark font-monospace fw-semibold mt-1" style="font-size: 0.7rem;">
+                        {% if ficha.fecha_aprobacion %}
+                            {{ ficha.fecha_aprobacion|date:"d/m/Y" }}
+                        {% else %}
+                            PENDIENTE
+                        {% endif %}
+                    </span>
+                    <span class="text-muted d-block" style="font-size: 0.62rem; border-top: 1px solid #ddd; margin-top: 5px; padding-top: 3px;">
+                        {% if ficha.aprobado_por %}
+                            {{ ficha.aprobado_por.get_role_display|upper }}<br>
+                            <span class="text-dark fw-bold font-monospace">{{ ficha.aprobado_por.first_name|default:ficha.aprobado_por.username|slice:":1" }}. {{ ficha.aprobado_por.last_name|default:""|upper }}</span>
+                        {% else %}
+                            COMISIÓN LIGA
+                        {% endif %}
+                    </span>
+                </div>
+                <span class="text-muted d-block small mt-2" style="font-size: 0.72rem;">Sello Técnico de Habilitación</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
