@@ -34,13 +34,12 @@ def logout_view(request):
 
 @login_required
 def club_portal(request):
-    # Redireccionar jugadores a su carnet o estado de validación
+    # Si el usuario tiene el rol de 'jugador'
     if request.user.role == 'jugador':
         try:
             ficha = request.user.ficha_jugador
-            if ficha.estado_validacion == 'aprobado':
-                return redirect('ver_carnet', ficha_id=ficha.id)
-            else:
+            # Si no está aprobado, lo mandamos a la pantalla de validación en curso/rechazo
+            if ficha.estado_validacion != 'aprobado':
                 return render(request, 'teams/registro_exito.html', {'ficha': ficha, 'hide_navbar': False})
         except FichaJugador.DoesNotExist:
             messages.error(request, "No tienes una ficha de registro asociada a tu cuenta.")
@@ -51,9 +50,15 @@ def club_portal(request):
         messages.error(request, "No tienes permisos para acceder al Portal del Club.")
         return redirect('gestion_usuarios') if request.user.role == 'superadmin' else redirect('/login/')
 
-    # Equipos que administra: si es superadmin, comision o superuser ve todos
+    # Equipos que administra o a los que pertenece
     if request.user.role in ['superadmin', 'comision'] or request.user.is_superuser:
         equipos = Equipo.objects.all()
+    elif request.user.role == 'jugador':
+        # Mostrar únicamente el equipo al que pertenece el jugador
+        if request.user.ficha_jugador.equipo:
+            equipos = Equipo.objects.filter(id=request.user.ficha_jugador.equipo.id)
+        else:
+            equipos = Equipo.objects.none()
     else:
         equipos = Equipo.objects.filter(dirigente=request.user)
     

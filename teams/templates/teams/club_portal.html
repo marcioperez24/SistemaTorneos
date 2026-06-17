@@ -166,11 +166,13 @@
                 <h1 class="fw-bold"><i class="fa-solid fa-users-gear me-3 text-warning"></i>Portal del Club</h1>
                 <p class="lead mb-0 text-white-50">Gestiona tu equipo, genera invitaciones de jugadores y monitorea su registro.</p>
             </div>
+            {% if request.user.role != 'jugador' %}
             <div class="col-md-4 text-md-end mt-3 mt-md-0">
                 <a href="{% url 'crear_equipo' %}" class="btn btn-custom-accent py-2.5 px-4 shadow">
                     <i class="fa-solid fa-plus me-2"></i>Registrar Nuevo Equipo
                 </a>
             </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -184,7 +186,9 @@
                 </div>
                 <h3>Aún no has registrado ningún equipo</h3>
                 <p class="text-muted">Para comenzar a gestionar tu plantilla, haz clic en el botón superior para registrar tu primer club.</p>
+                {% if request.user.role != 'jugador' %}
                 <a href="{% url 'crear_equipo' %}" class="btn btn-custom-primary mt-3 px-4 py-2">Crear Equipo Ahora</a>
+                {% endif %}
             </div>
         </div>
     {% else %}
@@ -218,6 +222,7 @@
                         </div>
                     </div>
                     
+                    {% if request.user.role != 'jugador' %}
                     <div class="mt-3 mt-md-0 d-flex gap-2">
                         <a href="{% url 'editar_equipo' equipo.id %}" class="btn btn-outline-primary btn-sm d-flex align-items-center px-3 py-2" style="border-radius: 10px; font-weight: 600;">
                             <i class="fa-solid fa-pen-to-square me-1.5"></i>Editar Equipo
@@ -226,6 +231,7 @@
                             <i class="fa-solid fa-share-nodes me-1.5"></i>Generar Enlace
                         </a>
                     </div>
+                    {% endif %}
                 </div>
 
                 <!-- Contenido Colapsable (Roster y Detalles) -->
@@ -447,19 +453,25 @@
                             <div class="col-lg-6 d-flex flex-column justify-content-between p-3">
                                 <div>
                                     <h5 class="fw-bold text-primary mb-2"><i class="fa-solid fa-compass me-2"></i>Instrucciones de Alineación</h5>
-                                    <p class="small text-muted mb-3">Haz clic en cualquiera de las posiciones en la pizarra táctica para asignar un jugador de tu plantilla en esa posición. Recuerda guardar los cambios para consolidar la formación.</p>
+                                    <p class="small text-muted mb-3">
+                                        {% if request.user.role != 'jugador' %}
+                                        Haz clic en cualquiera de las posiciones en la pizarra táctica para asignar un jugador de tu plantilla en esa posición. Recuerda guardar los cambios para consolidar la formación.
+                                        {% else %}
+                                        Visualiza la formación táctica elegida para tu equipo en el partido. Las posiciones y los suplentes se actualizan dinámicamente.
+                                        {% endif %}
+                                    </p>
                                     
                                     <div class="card bg-light border-0 p-3 rounded-3 mb-3">
                                         <h6 class="fw-bold mb-2" style="font-size: 0.85rem;">Esquema Táctico</h6>
                                         <div class="mb-3">
-                                            <select class="form-select form-select-sm" id="formationSelect{{ equipo.id }}" onchange="changeFormation({{ equipo.id }}, this.value)">
+                                            <select class="form-select form-select-sm" id="formationSelect{{ equipo.id }}" onchange="changeFormation({{ equipo.id }}, this.value)" {% if request.user.role == 'jugador' %}disabled{% endif %}>
                                                 <option value="4-4-2">4-4-2 (Tradicional)</option>
                                                 <option value="4-3-3">4-3-3 (Ofensivo)</option>
                                                 <option value="3-5-2">3-5-2 (Táctico)</option>
                                                 <option value="5-4-1">5-4-1 (Defensivo)</option>
                                             </select>
                                         </div>
-                                        <div class="small text-secondary mb-0">Usa esta pizarra interactiva para diagramar tu equipo inicial. Las camisetas mostrarán el número dorsal oficial de cada jugador.</div>
+                                        <div class="small text-secondary mb-0">Las camisetas muestran el número dorsal oficial de cada jugador.</div>
                                     </div>
 
                                     <!-- Panel de Suplentes / Banca -->
@@ -471,6 +483,7 @@
                                     </div>
                                 </div>
                                 
+                                {% if request.user.role != 'jugador' %}
                                 <div class="text-end">
                                     <button type="button" class="btn btn-outline-danger me-2 py-2 px-3 rounded-pill" onclick="clearLineup({{ equipo.id }})">
                                         <i class="fa-solid fa-trash-can me-1.5"></i>Limpiar Todo
@@ -479,6 +492,7 @@
                                         <i class="fa-solid fa-cloud-arrow-up me-1.5"></i>Guardar Alineación
                                     </button>
                                 </div>
+                                {% endif %}
                             </div>
                         </div>
                     </div> <!-- /tactics-pane -->
@@ -725,6 +739,11 @@
     }
 
     function openLineupSelector(equipoId, posId, fallbackLabel) {
+        {% if request.user.role == 'jugador' %}
+        // Si es un jugador, no permitir abrir el selector
+        return;
+        {% endif %}
+
         activeEquipoId = equipoId;
         activePosKey = posId; // posId es numérico (0 a 13)
         
