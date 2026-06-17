@@ -14,6 +14,105 @@
     .collapse-toggle-header:hover {
         background-color: #f8f9fa !important;
     }
+
+    /* Pizarra Táctica / Campo de Fútbol */
+    .soccer-pitch {
+        width: 100%;
+        max-width: 480px;
+        height: 380px;
+        background: radial-gradient(circle, #388e3c 0%, #1b5e20 100%);
+        border: 3px solid #ffffff;
+        border-radius: 12px;
+        position: relative;
+        overflow: hidden;
+        margin: 20px auto;
+        box-shadow: inset 0 0 30px rgba(0,0,0,0.6), 0 8px 20px rgba(0,0,0,0.15);
+    }
+    .pitch-midline {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: 100%;
+        border-top: 2px solid rgba(255, 255, 255, 0.4);
+    }
+    .pitch-center-circle {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 70px;
+        height: 70px;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+    }
+    .pitch-penalty-area-top {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: 150px;
+        height: 50px;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.4);
+        border-left: 2px solid rgba(255, 255, 255, 0.4);
+        border-right: 2px solid rgba(255, 255, 255, 0.4);
+        transform: translateX(-50%);
+    }
+    .pitch-penalty-area-bottom {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        width: 150px;
+        height: 50px;
+        border-top: 2px solid rgba(255, 255, 255, 0.4);
+        border-left: 2px solid rgba(255, 255, 255, 0.4);
+        border-right: 2px solid rgba(255, 255, 255, 0.4);
+        transform: translateX(-50%);
+    }
+    .player-node {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        z-index: 10;
+        cursor: pointer;
+    }
+    .player-shirt {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: #ffc107;
+        color: #000;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #ffffff;
+        font-size: 0.8rem;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        margin: 0 auto;
+        transition: transform 0.2s, background-color 0.2s;
+    }
+    .player-shirt:hover {
+        transform: scale(1.15);
+    }
+    .player-shirt.unassigned {
+        background-color: rgba(255, 255, 255, 0.2);
+        color: rgba(255, 255, 255, 0.6);
+        border: 2px dashed rgba(255, 255, 255, 0.5);
+    }
+    .player-name-label {
+        display: block;
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: #ffffff;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
+        background: rgba(0,0,0,0.5);
+        padding: 1px 5px;
+        border-radius: 3px;
+        margin-top: 3px;
+        white-space: nowrap;
+        max-width: 80px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 </style>
 {% endblock %}
 
@@ -107,11 +206,24 @@
                         </div>
                     {% endif %}
 
-                    <h4 class="fw-bold mt-4 mb-3 text-secondary border-bottom pb-2">
-                        <i class="fa-solid fa-users me-2 text-primary"></i>Plantilla del Club ({{ equipo.jugadores.count }} Jugadores)
-                    </h4>
+                    <!-- Nav Tabs para alternar entre Plantilla y Alineación -->
+                    <ul class="nav nav-tabs nav-fill mb-4" id="teamTab{{ equipo.id }}" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active fw-bold text-uppercase fs-7 py-2.5" id="roster-tab{{ equipo.id }}" data-bs-toggle="tab" data-bs-target="#roster-pane{{ equipo.id }}" type="button" role="tab" aria-controls="roster-pane{{ equipo.id }}" aria-selected="true">
+                                <i class="fa-solid fa-users me-2 text-primary"></i>Plantilla del Club
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold text-uppercase fs-7 py-2.5" id="tactics-tab{{ equipo.id }}" data-bs-toggle="tab" data-bs-target="#tactics-pane{{ equipo.id }}" type="button" role="tab" aria-controls="tactics-pane{{ equipo.id }}" aria-selected="false">
+                                <i class="fa-solid fa-chalkboard-user me-2 text-warning"></i>Alineación Táctica
+                            </button>
+                        </li>
+                    </ul>
 
-                    {% if not equipo.jugadores.exists %}
+                    <div class="tab-content" id="teamTabContent{{ equipo.id }}">
+                        <!-- PANEL 1: PLANTILLA -->
+                        <div class="tab-pane fade show active" id="roster-pane{{ equipo.id }}" role="tabpanel" aria-labelledby="roster-tab{{ equipo.id }}">
+                            {% if not equipo.jugadores.exists %}
                         <div class="text-center py-5 text-muted bg-light rounded-4">
                             <i class="fa-solid fa-user-plus fa-3x mb-3 text-black-50"></i>
                             <h5>No hay jugadores registrados en este equipo</h5>
@@ -201,11 +313,142 @@
                             </table>
                         </div>
                     {% endif %}
-                    </div>
-                </div>
-            </div>
+                    </div> <!-- /roster-pane -->
+
+                    <!-- PANEL 2: ALINEACIÓN TÁCTICA -->
+                    <div class="tab-pane fade" id="tactics-pane{{ equipo.id }}" role="tabpanel" aria-labelledby="tactics-tab{{ equipo.id }}">
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <!-- El Campo de Fútbol Visual -->
+                                <div class="soccer-pitch shadow-lg position-relative" id="pitch{{ equipo.id }}">
+                                    <div class="pitch-midline"></div>
+                                    <div class="pitch-center-circle"></div>
+                                    <div class="pitch-penalty-area-top"></div>
+                                    <div class="pitch-penalty-area-bottom"></div>
+                                    
+                                    <!-- Posición GK -->
+                                    <div class="player-node" style="left: 50%; top: 86%;" data-pos="gk" onclick="openLineupSelector({{ equipo.id }}, 'gk', 'Arquero')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_gk">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_gk">Portero</span>
+                                    </div>
+                                    
+                                    <!-- Defensas (DF) -->
+                                    <div class="player-node" style="left: 15%; top: 70%;" data-pos="df_lb" onclick="openLineupSelector({{ equipo.id }}, 'df_lb', 'Lat. Izquierdo')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_df_lb">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_df_lb">Lat. Izq</span>
+                                    </div>
+                                    <div class="player-node" style="left: 38%; top: 73%;" data-pos="df_lcb" onclick="openLineupSelector({{ equipo.id }}, 'df_lcb', 'Def. Central Izq')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_df_lcb">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_df_lcb">Central Izq</span>
+                                    </div>
+                                    <div class="player-node" style="left: 62%; top: 73%;" data-pos="df_rcb" onclick="openLineupSelector({{ equipo.id }}, 'df_rcb', 'Def. Central Der')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_df_rcb">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_df_rcb">Central Der</span>
+                                    </div>
+                                    <div class="player-node" style="left: 85%; top: 70%;" data-pos="df_rb" onclick="openLineupSelector({{ equipo.id }}, 'df_rb', 'Lat. Derecho')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_df_rb">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_df_rb">Lat. Der</span>
+                                    </div>
+                                    
+                                    <!-- Mediocampistas (MF) -->
+                                    <div class="player-node" style="left: 15%; top: 43%;" data-pos="mf_lm" onclick="openLineupSelector({{ equipo.id }}, 'mf_lm', 'Vol. Izquierdo')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_mf_lm">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_mf_lm">Vol. Izq</span>
+                                    </div>
+                                    <div class="player-node" style="left: 38%; top: 46%;" data-pos="mf_lcm" onclick="openLineupSelector({{ equipo.id }}, 'mf_lcm', 'Vol. Central Izq')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_mf_lcm">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_mf_lcm">Medio Izq</span>
+                                    </div>
+                                    <div class="player-node" style="left: 62%; top: 46%;" data-pos="mf_rcm" onclick="openLineupSelector({{ equipo.id }}, 'mf_rcm', 'Vol. Central Der')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_mf_rcm">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_mf_rcm">Medio Der</span>
+                                    </div>
+                                    <div class="player-node" style="left: 85%; top: 43%;" data-pos="mf_rm" onclick="openLineupSelector({{ equipo.id }}, 'mf_rm', 'Vol. Derecho')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_mf_rm">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_mf_rm">Vol. Der</span>
+                                    </div>
+                                    
+                                    <!-- Delanteros (FW) -->
+                                    <div class="player-node" style="left: 35%; top: 18%;" data-pos="fw_lf" onclick="openLineupSelector({{ equipo.id }}, 'fw_lf', 'Delantero Izq')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_fw_lf">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_fw_lf">Del. Izq</span>
+                                    </div>
+                                    <div class="player-node" style="left: 65%; top: 18%;" data-pos="fw_rf" onclick="openLineupSelector({{ equipo.id }}, 'fw_rf', 'Delantero Der')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_fw_rf">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_fw_rf">Del. Der</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-lg-6 d-flex flex-column justify-content-between p-3">
+                                <div>
+                                    <h5 class="fw-bold text-primary mb-2"><i class="fa-solid fa-compass me-2"></i>Instrucciones de Alineación</h5>
+                                    <p class="small text-muted mb-3">Haz clic en cualquiera de las posiciones en la pizarra táctica para asignar un jugador de tu plantilla en esa posición. Recuerda guardar los cambios para consolidar la formación.</p>
+                                    
+                                    <div class="card bg-light border-0 p-3 rounded-3 mb-3">
+                                        <h6 class="fw-bold mb-1.5" style="font-size: 0.85rem;">Esquema por Defecto: 4-4-2</h6>
+                                        <div class="small text-secondary mb-0">Usa esta pizarra interactiva para diagramar tu equipo inicial. Las camisetas mostrarán el número dorsal oficial de cada jugador.</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-end">
+                                    <button type="button" class="btn btn-outline-danger me-2 py-2 px-3 rounded-pill" onclick="clearLineup({{ equipo.id }})">
+                                        <i class="fa-solid fa-trash-can me-1.5"></i>Limpiar Todo
+                                    </button>
+                                    <button type="button" class="btn btn-success py-2 px-4 fw-bold rounded-pill shadow-sm" onclick="saveLineup({{ equipo.id }})">
+                                        <i class="fa-solid fa-cloud-arrow-up me-1.5"></i>Guardar Alineación
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- /tactics-pane -->
+                </div> <!-- /tab-content -->
+                
+                <script>
+                    if (!window.teamPlayersData) window.teamPlayersData = {};
+                    window.teamPlayersData[{{ equipo.id }}] = [
+                        {% for jugador in equipo.jugadores.all %}
+                            {
+                                "id": {{ jugador.id }},
+                                "nombre": "{{ jugador.user.get_full_name|escapejs }}",
+                                "camiseta": "{{ jugador.numero_camiseta|default:'-'|escapejs }}"
+                            },
+                        {% endfor %}-1
+                    ].filter(p => p !== -1);
+                    
+                    if (!window.teamLineups) window.teamLineups = {};
+                    window.teamLineups[{{ equipo.id }}] = {% if equipo.alineacion %}{{ equipo.alineacion|safe }}{% else %}{}{% endif %};
+                </script>
+            </div> <!-- /card-body -->
+        </div> <!-- /collapseEquipo -->
+    </div> <!-- /card -->
         {% endfor %}
     {% endif %}
+</div>
+
+<!-- Modal para Seleccionar Jugador de la Alineación -->
+<div class="modal fade" id="lineupSelectModal" tabindex="-1" aria-labelledby="lineupSelectModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-dark text-white rounded-top-4 py-3">
+                <h5 class="modal-title fw-bold" id="lineupSelectModalLabel">
+                    <i class="fa-solid fa-user-plus text-warning me-2"></i>Asignar Jugador
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <span class="text-secondary d-block small mb-3">Posición: <strong class="text-dark" id="modalPosTitle"></strong></span>
+                
+                <div class="list-group list-group-flush overflow-auto" id="modalPlayerList" style="max-height: 250px;">
+                    <!-- Se carga dinámicamente con JS -->
+                </div>
+                
+                <button type="button" class="btn btn-outline-danger btn-sm w-100 mt-3 rounded-pill" id="removePlayerFromPosBtn">
+                    <i class="fa-solid fa-user-minus me-1.5"></i>Remover Jugador
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
@@ -216,9 +459,176 @@
         copyText.select();
         copyText.setSelectionRange(0, 99999); // For mobile devices
         navigator.clipboard.writeText(copyText.value);
-        
-        // Show tooltip or change button temporarily
         alert("Enlace de invitación copiado en el portapapeles.");
+    }
+
+    // LÓGICA DE ALINEACIÓN TÁCTICA
+    let activeEquipoId = null;
+    let activePosKey = null;
+    let lineupSelectModal = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar el modal de Bootstrap
+        lineupSelectModal = new bootstrap.Modal(document.getElementById('lineupSelectModal'));
+        
+        // Inicializar los campos de fútbol con alineaciones guardadas
+        Object.keys(window.teamLineups).forEach(equipoId => {
+            const lineup = window.teamLineups[equipoId] || {};
+            Object.keys(lineup).forEach(posKey => {
+                const player = lineup[posKey];
+                if (player) {
+                    updateShirtNode(equipoId, posKey, player.camiseta, player.nombre);
+                }
+            });
+        });
+    });
+
+    function openLineupSelector(equipoId, posKey, posLabel) {
+        activeEquipoId = equipoId;
+        activePosKey = posKey;
+        
+        document.getElementById('modalPosTitle').innerText = posLabel;
+        
+        const playerListContainer = document.getElementById('modalPlayerList');
+        playerListContainer.innerHTML = '';
+        
+        // Obtener jugadores del equipo
+        const players = window.teamPlayersData[equipoId] || [];
+        
+        if (players.length === 0) {
+            playerListContainer.innerHTML = '<div class="text-muted text-center py-3">No hay jugadores registrados en este equipo.</div>';
+        } else {
+            players.forEach(p => {
+                // Verificar si el jugador ya está asignado en otra posición de este equipo
+                const isAssigned = Object.values(window.teamLineups[equipoId]).some(val => val && val.id === p.id);
+                const assignedPos = Object.keys(window.teamLineups[equipoId]).find(key => window.teamLineups[equipoId][key] && window.teamLineups[equipoId][key].id === p.id);
+                
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `list-group-item list-group-item-action d-flex justify-content-between align-items-center border-0 rounded-3 mb-1 py-2 ${isAssigned && assignedPos !== posKey ? 'disabled text-muted opacity-50' : ''}`;
+                btn.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-secondary-subtle text-secondary me-2.5 font-monospace fw-bold">#${p.camiseta}</span>
+                        <span class="fw-bold fs-7">${p.nombre}</span>
+                    </div>
+                    ${assignedPos === posKey ? '<i class="fa-solid fa-circle-check text-success fs-6"></i>' : ''}
+                `;
+                
+                if (!isAssigned || assignedPos === posKey) {
+                    btn.onclick = () => selectPlayerForPosition(p);
+                }
+                playerListContainer.appendChild(btn);
+            });
+        }
+        
+        // Configurar botón de remover
+        const removeBtn = document.getElementById('removePlayerFromPosBtn');
+        if (window.teamLineups[equipoId] && window.teamLineups[equipoId][posKey]) {
+            removeBtn.style.display = 'block';
+            removeBtn.onclick = () => removePlayerFromPosition();
+        } else {
+            removeBtn.style.display = 'none';
+        }
+        
+        lineupSelectModal.show();
+    }
+
+    function selectPlayerForPosition(player) {
+        const equipoId = activeEquipoId;
+        const posKey = activePosKey;
+        
+        if (!window.teamLineups[equipoId]) {
+            window.teamLineups[equipoId] = {};
+        }
+        
+        window.teamLineups[equipoId][posKey] = {
+            id: player.id,
+            nombre: player.nombre,
+            camiseta: player.camiseta
+        };
+        
+        updateShirtNode(equipoId, posKey, player.camiseta, player.nombre);
+        lineupSelectModal.hide();
+    }
+
+    function removePlayerFromPosition() {
+        const equipoId = activeEquipoId;
+        const posKey = activePosKey;
+        
+        if (window.teamLineups[equipoId]) {
+            delete window.teamLineups[equipoId][posKey];
+        }
+        
+        updateShirtNode(equipoId, posKey, '+', getPosDefaultLabel(posKey), true);
+        lineupSelectModal.hide();
+    }
+
+    function updateShirtNode(equipoId, posKey, number, name, isUnassigned = false) {
+        const shirtEl = document.getElementById(`shirt_${equipoId}_${posKey}`);
+        const labelEl = document.getElementById(`label_${equipoId}_${posKey}`);
+        
+        if (shirtEl && labelEl) {
+            shirtEl.innerText = number;
+            labelEl.innerText = name;
+            
+            if (isUnassigned) {
+                shirtEl.classList.add('unassigned');
+            } else {
+                shirtEl.classList.remove('unassigned');
+            }
+        }
+    }
+
+    function getPosDefaultLabel(posKey) {
+        const labels = {
+            'gk': 'Portero',
+            'df_lb': 'Lat. Izq',
+            'df_lcb': 'Central Izq',
+            'df_rcb': 'Central Der',
+            'df_rb': 'Lat. Der',
+            'mf_lm': 'Vol. Izq',
+            'mf_lcm': 'Medio Izq',
+            'mf_rcm': 'Medio Der',
+            'mf_rm': 'Vol. Der',
+            'fw_lf': 'Del. Izq',
+            'fw_rf': 'Del. Der'
+        };
+        return labels[posKey] || 'Jugador';
+    }
+
+    function clearLineup(equipoId) {
+        if (confirm('¿Deseas vaciar toda la alineación táctica de este equipo?')) {
+            window.teamLineups[equipoId] = {};
+            const positions = ['gk', 'df_lb', 'df_lcb', 'df_rcb', 'df_rb', 'mf_lm', 'mf_lcm', 'mf_rcm', 'mf_rm', 'fw_lf', 'fw_rf'];
+            positions.forEach(pos => {
+                updateShirtNode(equipoId, pos, '+', getPosDefaultLabel(pos), true);
+            });
+        }
+    }
+
+    function saveLineup(equipoId) {
+        const lineupData = window.teamLineups[equipoId] || {};
+        
+        fetch(`/equipo/${equipoId}/alineacion/guardar/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(lineupData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Alineación táctica guardada correctamente.');
+            } else {
+                alert('Error al guardar alineación: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al conectar con el servidor.');
+        });
     }
 </script>
 {% endblock %}

@@ -260,3 +260,25 @@ def ver_ficha(request, ficha_id):
     }
     return render(request, 'teams/ficha_jugador_print.html', context)
 
+@login_required
+def guardar_alineacion(request, equipo_id):
+    import json
+    from django.http import JsonResponse
+    equipo = get_object_or_404(Equipo, id=equipo_id)
+    
+    es_dirigente = request.user == equipo.dirigente
+    es_admin = request.user.role == 'superadmin' or request.user.is_superuser
+    if not (es_dirigente or es_admin):
+        return JsonResponse({'status': 'error', 'message': 'No autorizado'}, status=403)
+        
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            equipo.alineacion = data
+            equipo.save()
+            return JsonResponse({'status': 'success', 'message': 'Alineación guardada con éxito.'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+            
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
+

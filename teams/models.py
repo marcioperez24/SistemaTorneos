@@ -17,6 +17,7 @@ class Equipo(models.Model):
     categoria = models.CharField(max_length=20, choices=CATEGORIAS, default='senior', verbose_name="Categoría")
     entrenador = models.CharField(max_length=100, blank=True, null=True, verbose_name="Entrenador / DT")
     telefono_entrenador = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono del Entrenador")
+    alineacion = models.JSONField(default=dict, blank=True, null=True, verbose_name="Alineación Táctica")
     dirigente = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE, 
