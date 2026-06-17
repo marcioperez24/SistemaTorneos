@@ -220,7 +220,7 @@
                      data-bs-target="#collapseEquipo{{ equipo.id }}" 
                      aria-expanded="{% if forloop.first and equipos|length == 1 %}true{% else %}false{% endif %}" 
                      aria-controls="collapseEquipo{{ equipo.id }}"
-                     onclick="if (event.target.closest('a') || event.target.closest('button')) event.stopPropagation();">
+                     onclick="if (event.target.closest('a') || event.target.closest('button') || event.target.tagName === 'A' || event.target.tagName === 'BUTTON') { event.stopPropagation(); }">
                      
                     <div class="d-flex align-items-center">
                         {% if equipo.logo %}
