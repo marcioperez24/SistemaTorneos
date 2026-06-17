@@ -74,7 +74,7 @@ def crear_equipo(request):
         return redirect('club_portal')
         
     if request.method == 'POST':
-        form = EquipoForm(request.POST, request.FILES)
+        form = EquipoForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             equipo = form.save(commit=False)
             equipo.dirigente = request.user
@@ -82,7 +82,7 @@ def crear_equipo(request):
             messages.success(request, f"Equipo '{equipo.nombre}' creado exitosamente.")
             return redirect('club_portal')
     else:
-        form = EquipoForm()
+        form = EquipoForm(user=request.user)
     return render(request, 'teams/crear_equipo.html', {'form': form})
 
 @login_required
@@ -98,13 +98,13 @@ def editar_equipo(request, equipo_id):
         equipo = get_object_or_404(Equipo, id=equipo_id, dirigente=request.user)
         
     if request.method == 'POST':
-        form = EquipoForm(request.POST, request.FILES, instance=equipo)
+        form = EquipoForm(request.POST, request.FILES, instance=equipo, user=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, f"Equipo '{equipo.nombre}' actualizado exitosamente.")
             return redirect('club_portal')
     else:
-        form = EquipoForm(instance=equipo)
+        form = EquipoForm(instance=equipo, user=request.user)
     return render(request, 'teams/crear_equipo.html', {'form': form, 'edit_mode': True, 'equipo': equipo})
 
 @login_required

@@ -326,56 +326,78 @@
                                     <div class="pitch-penalty-area-top"></div>
                                     <div class="pitch-penalty-area-bottom"></div>
                                     
-                                    <!-- Posición GK -->
-                                    <div class="player-node" style="left: 50%; top: 86%;" data-pos="gk" onclick="openLineupSelector({{ equipo.id }}, 'gk', 'Arquero')">
-                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_gk">+</div>
-                                        <span class="player-name-label" id="label_{{ equipo.id }}_gk">Portero</span>
+                                    <!-- Posición 1 (GK) -->
+                                    <div class="player-node" id="node_{{ equipo.id }}_0" onclick="openLineupSelector({{ equipo.id }}, 0, 'Arquero')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_0">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_0">Portero</span>
                                     </div>
                                     
-                                    <!-- Defensas (DF) -->
-                                    <div class="player-node" style="left: 15%; top: 70%;" data-pos="df_lb" onclick="openLineupSelector({{ equipo.id }}, 'df_lb', 'Lat. Izquierdo')">
-                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_df_lb">+</div>
-                                        <span class="player-name-label" id="label_{{ equipo.id }}_df_lb">Lat. Izq</span>
+                                    <!-- Posición 2 -->
+                                    <div class="player-node" id="node_{{ equipo.id }}_1" onclick="openLineupSelector({{ equipo.id }}, 1, 'Defensa 1')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_1">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_1">Def. 1</span>
                                     </div>
-                                    <div class="player-node" style="left: 38%; top: 73%;" data-pos="df_lcb" onclick="openLineupSelector({{ equipo.id }}, 'df_lcb', 'Def. Central Izq')">
-                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_df_lcb">+</div>
-                                        <span class="player-name-label" id="label_{{ equipo.id }}_df_lcb">Central Izq</span>
+                                    <!-- Posición 3 -->
+                                    <div class="player-node" id="node_{{ equipo.id }}_2" onclick="openLineupSelector({{ equipo.id }}, 2, 'Defensa 2')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_2">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_2">Def. 2</span>
                                     </div>
-                                    <div class="player-node" style="left: 62%; top: 73%;" data-pos="df_rcb" onclick="openLineupSelector({{ equipo.id }}, 'df_rcb', 'Def. Central Der')">
-                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_df_rcb">+</div>
-                                        <span class="player-name-label" id="label_{{ equipo.id }}_df_rcb">Central Der</span>
+                                    <!-- Posición 4 -->
+                                    <div class="player-node" id="node_{{ equipo.id }}_3" onclick="openLineupSelector({{ equipo.id }}, 3, 'Defensa 3')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_3">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_3">Def. 3</span>
                                     </div>
-                                    <div class="player-node" style="left: 85%; top: 70%;" data-pos="df_rb" onclick="openLineupSelector({{ equipo.id }}, 'df_rb', 'Lat. Derecho')">
-                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_df_rb">+</div>
-                                        <span class="player-name-label" id="label_{{ equipo.id }}_df_rb">Lat. Der</span>
+                                    <!-- Posición 5 -->
+                                    <div class="player-node" id="node_{{ equipo.id }}_4" onclick="openLineupSelector({{ equipo.id }}, 4, 'Defensa 4')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_4">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_4">Def. 4</span>
                                     </div>
-                                    
-                                    <!-- Mediocampistas (MF) -->
-                                    <div class="player-node" style="left: 15%; top: 43%;" data-pos="mf_lm" onclick="openLineupSelector({{ equipo.id }}, 'mf_lm', 'Vol. Izquierdo')">
-                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_mf_lm">+</div>
-                                        <span class="player-name-label" id="label_{{ equipo.id }}_mf_lm">Vol. Izq</span>
-                                    </div>
-                                    <div class="player-node" style="left: 38%; top: 46%;" data-pos="mf_lcm" onclick="openLineupSelector({{ equipo.id }}, 'mf_lcm', 'Vol. Central Izq')">
-                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_mf_lcm">+</div>
-                                        <span class="player-name-label" id="label_{{ equipo.id }}_mf_lcm">Medio Izq</span>
-                                    </div>
-                                    <div class="player-node" style="left: 62%; top: 46%;" data-pos="mf_rcm" onclick="openLineupSelector({{ equipo.id }}, 'mf_rcm', 'Vol. Central Der')">
-                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_mf_rcm">+</div>
-                                        <span class="player-name-label" id="label_{{ equipo.id }}_mf_rcm">Medio Der</span>
-                                    </div>
-                                    <div class="player-node" style="left: 85%; top: 43%;" data-pos="mf_rm" onclick="openLineupSelector({{ equipo.id }}, 'mf_rm', 'Vol. Derecho')">
-                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_mf_rm">+</div>
-                                        <span class="player-name-label" id="label_{{ equipo.id }}_mf_rm">Vol. Der</span>
+                                    <!-- Posición 6 -->
+                                    <div class="player-node" id="node_{{ equipo.id }}_5" onclick="openLineupSelector({{ equipo.id }}, 5, 'Defensa 5')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_5">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_5">Def. 5</span>
                                     </div>
                                     
-                                    <!-- Delanteros (FW) -->
-                                    <div class="player-node" style="left: 35%; top: 18%;" data-pos="fw_lf" onclick="openLineupSelector({{ equipo.id }}, 'fw_lf', 'Delantero Izq')">
-                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_fw_lf">+</div>
-                                        <span class="player-name-label" id="label_{{ equipo.id }}_fw_lf">Del. Izq</span>
+                                    <!-- Posición 7 -->
+                                    <div class="player-node" id="node_{{ equipo.id }}_6" onclick="openLineupSelector({{ equipo.id }}, 6, 'Mediocampista 1')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_6">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_6">Med. 1</span>
                                     </div>
-                                    <div class="player-node" style="left: 65%; top: 18%;" data-pos="fw_rf" onclick="openLineupSelector({{ equipo.id }}, 'fw_rf', 'Delantero Der')">
-                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_fw_rf">+</div>
-                                        <span class="player-name-label" id="label_{{ equipo.id }}_fw_rf">Del. Der</span>
+                                    <!-- Posición 8 -->
+                                    <div class="player-node" id="node_{{ equipo.id }}_7" onclick="openLineupSelector({{ equipo.id }}, 7, 'Mediocampista 2')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_7">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_7">Med. 2</span>
+                                    </div>
+                                    <!-- Posición 9 -->
+                                    <div class="player-node" id="node_{{ equipo.id }}_8" onclick="openLineupSelector({{ equipo.id }}, 8, 'Mediocampista 3')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_8">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_8">Med. 3</span>
+                                    </div>
+                                    <!-- Posición 10 -->
+                                    <div class="player-node" id="node_{{ equipo.id }}_9" onclick="openLineupSelector({{ equipo.id }}, 9, 'Mediocampista 4')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_9">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_9">Med. 4</span>
+                                    </div>
+                                    <!-- Posición 11 -->
+                                    <div class="player-node" id="node_{{ equipo.id }}_10" onclick="openLineupSelector({{ equipo.id }}, 10, 'Mediocampista 5')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_10">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_10">Med. 5</span>
+                                    </div>
+                                    
+                                    <!-- Posición 12 (Delantero 1) -->
+                                    <div class="player-node" id="node_{{ equipo.id }}_11" onclick="openLineupSelector({{ equipo.id }}, 11, 'Delantero 1')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_11">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_11">Del. 1</span>
+                                    </div>
+                                    <!-- Posición 13 (Delantero 2) -->
+                                    <div class="player-node" id="node_{{ equipo.id }}_12" onclick="openLineupSelector({{ equipo.id }}, 12, 'Delantero 2')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_12">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_12">Del. 2</span>
+                                    </div>
+                                    <!-- Posición 14 (Delantero 3) -->
+                                    <div class="player-node" id="node_{{ equipo.id }}_13" onclick="openLineupSelector({{ equipo.id }}, 13, 'Delantero 3')">
+                                        <div class="player-shirt unassigned" id="shirt_{{ equipo.id }}_13">+</div>
+                                        <span class="player-name-label" id="label_{{ equipo.id }}_13">Del. 3</span>
                                     </div>
                                 </div>
                             </div>
@@ -386,7 +408,15 @@
                                     <p class="small text-muted mb-3">Haz clic en cualquiera de las posiciones en la pizarra táctica para asignar un jugador de tu plantilla en esa posición. Recuerda guardar los cambios para consolidar la formación.</p>
                                     
                                     <div class="card bg-light border-0 p-3 rounded-3 mb-3">
-                                        <h6 class="fw-bold mb-1.5" style="font-size: 0.85rem;">Esquema por Defecto: 4-4-2</h6>
+                                        <h6 class="fw-bold mb-2" style="font-size: 0.85rem;">Esquema Táctico</h6>
+                                        <div class="mb-3">
+                                            <select class="form-select form-select-sm" id="formationSelect{{ equipo.id }}" onchange="changeFormation({{ equipo.id }}, this.value)">
+                                                <option value="4-4-2">4-4-2 (Tradicional)</option>
+                                                <option value="4-3-3">4-3-3 (Ofensivo)</option>
+                                                <option value="3-5-2">3-5-2 (Táctico)</option>
+                                                <option value="5-4-1">5-4-1 (Defensivo)</option>
+                                            </select>
+                                        </div>
                                         <div class="small text-secondary mb-0">Usa esta pizarra interactiva para diagramar tu equipo inicial. Las camisetas mostrarán el número dorsal oficial de cada jugador.</div>
                                     </div>
                                 </div>
@@ -467,25 +497,143 @@
     let activePosKey = null;
     let lineupSelectModal = null;
 
+    // Coordenadas y etiquetas según el esquema seleccionado
+    const formationsCoordinates = {
+        '4-4-2': [
+            { id: 0, label: 'Portero', left: '50%', top: '86%' },
+            { id: 1, label: 'Lat. Izq', left: '15%', top: '70%' },
+            { id: 2, label: 'Central Izq', left: '38%', top: '73%' },
+            { id: 3, label: 'Central Der', left: '62%', top: '73%' },
+            { id: 4, label: 'Lat. Der', left: '85%', top: '70%' },
+            { id: 5, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true },
+            { id: 6, label: 'Vol. Izq', left: '15%', top: '43%' },
+            { id: 7, label: 'Medio Izq', left: '38%', top: '46%' },
+            { id: 8, label: 'Medio Der', left: '62%', top: '46%' },
+            { id: 9, label: 'Vol. Der', left: '85%', top: '43%' },
+            { id: 10, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true },
+            { id: 11, label: 'Del. Izq', left: '35%', top: '18%' },
+            { id: 12, label: 'Del. Der', left: '65%', top: '18%' },
+            { id: 13, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true }
+        ],
+        '4-3-3': [
+            { id: 0, label: 'Portero', left: '50%', top: '86%' },
+            { id: 1, label: 'Lat. Izq', left: '15%', top: '70%' },
+            { id: 2, label: 'Central Izq', left: '38%', top: '73%' },
+            { id: 3, label: 'Central Der', left: '62%', top: '73%' },
+            { id: 4, label: 'Lat. Der', left: '85%', top: '70%' },
+            { id: 5, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true },
+            { id: 6, label: 'Medio Izq', left: '25%', top: '48%' },
+            { id: 7, label: 'Pivote', left: '50%', top: '53%' },
+            { id: 8, label: 'Medio Der', left: '75%', top: '48%' },
+            { id: 9, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true },
+            { id: 10, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true },
+            { id: 11, label: 'Extr. Izq', left: '20%', top: '22%' },
+            { id: 12, label: 'Centrodel.', left: '50%', top: '16%' },
+            { id: 13, label: 'Extr. Der', left: '80%', top: '22%' }
+        ],
+        '3-5-2': [
+            { id: 0, label: 'Portero', left: '50%', top: '86%' },
+            { id: 1, label: 'Stopper Izq', left: '25%', top: '73%' },
+            { id: 2, label: 'Líbero', left: '50%', top: '75%' },
+            { id: 3, label: 'Stopper Der', left: '75%', top: '73%' },
+            { id: 4, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true },
+            { id: 5, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true },
+            { id: 6, label: 'Carril. Izq', left: '15%', top: '48%' },
+            { id: 7, label: 'Vol. Def', left: '38%', top: '52%' },
+            { id: 8, label: 'Vol. Def', left: '62%', top: '52%' },
+            { id: 9, label: 'Carril. Der', left: '85%', top: '48%' },
+            { id: 10, label: 'Enganche', left: '50%', top: '38%' },
+            { id: 11, label: 'Del. Izq', left: '35%', top: '18%' },
+            { id: 12, label: 'Del. Der', left: '65%', top: '18%' },
+            { id: 13, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true }
+        ],
+        '5-4-1': [
+            { id: 0, label: 'Portero', left: '50%', top: '86%' },
+            { id: 1, label: 'Carril. Izq', left: '15%', top: '65%' },
+            { id: 2, label: 'Stopper Izq', left: '32%', top: '73%' },
+            { id: 3, label: 'Líbero', left: '50%', top: '75%' },
+            { id: 4, label: 'Stopper Der', left: '68%', top: '73%' },
+            { id: 5, label: 'Carril. Der', left: '85%', top: '65%' },
+            { id: 6, label: 'Vol. Izq', left: '20%', top: '45%' },
+            { id: 7, label: 'Medio Izq', left: '38%', top: '48%' },
+            { id: 8, label: 'Medio Der', left: '62%', top: '48%' },
+            { id: 9, label: 'Vol. Der', left: '80%', top: '45%' },
+            { id: 10, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true },
+            { id: 11, label: 'Delantero', left: '50%', top: '18%' },
+            { id: 12, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true },
+            { id: 13, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true }
+        ]
+    };
+
     document.addEventListener('DOMContentLoaded', function() {
         // Inicializar el modal de Bootstrap
         lineupSelectModal = new bootstrap.Modal(document.getElementById('lineupSelectModal'));
         
         // Inicializar los campos de fútbol con alineaciones guardadas
         Object.keys(window.teamLineups).forEach(equipoId => {
-            const lineup = window.teamLineups[equipoId] || {};
-            Object.keys(lineup).forEach(posKey => {
-                const player = lineup[posKey];
+            const data = window.teamLineups[equipoId] || {};
+            const formation = data.formation || '4-4-2';
+            
+            // Poner el dropdown en el valor correcto
+            const selectEl = document.getElementById(`formationSelect${equipoId}`);
+            if (selectEl) {
+                selectEl.value = formation;
+            }
+            
+            applyFormationPositions(equipoId, formation);
+            
+            const players = data.players || {};
+            Object.keys(players).forEach(posId => {
+                const player = players[posId];
                 if (player) {
-                    updateShirtNode(equipoId, posKey, player.camiseta, player.nombre);
+                    updateShirtNode(equipoId, posId, player.camiseta, player.nombre);
                 }
             });
         });
     });
 
-    function openLineupSelector(equipoId, posKey, posLabel) {
+    function applyFormationPositions(equipoId, formationName) {
+        const config = formationsCoordinates[formationName];
+        if (!config) return;
+        
+        config.forEach(pos => {
+            const nodeEl = document.getElementById(`node_${equipoId}_${pos.id}`);
+            if (nodeEl) {
+                nodeEl.style.left = pos.left;
+                nodeEl.style.top = pos.top;
+                if (pos.inactive) {
+                    nodeEl.style.display = 'none';
+                } else {
+                    nodeEl.style.display = 'block';
+                    
+                    // Si la posición no está asignada en el lineup guardado, mostrar la etiqueta por defecto
+                    const currentLineup = window.teamLineups[equipoId] || {};
+                    const currentPlayers = currentLineup.players || {};
+                    if (!currentPlayers[pos.id]) {
+                        updateShirtNode(equipoId, pos.id, '+', pos.label, true);
+                    }
+                }
+            }
+        });
+    }
+
+    function changeFormation(equipoId, formationName) {
+        if (!window.teamLineups[equipoId]) {
+            window.teamLineups[equipoId] = { formation: '4-4-2', players: {} };
+        }
+        window.teamLineups[equipoId].formation = formationName;
+        applyFormationPositions(equipoId, formationName);
+    }
+
+    function openLineupSelector(equipoId, posId, fallbackLabel) {
         activeEquipoId = equipoId;
-        activePosKey = posKey;
+        activePosKey = posId; // posId es numérico (0 a 13)
+        
+        // Buscar la etiqueta según formación activa
+        const currentFormation = (window.teamLineups[equipoId] && window.teamLineups[equipoId].formation) || '4-4-2';
+        const config = formationsCoordinates[currentFormation];
+        const posConfig = config.find(c => c.id === posId);
+        const posLabel = posConfig ? posConfig.label : fallbackLabel;
         
         document.getElementById('modalPosTitle').innerText = posLabel;
         
@@ -499,22 +647,25 @@
             playerListContainer.innerHTML = '<div class="text-muted text-center py-3">No hay jugadores registrados en este equipo.</div>';
         } else {
             players.forEach(p => {
+                const currentLineup = window.teamLineups[equipoId] || {};
+                const currentPlayers = currentLineup.players || {};
+                
                 // Verificar si el jugador ya está asignado en otra posición de este equipo
-                const isAssigned = Object.values(window.teamLineups[equipoId]).some(val => val && val.id === p.id);
-                const assignedPos = Object.keys(window.teamLineups[equipoId]).find(key => window.teamLineups[equipoId][key] && window.teamLineups[equipoId][key].id === p.id);
+                const isAssigned = Object.values(currentPlayers).some(val => val && val.id === p.id);
+                const assignedPos = Object.keys(currentPlayers).find(key => currentPlayers[key] && currentPlayers[key].id === p.id);
                 
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = `list-group-item list-group-item-action d-flex justify-content-between align-items-center border-0 rounded-3 mb-1 py-2 ${isAssigned && assignedPos !== posKey ? 'disabled text-muted opacity-50' : ''}`;
+                btn.className = `list-group-item list-group-item-action d-flex justify-content-between align-items-center border-0 rounded-3 mb-1 py-2 ${isAssigned && String(assignedPos) !== String(posId) ? 'disabled text-muted opacity-50' : ''}`;
                 btn.innerHTML = `
                     <div class="d-flex align-items-center">
                         <span class="badge bg-secondary-subtle text-secondary me-2.5 font-monospace fw-bold">#${p.camiseta}</span>
                         <span class="fw-bold fs-7">${p.nombre}</span>
                     </div>
-                    ${assignedPos === posKey ? '<i class="fa-solid fa-circle-check text-success fs-6"></i>' : ''}
+                    ${String(assignedPos) === String(posId) ? '<i class="fa-solid fa-circle-check text-success fs-6"></i>' : ''}
                 `;
                 
-                if (!isAssigned || assignedPos === posKey) {
+                if (!isAssigned || String(assignedPos) === String(posId)) {
                     btn.onclick = () => selectPlayerForPosition(p);
                 }
                 playerListContainer.appendChild(btn);
@@ -523,7 +674,9 @@
         
         // Configurar botón de remover
         const removeBtn = document.getElementById('removePlayerFromPosBtn');
-        if (window.teamLineups[equipoId] && window.teamLineups[equipoId][posKey]) {
+        const currentLineup = window.teamLineups[equipoId] || {};
+        const currentPlayers = currentLineup.players || {};
+        if (currentPlayers[posId]) {
             removeBtn.style.display = 'block';
             removeBtn.onclick = () => removePlayerFromPosition();
         } else {
@@ -535,37 +688,45 @@
 
     function selectPlayerForPosition(player) {
         const equipoId = activeEquipoId;
-        const posKey = activePosKey;
+        const posId = activePosKey;
         
         if (!window.teamLineups[equipoId]) {
-            window.teamLineups[equipoId] = {};
+            window.teamLineups[equipoId] = { formation: '4-4-2', players: {} };
+        }
+        if (!window.teamLineups[equipoId].players) {
+            window.teamLineups[equipoId].players = {};
         }
         
-        window.teamLineups[equipoId][posKey] = {
+        window.teamLineups[equipoId].players[posId] = {
             id: player.id,
             nombre: player.nombre,
             camiseta: player.camiseta
         };
         
-        updateShirtNode(equipoId, posKey, player.camiseta, player.nombre);
+        updateShirtNode(equipoId, posId, player.camiseta, player.nombre);
         lineupSelectModal.hide();
     }
 
     function removePlayerFromPosition() {
         const equipoId = activeEquipoId;
-        const posKey = activePosKey;
+        const posId = activePosKey;
         
-        if (window.teamLineups[equipoId]) {
-            delete window.teamLineups[equipoId][posKey];
+        if (window.teamLineups[equipoId] && window.teamLineups[equipoId].players) {
+            delete window.teamLineups[equipoId].players[posId];
         }
         
-        updateShirtNode(equipoId, posKey, '+', getPosDefaultLabel(posKey), true);
+        const currentFormation = (window.teamLineups[equipoId] && window.teamLineups[equipoId].formation) || '4-4-2';
+        const config = formationsCoordinates[currentFormation];
+        const posConfig = config.find(c => c.id === posId);
+        const defLabel = posConfig ? posConfig.label : 'Jugador';
+        
+        updateShirtNode(equipoId, posId, '+', defLabel, true);
         lineupSelectModal.hide();
     }
 
-    function updateShirtNode(equipoId, posKey, number, name, isUnassigned = false) {
-        const shirtEl = document.getElementById(`shirt_${equipoId}_${posKey}`);
-        const labelEl = document.getElementById(`label_${equipoId}_${posKey}`);
+    function updateShirtNode(equipoId, posId, number, name, isUnassigned = false) {
+        const shirtEl = document.getElementById(`shirt_${equipoId}_${posId}`);
+        const labelEl = document.getElementById(`label_${equipoId}_${posId}`);
         
         if (shirtEl && labelEl) {
             shirtEl.innerText = number;
@@ -579,35 +740,22 @@
         }
     }
 
-    function getPosDefaultLabel(posKey) {
-        const labels = {
-            'gk': 'Portero',
-            'df_lb': 'Lat. Izq',
-            'df_lcb': 'Central Izq',
-            'df_rcb': 'Central Der',
-            'df_rb': 'Lat. Der',
-            'mf_lm': 'Vol. Izq',
-            'mf_lcm': 'Medio Izq',
-            'mf_rcm': 'Medio Der',
-            'mf_rm': 'Vol. Der',
-            'fw_lf': 'Del. Izq',
-            'fw_rf': 'Del. Der'
-        };
-        return labels[posKey] || 'Jugador';
-    }
-
     function clearLineup(equipoId) {
         if (confirm('¿Deseas vaciar toda la alineación táctica de este equipo?')) {
-            window.teamLineups[equipoId] = {};
-            const positions = ['gk', 'df_lb', 'df_lcb', 'df_rcb', 'df_rb', 'mf_lm', 'mf_lcm', 'mf_rcm', 'mf_rm', 'fw_lf', 'fw_rf'];
-            positions.forEach(pos => {
-                updateShirtNode(equipoId, pos, '+', getPosDefaultLabel(pos), true);
+            const currentFormation = (window.teamLineups[equipoId] && window.teamLineups[equipoId].formation) || '4-4-2';
+            window.teamLineups[equipoId] = { formation: currentFormation, players: {} };
+            
+            const config = formationsCoordinates[currentFormation];
+            config.forEach(pos => {
+                if (!pos.inactive) {
+                    updateShirtNode(equipoId, pos.id, '+', pos.label, true);
+                }
             });
         }
     }
 
     function saveLineup(equipoId) {
-        const lineupData = window.teamLineups[equipoId] || {};
+        const lineupData = window.teamLineups[equipoId] || { formation: '4-4-2', players: {} };
         
         fetch(`/equipo/${equipoId}/alineacion/guardar/`, {
             method: 'POST',
