@@ -214,15 +214,15 @@
         {% for equipo in equipos %}
             <div class="card card-custom mb-4 shadow-sm overflow-hidden">
                 <!-- Cabecera colapsable del Equipo -->
-                <div class="card-header bg-white border-0 pt-4 px-4 d-flex flex-wrap align-items-center justify-content-between collapse-toggle-header {% if not forloop.first or equipos|length > 1 %}collapsed{% endif %}" 
-                     style="cursor: pointer; transition: background-color 0.2s;" 
-                     data-bs-toggle="collapse" 
-                     data-bs-target="#collapseEquipo{{ equipo.id }}" 
-                     aria-expanded="{% if forloop.first and equipos|length == 1 %}true{% else %}false{% endif %}" 
-                     aria-controls="collapseEquipo{{ equipo.id }}"
-                     onclick="if (event.target.closest('a') || event.target.closest('button') || event.target.tagName === 'A' || event.target.tagName === 'BUTTON') { event.stopPropagation(); }">
+                <div class="card-header bg-white border-0 pt-4 px-4 d-flex flex-wrap align-items-center justify-content-between">
                      
-                    <div class="d-flex align-items-center">
+                    <div class="d-flex align-items-center collapse-toggle-header {% if not forloop.first or equipos|length > 1 %}collapsed{% endif %}" 
+                         style="cursor: pointer;" 
+                         data-bs-toggle="collapse" 
+                         data-bs-target="#collapseEquipo{{ equipo.id }}" 
+                         aria-expanded="{% if forloop.first and equipos|length == 1 %}true{% else %}false{% endif %}" 
+                         aria-controls="collapseEquipo{{ equipo.id }}">
+                         
                         {% if equipo.logo %}
                             <img src="{{ equipo.logo.url }}" alt="{{ equipo.nombre }}" class="rounded-circle border me-3 shadow-sm" style="width: 60px; height: 60px; object-fit: cover;">
                         {% else %}
