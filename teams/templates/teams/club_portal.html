@@ -75,8 +75,8 @@
         cursor: pointer;
     }
     .player-shirt {
-        width: 32px;
-        height: 32px;
+        width: 38px;
+        height: 38px;
         border-radius: 50%;
         background-color: #ffc107;
         color: #000;
@@ -89,14 +89,35 @@
         box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         margin: 0 auto;
         transition: transform 0.2s, background-color 0.2s;
+        background-size: cover;
+        background-position: center;
+        position: relative;
     }
     .player-shirt:hover {
         transform: scale(1.15);
     }
     .player-shirt.unassigned {
-        background-color: rgba(255, 255, 255, 0.2);
+        background-color: rgba(255, 255, 255, 0.2) !important;
+        background-image: none !important;
         color: rgba(255, 255, 255, 0.6);
         border: 2px dashed rgba(255, 255, 255, 0.5);
+    }
+    .shirt-number-badge {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        background-color: #dc3545;
+        color: white;
+        border: 1px solid white;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        font-size: 0.6rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     .player-name-label {
         display: block;
@@ -112,6 +133,27 @@
         max-width: 80px;
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+    /* Suplentes panel */
+    .substitutes-bench {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 15px;
+    }
+    .sub-item-card {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        transition: box-shadow 0.15s ease;
+    }
+    .sub-item-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
     }
 </style>
 {% endblock %}
@@ -419,6 +461,14 @@
                                         </div>
                                         <div class="small text-secondary mb-0">Usa esta pizarra interactiva para diagramar tu equipo inicial. Las camisetas mostrarán el número dorsal oficial de cada jugador.</div>
                                     </div>
+
+                                    <!-- Panel de Suplentes / Banca -->
+                                    <div class="mb-4">
+                                        <h6 class="fw-bold text-secondary mb-2.5"><i class="fa-solid fa-chair me-1.5 text-info"></i>Suplentes / Banca</h6>
+                                        <div class="substitutes-bench" id="substitutesBench{{ equipo.id }}">
+                                            <!-- Se carga dinámicamente con JS -->
+                                        </div>
+                                    </div>
                                 </div>
                                 
                                 <div class="text-end">
@@ -441,7 +491,8 @@
                             {
                                 "id": {{ jugador.id }},
                                 "nombre": "{{ jugador.user.get_full_name|escapejs }}",
-                                "camiseta": "{{ jugador.numero_camiseta|default:'-'|escapejs }}"
+                                "camiseta": "{{ jugador.numero_camiseta|default:'-'|escapejs }}",
+                                "foto": "{% if jugador.foto %}{{ jugador.foto.url|escapejs }}{% else %}{% endif %}"
                             },
                         {% endfor %}-1
                     ].filter(p => p !== -1);
@@ -586,9 +637,14 @@
             Object.keys(players).forEach(posId => {
                 const player = players[posId];
                 if (player) {
-                    updateShirtNode(equipoId, posId, player.camiseta, player.nombre);
+                    // Buscar la foto actualizada de los datos locales del equipo
+                    const fullPlayerInfo = (window.teamPlayersData[equipoId] || []).find(p => p.id === player.id);
+                    const photoUrl = fullPlayerInfo ? fullPlayerInfo.foto : '';
+                    updateShirtNode(equipoId, posId, player.camiseta, player.nombre, false, photoUrl);
                 }
             });
+
+            updateSubstitutesBench(equipoId);
         });
     });
 
@@ -623,6 +679,49 @@
         }
         window.teamLineups[equipoId].formation = formationName;
         applyFormationPositions(equipoId, formationName);
+        updateSubstitutesBench(equipoId);
+    }
+
+    function updateSubstitutesBench(equipoId) {
+        const benchEl = document.getElementById(`substitutesBench${equipoId}`);
+        if (!benchEl) return;
+
+        benchEl.innerHTML = '';
+        const allPlayers = window.teamPlayersData[equipoId] || [];
+        const currentLineup = window.teamLineups[equipoId] || {};
+        const currentPlayers = currentLineup.players || {};
+
+        // Identificar quiénes NO están asignados en las posiciones activas de la formación actual
+        const currentFormation = currentLineup.formation || '4-4-2';
+        const activePositions = formationsCoordinates[currentFormation]
+            .filter(pos => !pos.inactive)
+            .map(pos => String(pos.id));
+
+        const activePlayerIds = Object.keys(currentPlayers)
+            .filter(posId => activePositions.includes(String(posId)))
+            .map(posId => currentPlayers[posId].id);
+
+        const subs = allPlayers.filter(p => !activePlayerIds.includes(p.id));
+
+        if (subs.length === 0) {
+            benchEl.innerHTML = '<div class="text-muted text-center py-2 fs-7">Toda la plantilla está en la alineación titular.</div>';
+            return;
+        }
+
+        subs.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'sub-item-card';
+            card.innerHTML = `
+                <div class="d-flex align-items-center">
+                    ${p.foto ? `<img src="${p.foto}" alt="${p.nombre}" class="rounded-circle border me-2" style="width: 28px; height: 28px; object-fit: cover;">` : `<div class="bg-secondary rounded-circle text-white d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px; font-size: 10px;"><i class="fa-solid fa-user"></i></div>`}
+                    <div>
+                        <span class="fw-bold fs-7 d-block">${p.nombre}</span>
+                    </div>
+                </div>
+                <span class="badge bg-secondary-subtle text-secondary font-monospace fw-bold">#${p.camiseta}</span>
+            `;
+            benchEl.appendChild(card);
+        });
     }
 
     function openLineupSelector(equipoId, posId, fallbackLabel) {
@@ -703,7 +802,8 @@
             camiseta: player.camiseta
         };
         
-        updateShirtNode(equipoId, posId, player.camiseta, player.nombre);
+        updateShirtNode(equipoId, posId, player.camiseta, player.nombre, false, player.foto);
+        updateSubstitutesBench(equipoId);
         lineupSelectModal.hide();
     }
 
@@ -721,22 +821,30 @@
         const defLabel = posConfig ? posConfig.label : 'Jugador';
         
         updateShirtNode(equipoId, posId, '+', defLabel, true);
+        updateSubstitutesBench(equipoId);
         lineupSelectModal.hide();
     }
 
-    function updateShirtNode(equipoId, posId, number, name, isUnassigned = false) {
+    function updateShirtNode(equipoId, posId, number, name, isUnassigned = false, photoUrl = '') {
         const shirtEl = document.getElementById(`shirt_${equipoId}_${posId}`);
         const labelEl = document.getElementById(`label_${equipoId}_${posId}`);
         
         if (shirtEl && labelEl) {
-            shirtEl.innerText = number;
-            labelEl.innerText = name;
-            
             if (isUnassigned) {
                 shirtEl.classList.add('unassigned');
+                shirtEl.innerHTML = '+';
+                shirtEl.style.backgroundImage = 'none';
             } else {
                 shirtEl.classList.remove('unassigned');
+                if (photoUrl) {
+                    shirtEl.innerHTML = `<span class="shirt-number-badge">${number}</span>`;
+                    shirtEl.style.backgroundImage = `url('${photoUrl}')`;
+                } else {
+                    shirtEl.innerText = number;
+                    shirtEl.style.backgroundImage = 'none';
+                }
             }
+            labelEl.innerText = name;
         }
     }
 
@@ -751,6 +859,7 @@
                     updateShirtNode(equipoId, pos.id, '+', pos.label, true);
                 }
             });
+            updateSubstitutesBench(equipoId);
         }
     }
 
