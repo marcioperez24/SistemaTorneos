@@ -22,6 +22,151 @@
         max-height: 400px;
         overflow-y: auto;
     }
+
+    /* Pizarra Táctica / Campo de Fútbol */
+    .soccer-pitch {
+        width: 100%;
+        max-width: 100%;
+        height: 420px;
+        background: radial-gradient(circle, #2e7d32 0%, #1b5e20 100%);
+        border: 4px solid #ffffff;
+        border-radius: 16px;
+        position: relative;
+        overflow: hidden;
+        margin: 10px auto 20px auto;
+        box-shadow: inset 0 0 30px rgba(0,0,0,0.6), 0 8px 20px rgba(0,0,0,0.15);
+    }
+    .pitch-midline {
+        position: absolute;
+        top: 50%;
+        left: 0;
+        width: 100%;
+        border-top: 2px solid rgba(255, 255, 255, 0.4);
+    }
+    .pitch-center-circle {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 80px;
+        height: 80px;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+    }
+    .pitch-penalty-area-top {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: 180px;
+        height: 60px;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.4);
+        border-left: 2px solid rgba(255, 255, 255, 0.4);
+        border-right: 2px solid rgba(255, 255, 255, 0.4);
+        transform: translateX(-50%);
+    }
+    .pitch-penalty-area-bottom {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        width: 180px;
+        height: 60px;
+        border-top: 2px solid rgba(255, 255, 255, 0.4);
+        border-left: 2px solid rgba(255, 255, 255, 0.4);
+        border-right: 2px solid rgba(255, 255, 255, 0.4);
+        transform: translateX(-50%);
+    }
+    .player-node {
+        position: absolute;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        z-index: 10;
+        cursor: pointer;
+    }
+    .player-shirt {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background-color: #ffc107;
+        color: #000;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2.5px solid #ffffff;
+        font-size: 0.85rem;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        margin: 0 auto;
+        transition: transform 0.2s, background-color 0.2s;
+        background-size: cover;
+        background-position: center;
+        position: relative;
+    }
+    .player-shirt:hover {
+        transform: scale(1.15);
+    }
+    .player-shirt.unassigned {
+        background-color: rgba(255, 255, 255, 0.2) !important;
+        background-image: none !important;
+        color: rgba(255, 255, 255, 0.6);
+        border: 2px dashed rgba(255, 255, 255, 0.5);
+    }
+    .shirt-number-badge {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        background-color: #dc3545;
+        color: white;
+        border: 1px solid white;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        font-size: 0.6rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .player-name-label {
+        display: block;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #ffffff;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.9);
+        background: rgba(0,0,0,0.6);
+        padding: 1px 5px;
+        border-radius: 4px;
+        margin-top: 4px;
+        white-space: nowrap;
+        max-width: 90px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    /* Suplentes panel */
+    .substitutes-bench {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 15px;
+        max-height: 380px;
+        overflow-y: auto;
+    }
+    .sub-item-card {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        transition: box-shadow 0.15s ease, transform 0.15s ease;
+        cursor: pointer;
+    }
+    .sub-item-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        transform: translateY(-1px);
+    }
 </style>
 {% endblock %}
 
@@ -77,61 +222,41 @@
             <div class="tab-content" id="teamTabsContent">
                 <!-- Plantilla Local -->
                 <div class="tab-pane fade show active" id="pane-local">
-                    <div class="row g-3">
-                        {% for j in jugadores_local %}
-                            <div class="col-md-6 col-xxl-4">
-                                <div class="card player-card-vocal p-2.5 border rounded-3 bg-white" data-bs-toggle="modal" data-bs-target="#modalEvento" data-jugador-id="{{ j.user.id }}" data-jugador-nombre="{{ j.user.get_full_name }}" data-equipo-id="{{ partido.equipo_local.id }}" data-equipo-nombre="{{ partido.equipo_local.nombre }}">
-                                    <div class="d-flex align-items-center">
-                                        {% if j.foto %}
-                                            <img src="{{ j.foto.url }}" class="rounded shadow-sm me-2.5 border" style="width: 45px; height: 45px; object-fit: cover;" alt="Selfie">
-                                        {% else %}
-                                            <div class="bg-secondary rounded shadow-sm me-2.5 text-white d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
-                                                <i class="fa-regular fa-user"></i>
-                                            </div>
-                                        {% endif %}
-                                        <div class="flex-grow-1 text-truncate">
-                                            <span class="fw-bold d-block text-dark text-truncate fs-7" style="line-height: 1.2;">{{ j.user.get_full_name|upper }}</span>
-                                            <small class="text-success font-semibold fs-9"><i class="fa-solid fa-circle-check me-1"></i>Habilitado | Sangre: {{ j.tipo_sangre }}</small>
-                                        </div>
-                                        <div class="text-end text-primary ps-2">
-                                            <i class="fa-solid fa-circle-plus fa-lg"></i>
-                                        </div>
-                                    </div>
-                                </div>
+                    <div class="row">
+                        <div class="col-lg-7 mb-3">
+                            <div class="soccer-pitch shadow-lg position-relative" id="pitch-local">
+                                <div class="pitch-midline"></div>
+                                <div class="pitch-center-circle"></div>
+                                <div class="pitch-penalty-area-top"></div>
+                                <div class="pitch-penalty-area-bottom"></div>
                             </div>
-                        {% empty %}
-                            <div class="col-12 py-4 text-center text-muted card bg-white">No hay jugadores registrados y aprobados para este equipo. Deben registrarse y ser aprobados por secretaría.</div>
-                        {% endfor %}
+                        </div>
+                        <div class="col-lg-5">
+                            <h5 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-chair me-2 text-info"></i>Banca de Suplentes</h5>
+                            <div class="substitutes-bench" id="bench-local">
+                                <!-- Se carga dinámicamente -->
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Plantilla Visitante -->
                 <div class="tab-pane fade" id="pane-visitante">
-                    <div class="row g-3">
-                        {% for j in jugadores_visitante %}
-                            <div class="col-md-6 col-xxl-4">
-                                <div class="card player-card-vocal p-2.5 border rounded-3 bg-white" data-bs-toggle="modal" data-bs-target="#modalEvento" data-jugador-id="{{ j.user.id }}" data-jugador-nombre="{{ j.user.get_full_name }}" data-equipo-id="{{ partido.equipo_visitante.id }}" data-equipo-nombre="{{ partido.equipo_visitante.nombre }}">
-                                    <div class="d-flex align-items-center">
-                                        {% if j.foto %}
-                                            <img src="{{ j.foto.url }}" class="rounded shadow-sm me-2.5 border" style="width: 45px; height: 45px; object-fit: cover;" alt="Selfie">
-                                        {% else %}
-                                            <div class="bg-secondary rounded shadow-sm me-2.5 text-white d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
-                                                <i class="fa-regular fa-user"></i>
-                                            </div>
-                                        {% endif %}
-                                        <div class="flex-grow-1 text-truncate">
-                                            <span class="fw-bold d-block text-dark text-truncate fs-7" style="line-height: 1.2;">{{ j.user.get_full_name|upper }}</span>
-                                            <small class="text-success font-semibold fs-9"><i class="fa-solid fa-circle-check me-1"></i>Habilitado | Sangre: {{ j.tipo_sangre }}</small>
-                                        </div>
-                                        <div class="text-end text-success ps-2">
-                                            <i class="fa-solid fa-circle-plus fa-lg"></i>
-                                        </div>
-                                    </div>
-                                </div>
+                    <div class="row">
+                        <div class="col-lg-7 mb-3">
+                            <div class="soccer-pitch shadow-lg position-relative" id="pitch-visitante">
+                                <div class="pitch-midline"></div>
+                                <div class="pitch-center-circle"></div>
+                                <div class="pitch-penalty-area-top"></div>
+                                <div class="pitch-penalty-area-bottom"></div>
                             </div>
-                        {% empty %}
-                            <div class="col-12 py-4 text-center text-muted card bg-white">No hay jugadores registrados y aprobados para este equipo. Deben registrarse y ser aprobados por secretaría.</div>
-                        {% endfor %}
+                        </div>
+                        <div class="col-lg-5">
+                            <h5 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-chair me-2 text-info"></i>Banca de Suplentes</h5>
+                            <div class="substitutes-bench" id="bench-visitante">
+                                <!-- Se carga dinámicamente -->
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -175,6 +300,7 @@
                     {% csrf_token %}
                     <p class="text-muted fs-8 mb-4">Verifica todos los eventos registrados antes de proceder al cierre digital bajo juramento.</p>
                     
+                    {% if request.user.role == 'vocal' or request.user.role == 'superadmin' %}
                     <!-- Firma del Vocal -->
                     <div class="mb-4">
                         <div class="d-flex justify-content-between align-items-center mb-1">
@@ -188,9 +314,11 @@
                         <div class="signature-container border rounded bg-light" style="position: relative; height: 110px;">
                             <canvas id="canvas_vocal" class="w-100 h-100" style="touch-action: none; cursor: crosshair;"></canvas>
                         </div>
-                        <input type="hidden" name="firma_vocal_data" id="input_vocal" required>
+                        <input type="hidden" name="firma_vocal_data" id="input_vocal">
                     </div>
+                    {% endif %}
 
+                    {% if request.user.role == 'arbitro' or request.user.role == 'superadmin' %}
                     <!-- Firma del Árbitro -->
                     <div class="mb-4">
                         <div class="d-flex justify-content-between align-items-center mb-1">
@@ -204,40 +332,9 @@
                         <div class="signature-container border rounded bg-light" style="position: relative; height: 110px;">
                             <canvas id="canvas_arbitro" class="w-100 h-100" style="touch-action: none; cursor: crosshair;"></canvas>
                         </div>
-                        <input type="hidden" name="firma_arbitro_data" id="input_arbitro" required>
+                        <input type="hidden" name="firma_arbitro_data" id="input_arbitro">
                     </div>
-
-                    <!-- Firma Entrenador Local -->
-                    <div class="mb-4">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label class="form-label fw-bold text-secondary mb-0 fs-7">
-                                <i class="fa-solid fa-signature me-1 text-success"></i>DT / Representante Local ({{ partido.equipo_local.get_dt_name }})
-                            </label>
-                            <button type="button" class="btn btn-link btn-sm text-decoration-none p-0 text-danger fs-8" id="canvas_local_clear">
-                                <i class="fa-solid fa-eraser me-1"></i>Borrar
-                            </button>
-                        </div>
-                        <div class="signature-container border rounded bg-light" style="position: relative; height: 110px;">
-                            <canvas id="canvas_local" class="w-100 h-100" style="touch-action: none; cursor: crosshair;"></canvas>
-                        </div>
-                        <input type="hidden" name="firma_local_data" id="input_local" required>
-                    </div>
-
-                    <!-- Firma Entrenador Visitante -->
-                    <div class="mb-4">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label class="form-label fw-bold text-secondary mb-0 fs-7">
-                                <i class="fa-solid fa-signature me-1 text-success"></i>DT / Representante Visitante ({{ partido.equipo_visitante.get_dt_name }})
-                            </label>
-                            <button type="button" class="btn btn-link btn-sm text-decoration-none p-0 text-danger fs-8" id="canvas_visitante_clear">
-                                <i class="fa-solid fa-eraser me-1"></i>Borrar
-                            </button>
-                        </div>
-                        <div class="signature-container border rounded bg-light" style="position: relative; height: 110px;">
-                            <canvas id="canvas_visitante" class="w-100 h-100" style="touch-action: none; cursor: crosshair;"></canvas>
-                        </div>
-                        <input type="hidden" name="firma_visitante_data" id="input_visitante" required>
-                    </div>
+                    {% endif %}
 
                     <button type="submit" class="btn btn-success w-100 py-2.5 text-uppercase fw-bold shadow">
                         <i class="fa-solid fa-file-signature me-2"></i>Cerrar y Firmar Acta
@@ -277,7 +374,7 @@
                         </div>
                     </div>
 
-                    <div class="mb-2">
+                    <div class="mb-3">
                         <label class="form-label fw-semibold text-secondary">Tipo de Incidencia</label>
                         <div class="row g-2">
                             <div class="col-6">
@@ -306,10 +403,21 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Selector de jugador que entra (suplente) -->
+                    <div class="mb-3 d-none" id="cambio-select-container">
+                        <label class="form-label fw-semibold text-secondary">Jugador que Entra (Sustituto)</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fa-solid fa-user-plus"></i></span>
+                            <select class="form-select" name="jugador_entra_id" id="evt-jugador-entra">
+                                <option value="">-- Selecciona Jugador --</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-custom-primary px-4">Guardar Registro</button>
+                    <button type="submit" class="btn btn-primary px-4">Guardar Registro</button>
                 </div>
             </form>
         </div>
@@ -317,29 +425,297 @@
 </div>
 
 <script>
-    // Dinamismo del modal para prellenar datos del jugador seleccionado
+    // Coordenadas y esquemas de alineación
+    const formationsCoordinates = {
+        '4-4-2': [
+            { id: 0, label: 'Portero', left: '50%', top: '86%' },
+            { id: 1, label: 'Lat. Izq', left: '15%', top: '70%' },
+            { id: 2, label: 'Central Izq', left: '38%', top: '73%' },
+            { id: 3, label: 'Central Der', left: '62%', top: '73%' },
+            { id: 4, label: 'Lat. Der', left: '85%', top: '70%' },
+            { id: 5, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true },
+            { id: 6, label: 'Vol. Izq', left: '15%', top: '43%' },
+            { id: 7, label: 'Medio Izq', left: '38%', top: '46%' },
+            { id: 8, label: 'Medio Der', left: '62%', top: '46%' },
+            { id: 9, label: 'Vol. Der', left: '85%', top: '43%' },
+            { id: 10, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true },
+            { id: 11, label: 'Del. Izq', left: '35%', top: '18%' },
+            { id: 12, label: 'Del. Der', left: '65%', top: '18%' },
+            { id: 13, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true }
+        ],
+        '4-3-3': [
+            { id: 0, label: 'Portero', left: '50%', top: '86%' },
+            { id: 1, label: 'Lat. Izq', left: '15%', top: '70%' },
+            { id: 2, label: 'Central Izq', left: '38%', top: '73%' },
+            { id: 3, label: 'Central Der', left: '62%', top: '73%' },
+            { id: 4, label: 'Lat. Der', left: '85%', top: '70%' },
+            { id: 5, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true },
+            { id: 6, label: 'Medio Izq', left: '25%', top: '48%' },
+            { id: 7, label: 'Pivote', left: '50%', top: '53%' },
+            { id: 8, label: 'Medio Der', left: '75%', top: '48%' },
+            { id: 9, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true },
+            { id: 10, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true },
+            { id: 11, label: 'Extr. Izq', left: '20%', top: '22%' },
+            { id: 12, label: 'Centrodel.', left: '50%', top: '16%' },
+            { id: 13, label: 'Extr. Der', left: '80%', top: '22%' }
+        ],
+        '3-5-2': [
+            { id: 0, label: 'Portero', left: '50%', top: '86%' },
+            { id: 1, label: 'Stopper Izq', left: '25%', top: '73%' },
+            { id: 2, label: 'Líbero', left: '50%', top: '75%' },
+            { id: 3, label: 'Stopper Der', left: '75%', top: '73%' },
+            { id: 4, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true },
+            { id: 5, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true },
+            { id: 6, label: 'Carril. Izq', left: '15%', top: '48%' },
+            { id: 7, label: 'Vol. Def', left: '38%', top: '52%' },
+            { id: 8, label: 'Vol. Def', left: '62%', top: '52%' },
+            { id: 9, label: 'Carril. Der', left: '85%', top: '48%' },
+            { id: 10, label: 'Enganche', left: '50%', top: '38%' },
+            { id: 11, label: 'Del. Izq', left: '35%', top: '18%' },
+            { id: 12, label: 'Del. Der', left: '65%', top: '18%' },
+            { id: 13, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true }
+        ],
+        '5-4-1': [
+            { id: 0, label: 'Portero', left: '50%', top: '86%' },
+            { id: 1, label: 'Carril. Izq', left: '15%', top: '65%' },
+            { id: 2, label: 'Stopper Izq', left: '32%', top: '73%' },
+            { id: 3, label: 'Líbero', left: '50%', top: '75%' },
+            { id: 4, label: 'Stopper Der', left: '68%', top: '73%' },
+            { id: 5, label: 'Carril. Der', left: '85%', top: '65%' },
+            { id: 6, label: 'Vol. Izq', left: '20%', top: '45%' },
+            { id: 7, label: 'Medio Izq', left: '38%', top: '48%' },
+            { id: 8, label: 'Medio Der', left: '62%', top: '48%' },
+            { id: 9, label: 'Vol. Der', left: '80%', top: '45%' },
+            { id: 10, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true },
+            { id: 11, label: 'Delantero', left: '50%', top: '18%' },
+            { id: 12, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true },
+            { id: 13, label: 'Inactivo', left: '-500px', top: '-500px', inactive: true }
+        ]
+    };
+
+    const teamPlayers = {
+        'local': [
+            {% for j in jugadores_local %}
+            {
+                id: {{ j.user.id }},
+                nombre: "{{ j.user.get_full_name|escapejs }}",
+                camiseta: "{{ j.numero_camiseta|default:'-' }}",
+                foto: "{% if j.foto %}{{ j.foto.url }}{% endif %}",
+                sangre: "{{ j.tipo_sangre }}"
+            },
+            {% endfor %}
+        ],
+        'visitante': [
+            {% for j in jugadores_visitante %}
+            {
+                id: {{ j.user.id }},
+                nombre: "{{ j.user.get_full_name|escapejs }}",
+                camiseta: "{{ j.numero_camiseta|default:'-' }}",
+                foto: "{% if j.foto %}{{ j.foto.url }}{% endif %}",
+                sangre: "{{ j.tipo_sangre }}"
+            },
+            {% endfor %}
+        ]
+    };
+
+    const teamLineups = {
+        'local': {% if partido.alineacion_local %}{{ partido.alineacion_local|safe }}{% else %}{ formation: "4-4-2", players: {} }{% endif %},
+        'visitante': {% if partido.alineacion_visitante %}{{ partido.alineacion_visitante|safe }}{% else %}{ formation: "4-4-2", players: {} }{% endif %}
+    };
+
+    const teamData = {
+        'local': {
+            id: {{ partido.equipo_local.id }},
+            nombre: "{{ partido.equipo_local.nombre|escapejs }}"
+        },
+        'visitante': {
+            id: {{ partido.equipo_visitante.id }},
+            nombre: "{{ partido.equipo_visitante.nombre|escapejs }}"
+        }
+    };
+
+    function initPitchAndBench(side) {
+        const pitchEl = document.getElementById(`pitch-${side}`);
+        const benchEl = document.getElementById(`bench-${side}`);
+        if (!pitchEl || !benchEl) return;
+
+        // Limpiar nodos anteriores
+        pitchEl.querySelectorAll('.player-node').forEach(el => el.remove());
+
+        const lineup = teamLineups[side] || {};
+        const formation = lineup.formation || '4-4-2';
+        const coords = formationsCoordinates[formation] || formationsCoordinates['4-4-2'];
+        const playersConfig = lineup.players || {};
+        const allPlayers = teamPlayers[side] || [];
+
+        const activePositions = coords.filter(pos => !pos.inactive).map(pos => String(pos.id));
+        const activePlayerIds = [];
+
+        coords.forEach(pos => {
+            if (pos.inactive) return;
+
+            const playerAssigned = playersConfig[pos.id];
+            let playerName = pos.label;
+            let playerShirtText = '?';
+            let hasPhoto = false;
+            let photoUrl = '';
+            let isAssigned = false;
+            let assignedPlayerId = '';
+
+            if (playerAssigned && playerAssigned.id) {
+                isAssigned = true;
+                assignedPlayerId = playerAssigned.id;
+                activePlayerIds.push(Number(assignedPlayerId));
+                playerName = playerAssigned.nombre;
+                playerShirtText = playerAssigned.camiseta || '-';
+
+                const matchedPlayer = allPlayers.find(p => Number(p.id) === Number(assignedPlayerId));
+                if (matchedPlayer && matchedPlayer.foto) {
+                    hasPhoto = true;
+                    photoUrl = matchedPlayer.foto;
+                }
+            }
+
+            const nodeDiv = document.createElement('div');
+            nodeDiv.className = 'player-node';
+            nodeDiv.style.left = pos.left;
+            nodeDiv.style.top = pos.top;
+
+            let shirtHtml = '';
+            if (isAssigned) {
+                nodeDiv.setAttribute('data-bs-toggle', 'modal');
+                nodeDiv.setAttribute('data-bs-target', '#modalEvento');
+                nodeDiv.setAttribute('data-jugador-id', assignedPlayerId);
+                nodeDiv.setAttribute('data-jugador-nombre', playerName);
+                nodeDiv.setAttribute('data-equipo-id', teamData[side].id);
+                nodeDiv.setAttribute('data-equipo-nombre', teamData[side].nombre);
+
+                if (hasPhoto) {
+                    shirtHtml = `<div class="player-shirt" style="background-image: url('${photoUrl}');"><span class="shirt-number-badge">${playerShirtText}</span></div>`;
+                } else {
+                    shirtHtml = `<div class="player-shirt bg-warning text-dark"><span class="fw-bold">${playerShirtText}</span></div>`;
+                }
+            } else {
+                shirtHtml = `<div class="player-shirt unassigned">+</div>`;
+            }
+
+            nodeDiv.innerHTML = `
+                ${shirtHtml}
+                <span class="player-name-label">${playerName}</span>
+            `;
+
+            pitchEl.appendChild(nodeDiv);
+        });
+
+        // Banca
+        benchEl.innerHTML = '';
+        const subs = allPlayers.filter(p => !activePlayerIds.includes(Number(p.id)));
+
+        if (subs.length === 0) {
+            benchEl.innerHTML = '<div class="text-muted text-center py-2 fs-7">Toda la plantilla está jugando.</div>';
+            return;
+        }
+
+        subs.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'sub-item-card';
+            card.setAttribute('data-bs-toggle', 'modal');
+            card.setAttribute('data-bs-target', '#modalEvento');
+            card.setAttribute('data-jugador-id', p.id);
+            card.setAttribute('data-jugador-nombre', p.nombre);
+            card.setAttribute('data-equipo-id', teamData[side].id);
+            card.setAttribute('data-equipo-nombre', teamData[side].nombre);
+
+            card.innerHTML = `
+                <div class="d-flex align-items-center">
+                    ${p.foto ? `<img src="${p.foto}" alt="${p.nombre}" class="rounded-circle border me-2" style="width: 28px; height: 28px; object-fit: cover;">` : `<div class="bg-secondary rounded-circle text-white d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px; font-size: 10px;"><i class="fa-solid fa-user"></i></div>`}
+                    <div>
+                        <span class="fw-bold fs-7 d-block">${p.nombre}</span>
+                    </div>
+                </div>
+                <span class="badge bg-secondary-subtle text-secondary font-monospace fw-bold">#${p.camiseta}</span>
+            `;
+            benchEl.appendChild(card);
+        });
+    }
+
+    // Inicializar visualizadores
+    window.addEventListener('DOMContentLoaded', () => {
+        initPitchAndBench('local');
+        initPitchAndBench('visitante');
+
+        // Signature pads condicionales
+        if (document.getElementById('canvas_vocal')) {
+            setupSignaturePad('canvas_vocal', 'input_vocal');
+        }
+        if (document.getElementById('canvas_arbitro')) {
+            setupSignaturePad('canvas_arbitro', 'input_arbitro');
+        }
+    });
+
+    // Toggle para el tipo de incidencia
+    document.querySelectorAll('input[name="tipo"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const cambioContainer = document.getElementById('cambio-select-container');
+            const selectEntra = document.getElementById('evt-jugador-entra');
+            if (this.value === 'cambio') {
+                cambioContainer.classList.remove('d-none');
+                selectEntra.setAttribute('required', 'required');
+            } else {
+                cambioContainer.classList.add('d-none');
+                selectEntra.removeAttribute('required');
+            }
+        });
+    });
+
+    // Dinamismo del modal para prellenar datos
     const modal = document.getElementById('modalEvento');
     modal.addEventListener('show.bs.modal', function (event) {
         const trigger = event.relatedTarget;
-        const jugadorId = trigger.getAttribute('data-jugador-id');
+        const jugadorId = Number(trigger.getAttribute('data-jugador-id'));
         const jugadorNombre = trigger.getAttribute('data-jugador-nombre');
-        const equipoId = trigger.getAttribute('data-equipo-id');
+        const equipoId = Number(trigger.getAttribute('data-equipo-id'));
         const equipoNombre = trigger.getAttribute('data-equipo-nombre');
 
         modal.querySelector('#evt-jugador-id').value = jugadorId;
         modal.querySelector('#evt-equipo-id').value = equipoId;
         modal.querySelector('#evt-jugador-lbl').textContent = jugadorNombre.toUpperCase();
         modal.querySelector('#evt-equipo-lbl').textContent = equipoNombre.toUpperCase();
+
+        let side = 'local';
+        if (equipoId === teamData['visitante'].id) {
+            side = 'visitante';
+        }
+
+        const selectEntra = document.getElementById('evt-jugador-entra');
+        selectEntra.innerHTML = '<option value="">-- Selecciona Jugador --</option>';
+
+        const lineup = teamLineups[side] || {};
+        const formation = lineup.formation || '4-4-2';
+        const coords = formationsCoordinates[formation] || formationsCoordinates['4-4-2'];
+        const activePositions = coords.filter(pos => !pos.inactive).map(pos => String(pos.id));
+        const activePlayerIds = [];
+        Object.keys(lineup.players || {}).forEach(posId => {
+            if (activePositions.includes(posId) && lineup.players[posId]) {
+                activePlayerIds.push(Number(lineup.players[posId].id));
+            }
+        });
+
+        const allPlayers = teamPlayers[side] || [];
+        const subs = allPlayers.filter(p => !activePlayerIds.includes(Number(p.id)));
+
+        subs.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = `${p.nombre} (#${p.camiseta})`;
+            selectEntra.appendChild(opt);
+        });
+
+        document.getElementById('t-gol').checked = true;
+        document.getElementById('cambio-select-container').classList.add('d-none');
+        selectEntra.removeAttribute('required');
     });
 
-    // Initialize Signature Pads
-    window.addEventListener('DOMContentLoaded', () => {
-        setupSignaturePad('canvas_vocal', 'input_vocal');
-        setupSignaturePad('canvas_arbitro', 'input_arbitro');
-        setupSignaturePad('canvas_local', 'input_local');
-        setupSignaturePad('canvas_visitante', 'input_visitante');
-    });
-    
     function setupSignaturePad(canvasId, inputId) {
         const canvas = document.getElementById(canvasId);
         const input = document.getElementById(inputId);
@@ -411,14 +787,18 @@
     }
 
     document.getElementById('form-cierre').addEventListener('submit', function(e) {
-        const vocal = document.getElementById('input_vocal').value;
-        const arbitro = document.getElementById('input_arbitro').value;
-        const local = document.getElementById('input_local').value;
-        const visitante = document.getElementById('input_visitante').value;
+        const inputVocal = document.getElementById('input_vocal');
+        const inputArbitro = document.getElementById('input_arbitro');
         
-        if (!vocal || !arbitro || !local || !visitante) {
+        if (inputVocal && !inputVocal.value) {
             e.preventDefault();
-            alert('Por favor, ingresa todas las firmas digitales antes de cerrar el acta del partido.');
+            alert('Por favor, ingresa la firma digital del Vocal antes de cerrar el acta.');
+            return;
+        }
+        if (inputArbitro && !inputArbitro.value) {
+            e.preventDefault();
+            alert('Por favor, ingresa la firma digital del Árbitro antes de cerrar el acta.');
+            return;
         }
     });
 </script>

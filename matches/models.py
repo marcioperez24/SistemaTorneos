@@ -84,6 +84,10 @@ class Partido(models.Model):
     firma_entrenador_local_img = models.TextField(blank=True, null=True, verbose_name="Firma Entrenador Local (PNG Base64)")
     firma_entrenador_visitante_img = models.TextField(blank=True, null=True, verbose_name="Firma Entrenador Visitante (PNG Base64)")
 
+    # Alineaciones en vivo para el control de incidencias y cambios
+    alineacion_local = models.JSONField(default=dict, blank=True, null=True, verbose_name="Alineación Local del Partido")
+    alineacion_visitante = models.JSONField(default=dict, blank=True, null=True, verbose_name="Alineación Visitante del Partido")
+
     class Meta:
         verbose_name = "Partido"
         verbose_name_plural = "Partidos"

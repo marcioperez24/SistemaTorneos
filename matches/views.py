@@ -285,15 +285,30 @@ def vocalia_dashboard(request):
 def match_day(request, partido_id):
     partido = get_object_or_404(Partido, id=partido_id)
     
-    if request.user.role not in ['vocal', 'superadmin'] or (partido.vocal != request.user and request.user.role != 'superadmin'):
-        messages.error(request, "No estás asignado como vocal de este partido.")
+    if request.user.role not in ['vocal', 'arbitro', 'superadmin'] or (
+        partido.vocal != request.user and partido.arbitro != request.user and request.user.role != 'superadmin'
+    ):
+        messages.error(request, "No estás autorizado como vocal o árbitro de este partido.")
         return redirect('vocalia_dashboard')
         
     # Si está programado, iniciamos el partido automáticamente al abrir la interfaz de campo
     if partido.estado == 'programado':
         partido.estado = 'en_curso'
+        partido.alineacion_local = partido.equipo_local.alineacion or {}
+        partido.alineacion_visitante = partido.equipo_visitante.alineacion or {}
         partido.save()
         messages.info(request, f"¡El partido entre {partido.equipo_local.nombre} y {partido.equipo_visitante.nombre} ha iniciado!")
+    else:
+        # Asegurar que existan las alineaciones
+        save_needed = False
+        if not partido.alineacion_local or len(partido.alineacion_local) == 0:
+            partido.alineacion_local = partido.equipo_local.alineacion or {}
+            save_needed = True
+        if not partido.alineacion_visitante or len(partido.alineacion_visitante) == 0:
+            partido.alineacion_visitante = partido.equipo_visitante.alineacion or {}
+            save_needed = True
+        if save_needed:
+            partido.save()
         
     # Obtener jugadores habilitados (aprobados) de cada equipo
     jugadores_local = FichaJugador.objects.filter(equipo=partido.equipo_local, estado_validacion='aprobado').select_related('user')
@@ -315,7 +330,9 @@ def match_day(request, partido_id):
 def registrar_evento(request, partido_id):
     partido = get_object_or_404(Partido, id=partido_id)
     
-    if request.user.role not in ['vocal', 'superadmin'] or (partido.vocal != request.user and request.user.role != 'superadmin'):
+    if request.user.role not in ['vocal', 'arbitro', 'superadmin'] or (
+        partido.vocal != request.user and partido.arbitro != request.user and request.user.role != 'superadmin'
+    ):
         return redirect('vocalia_dashboard')
         
     if request.method == 'POST':
@@ -327,13 +344,47 @@ def registrar_evento(request, partido_id):
         equipo = get_object_or_404(Equipo, id=equipo_id)
         jugador = get_object_or_404(User, id=jugador_id) if jugador_id else None
         
+        # En caso de sustitución
+        jugador_entra = None
+        detalle_str = None
+        if tipo == 'cambio':
+            jugador_entra_id = request.POST.get('jugador_entra_id')
+            if jugador_entra_id:
+                jugador_entra = get_object_or_404(User, id=jugador_entra_id)
+                ficha_sale = FichaJugador.objects.filter(user=jugador, equipo=equipo).first()
+                ficha_entra = FichaJugador.objects.filter(user=jugador_entra, equipo=equipo).first()
+                n_sale = f"#{ficha_sale.numero_camiseta}" if (ficha_sale and ficha_sale.numero_camiseta) else ""
+                n_entra = f"#{ficha_entra.numero_camiseta}" if (ficha_entra and ficha_entra.numero_camiseta) else ""
+                detalle_str = f"Entra {jugador_entra.get_full_name() or jugador_entra.username} {n_entra} por {jugador.get_full_name() or jugador.username} {n_sale}"
+                
+                # Actualizar alineación en vivo del partido
+                lineup = partido.alineacion_local if partido.equipo_local == equipo else partido.alineacion_visitante
+                if lineup and 'players' in lineup:
+                    pos_key_to_replace = None
+                    for pos_key, p_info in lineup['players'].items():
+                        if p_info and p_info.get('id') == jugador.id:
+                            pos_key_to_replace = pos_key
+                            break
+                    if pos_key_to_replace is not None:
+                        lineup['players'][pos_key_to_replace] = {
+                            'id': jugador_entra.id,
+                            'nombre': jugador_entra.get_full_name() or jugador_entra.username,
+                            'camiseta': str(ficha_entra.numero_camiseta) if (ficha_entra and ficha_entra.numero_camiseta) else '-'
+                        }
+                        if partido.equipo_local == equipo:
+                            partido.alineacion_local = lineup
+                        else:
+                            partido.alineacion_visitante = lineup
+                        partido.save()
+        
         # Registrar evento
         EventoPartido.objects.create(
             partido=partido,
             tipo=tipo,
             minuto=minuto,
             jugador=jugador,
-            equipo=equipo
+            equipo=equipo,
+            detalle=detalle_str
         )
         
         # Si es gol, sumamos al marcador
@@ -353,32 +404,52 @@ def registrar_evento(request, partido_id):
 def cerrar_partido(request, partido_id):
     partido = get_object_or_404(Partido, id=partido_id)
     
-    if request.user.role not in ['vocal', 'superadmin'] or (partido.vocal != request.user and request.user.role != 'superadmin'):
+    if request.user.role not in ['vocal', 'arbitro', 'superadmin'] or (
+        partido.vocal != request.user and partido.arbitro != request.user and request.user.role != 'superadmin'
+    ):
+        messages.error(request, "No estás autorizado para cerrar este partido.")
         return redirect('vocalia_dashboard')
         
     if request.method == 'POST':
-        firma_vocal_data = request.POST.get('firma_vocal_data')
-        firma_arbitro_data = request.POST.get('firma_arbitro_data')
-        firma_local_data = request.POST.get('firma_local_data')
-        firma_visitante_data = request.POST.get('firma_visitante_data')
-        
-        if firma_vocal_data and firma_arbitro_data and firma_local_data and firma_visitante_data:
-            partido.firma_vocal = True
-            partido.firma_capitan_local = True
-            partido.firma_capitan_visitante = True
+        # Validar y guardar firma de acuerdo a la persona autenticada
+        if request.user.role == 'vocal':
+            firma_vocal_data = request.POST.get('firma_vocal_data')
+            if firma_vocal_data:
+                partido.firma_vocal = True
+                partido.firma_vocal_img = firma_vocal_data
+                partido.estado = 'finalizado'
+                partido.save()
+                messages.success(request, "Acta de partido cerrada y firmada exitosamente por el Vocal de Mesa.")
+                return redirect('vocalia_dashboard')
+            else:
+                messages.error(request, "La firma manuscrita del Vocal es obligatoria.")
+                
+        elif request.user.role == 'arbitro':
+            firma_arbitro_data = request.POST.get('firma_arbitro_data')
+            if firma_arbitro_data:
+                partido.firma_arbitro_img = firma_arbitro_data
+                partido.estado = 'finalizado'
+                partido.save()
+                messages.success(request, "Acta de partido cerrada y firmada exitosamente por el Árbitro.")
+                return redirect('vocalia_dashboard')
+            else:
+                messages.error(request, "La firma manuscrita del Árbitro es obligatoria.")
+                
+        elif request.user.role == 'superadmin':
+            # Superadmin puede cerrar con cualquiera de las firmas disponibles
+            firma_vocal_data = request.POST.get('firma_vocal_data')
+            firma_arbitro_data = request.POST.get('firma_arbitro_data')
             
-            partido.firma_vocal_img = firma_vocal_data
-            partido.firma_arbitro_img = firma_arbitro_data
-            partido.firma_entrenador_local_img = firma_local_data
-            partido.firma_entrenador_visitante_img = firma_visitante_data
-            
+            if firma_vocal_data:
+                partido.firma_vocal = True
+                partido.firma_vocal_img = firma_vocal_data
+            if firma_arbitro_data:
+                partido.firma_arbitro_img = firma_arbitro_data
+                
             partido.estado = 'finalizado'
             partido.save()
-            
-            messages.success(request, "Acta de partido cerrada y firmada digitalmente con firmas manuscritas.")
+            messages.success(request, "Acta de partido cerrada y finalizada por el Administrador.")
             return redirect('vocalia_dashboard')
-        else:
-            messages.error(request, "Faltan firmas manuscritas requeridas para cerrar el acta del partido.")
             
     return redirect('match_day', partido_id=partido.id)
 
