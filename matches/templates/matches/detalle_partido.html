@@ -195,20 +195,18 @@
                 </div>
             </div>
         </div>
-    </div>
-
     <!-- Firmas Digitales de Validación -->
     <div class="mt-5">
         <h4 class="fw-bold mb-3 text-secondary"><i class="fa-solid fa-file-contract me-2 text-success"></i>Firmas de Acta Electrónica</h4>
         <div class="card card-custom p-4 bg-white">
-            <div class="row text-center mt-3 g-3">
+            <div class="row text-center mt-3 g-4 justify-content-center">
                 <!-- Vocal -->
-                <div class="col-6 col-md-3">
+                <div class="col-6 col-md-4">
                     <div class="p-3 border rounded-3 bg-light h-100 d-flex flex-column justify-content-between">
                         <div>
                             {% if partido.firma_vocal_img %}
-                                <div class="mb-2 bg-white rounded p-1 border" style="height: 70px; display: flex; align-items: center; justify-content: center;">
-                                    <img src="{{ partido.firma_vocal_img }}" style="max-height: 60px; max-width: 100%; object-fit: contain;" alt="Firma Vocal">
+                                <div class="mb-2 bg-white rounded p-1 border" style="height: 80px; display: flex; align-items: center; justify-content: center;">
+                                    <img src="{{ partido.firma_vocal_img }}" style="max-height: 70px; max-width: 100%; object-fit: contain;" alt="Firma Vocal">
                                 </div>
                                 <span class="fw-bold d-block text-success fs-9"><i class="fa-solid fa-circle-check me-1"></i>FIRMADO</span>
                             {% elif partido.firma_vocal %}
@@ -227,12 +225,12 @@
                 </div>
 
                 <!-- Árbitro -->
-                <div class="col-6 col-md-3">
+                <div class="col-6 col-md-4">
                     <div class="p-3 border rounded-3 bg-light h-100 d-flex flex-column justify-content-between">
                         <div>
                             {% if partido.firma_arbitro_img %}
-                                <div class="mb-2 bg-white rounded p-1 border" style="height: 70px; display: flex; align-items: center; justify-content: center;">
-                                    <img src="{{ partido.firma_arbitro_img }}" style="max-height: 60px; max-width: 100%; object-fit: contain;" alt="Firma Árbitro">
+                                <div class="mb-2 bg-white rounded p-1 border" style="height: 80px; display: flex; align-items: center; justify-content: center;">
+                                    <img src="{{ partido.firma_arbitro_img }}" style="max-height: 70px; max-width: 100%; object-fit: contain;" alt="Firma Árbitro">
                                 </div>
                                 <span class="fw-bold d-block text-success fs-9"><i class="fa-solid fa-circle-check me-1"></i>FIRMADO</span>
                             {% else %}
@@ -246,56 +244,9 @@
                         </div>
                     </div>
                 </div>
-                
-                <!-- Capitán / DT Local -->
-                <div class="col-6 col-md-3">
-                    <div class="p-3 border rounded-3 bg-light h-100 d-flex flex-column justify-content-between">
-                        <div>
-                            {% if partido.firma_entrenador_local_img %}
-                                <div class="mb-2 bg-white rounded p-1 border" style="height: 70px; display: flex; align-items: center; justify-content: center;">
-                                    <img src="{{ partido.firma_entrenador_local_img }}" style="max-height: 60px; max-width: 100%; object-fit: contain;" alt="Firma Local">
-                                </div>
-                                <span class="fw-bold d-block text-success fs-9"><i class="fa-solid fa-circle-check me-1"></i>FIRMADO</span>
-                            {% elif partido.firma_capitan_local %}
-                                <div class="text-success mb-2"><i class="fa-solid fa-signature fa-2x"></i></div>
-                                <span class="fw-bold d-block text-success fs-9">FIRMADO DIGITALMENTE</span>
-                            {% else %}
-                                <div class="text-danger mb-2"><i class="fa-solid fa-ban fa-2x"></i></div>
-                                <span class="text-danger fw-semibold fs-9">PENDIENTE</span>
-                            {% endif %}
-                        </div>
-                        <div class="signature-box mt-3 text-muted border-top pt-2 small">
-                            DT / Representante Local<br>
-                            <strong>{{ partido.equipo_local.get_dt_name }}</strong>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Capitán / DT Visitante -->
-                <div class="col-6 col-md-3">
-                    <div class="p-3 border rounded-3 bg-light h-100 d-flex flex-column justify-content-between">
-                        <div>
-                            {% if partido.firma_entrenador_visitante_img %}
-                                <div class="mb-2 bg-white rounded p-1 border" style="height: 70px; display: flex; align-items: center; justify-content: center;">
-                                    <img src="{{ partido.firma_entrenador_visitante_img }}" style="max-height: 60px; max-width: 100%; object-fit: contain;" alt="Firma Visitante">
-                                </div>
-                                <span class="fw-bold d-block text-success fs-9"><i class="fa-solid fa-circle-check me-1"></i>FIRMADO</span>
-                            {% elif partido.firma_capitan_visitante %}
-                                <div class="text-success mb-2"><i class="fa-solid fa-signature fa-2x"></i></div>
-                                <span class="fw-bold d-block text-success fs-9">FIRMADO DIGITALMENTE</span>
-                            {% else %}
-                                <div class="text-danger mb-2"><i class="fa-solid fa-ban fa-2x"></i></div>
-                                <span class="text-danger fw-semibold fs-9">PENDIENTE</span>
-                            {% endif %}
-                        </div>
-                        <div class="signature-box mt-3 text-muted border-top pt-2 small">
-                            DT / Representante Visitante<br>
-                            <strong>{{ partido.equipo_visitante.get_dt_name }}</strong>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
+
 </div>
 {% endblock %}
