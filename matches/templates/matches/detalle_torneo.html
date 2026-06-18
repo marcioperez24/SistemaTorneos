@@ -73,7 +73,7 @@
                                 {% endif %}
                                 <div>
                                     <div class="fw-semibold text-dark fs-7">{{ eq.nombre }}</div>
-                                    <div class="text-muted small fs-9">{{ eq.get_categoria_display }} | DT: {{ eq.entrenador|default:"Sin asignar" }}</div>
+                                    <div class="text-muted small fs-9">{{ eq.get_categoria_display }} | DT: {{ eq.get_dt_name }}</div>
                                 </div>
                             </div>
                             <form method="POST" onsubmit="return confirm('¿Retirar al equipo {{ eq.nombre }} del torneo?');">

@@ -7,13 +7,11 @@ User = get_user_model()
 class EquipoForm(forms.ModelForm):
     class Meta:
         model = Equipo
-        fields = ['nombre', 'logo', 'categoria', 'entrenador', 'telefono_entrenador']
+        fields = ['nombre', 'logo', 'categoria']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Real Madrid'}),
             'logo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'categoria': forms.Select(attrs={'class': 'form-select'}),
-            'entrenador': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre del Entrenador / Director Técnico'}),
-            'telefono_entrenador': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. +56912345678'}),
         }
 
     def __init__(self, *args, **kwargs):

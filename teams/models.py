@@ -33,6 +33,26 @@ class Equipo(models.Model):
     def __str__(self):
         return f"{self.nombre} ({self.get_categoria_display()})"
 
+    def get_dt(self):
+        if not hasattr(self, '_cached_dt'):
+            dt = self.cuerpo_tecnico.filter(estado_validacion='aprobado').first()
+            if not dt:
+                dt = self.cuerpo_tecnico.first()
+            self._cached_dt = dt
+        return self._cached_dt
+
+    def get_dt_name(self):
+        dt = self.get_dt()
+        if dt:
+            return dt.user.get_full_name() or dt.user.username
+        return self.entrenador or "Sin Entrenador"
+
+    def get_dt_telefono(self):
+        dt = self.get_dt()
+        if dt:
+            return dt.user.telefono or ""
+        return self.telefono_entrenador or ""
+
 
 class InvitacionEquipo(models.Model):
     TIPO_CHOICES = (

@@ -266,7 +266,7 @@
                         </div>
                         <div class="signature-box mt-3 text-muted border-top pt-2 small">
                             DT / Representante Local<br>
-                            <strong>{{ partido.equipo_local.entrenador|default:partido.equipo_local.nombre }}</strong>
+                            <strong>{{ partido.equipo_local.get_dt_name }}</strong>
                         </div>
                     </div>
                 </div>
@@ -290,7 +290,7 @@
                         </div>
                         <div class="signature-box mt-3 text-muted border-top pt-2 small">
                             DT / Representante Visitante<br>
-                            <strong>{{ partido.equipo_visitante.entrenador|default:partido.equipo_visitante.nombre }}</strong>
+                            <strong>{{ partido.equipo_visitante.get_dt_name }}</strong>
                         </div>
                     </div>
                 </div>

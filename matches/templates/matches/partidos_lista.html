@@ -256,17 +256,17 @@
                                                     <div class="p-3 border rounded-3 bg-light d-flex align-items-center justify-content-between">
                                                         <div class="text-start">
                                                             <span class="badge bg-secondary text-white mb-1">DT Local - {{ partido.equipo_local.nombre }}</span>
-                                                            <h6 class="fw-bold mb-0 text-dark fs-7">{{ partido.equipo_local.entrenador|default:"Sin entrenador" }}</h6>
+                                                            <h6 class="fw-bold mb-0 text-dark fs-7">{{ partido.equipo_local.get_dt_name }}</h6>
                                                             <small class="text-muted">
-                                                                {% if partido.equipo_local.telefono_entrenador %}
-                                                                    <i class="fa-solid fa-phone me-1 text-success"></i>{{ partido.equipo_local.telefono_entrenador }}
+                                                                {% if partido.equipo_local.get_dt_telefono %}
+                                                                    <i class="fa-solid fa-phone me-1 text-success"></i>{{ partido.equipo_local.get_dt_telefono }}
                                                                 {% else %}
                                                                     <i class="fa-solid fa-triangle-exclamation me-1 text-danger"></i>Sin teléfono
                                                                 {% endif %}
                                                             </small>
                                                         </div>
-                                                        <button onclick="enviarWhatsApp('{{ partido.equipo_local.telefono_entrenador }}', 'Recordatorio: Su equipo {{ partido.equipo_local.nombre }} tiene programado el partido contra {{ partido.equipo_visitante.nombre }} el {{ partido.fecha_hora|date:'d/m/Y' }} a las {{ partido.fecha_hora|date:'H:i' }} en el estadio {{ partido.estadio }}.')" 
-                                                                class="btn btn-success btn-sm rounded-pill px-3 {% if not partido.equipo_local.telefono_entrenador %}disabled{% endif %}">
+                                                        <button onclick="enviarWhatsApp('{{ partido.equipo_local.get_dt_telefono }}', 'Recordatorio: Su equipo {{ partido.equipo_local.nombre }} tiene programado el partido contra {{ partido.equipo_visitante.nombre }} el {{ partido.fecha_hora|date:'d/m/Y' }} a las {{ partido.fecha_hora|date:'H:i' }} en el estadio {{ partido.estadio }}.')" 
+                                                                class="btn btn-success btn-sm rounded-pill px-3 {% if not partido.equipo_local.get_dt_telefono %}disabled{% endif %}">
                                                             <i class="fa-brands fa-whatsapp me-1"></i>Enviar
                                                         </button>
                                                     </div>
@@ -275,17 +275,17 @@
                                                     <div class="p-3 border rounded-3 bg-light d-flex align-items-center justify-content-between">
                                                         <div class="text-start">
                                                             <span class="badge bg-secondary text-white mb-1">DT Vis. - {{ partido.equipo_visitante.nombre }}</span>
-                                                            <h6 class="fw-bold mb-0 text-dark fs-7">{{ partido.equipo_visitante.entrenador|default:"Sin entrenador" }}</h6>
+                                                            <h6 class="fw-bold mb-0 text-dark fs-7">{{ partido.equipo_visitante.get_dt_name }}</h6>
                                                             <small class="text-muted">
-                                                                {% if partido.equipo_visitante.telefono_entrenador %}
-                                                                    <i class="fa-solid fa-phone me-1 text-success"></i>{{ partido.equipo_visitante.telefono_entrenador }}
+                                                                {% if partido.equipo_visitante.get_dt_telefono %}
+                                                                    <i class="fa-solid fa-phone me-1 text-success"></i>{{ partido.equipo_visitante.get_dt_telefono }}
                                                                 {% else %}
                                                                     <i class="fa-solid fa-triangle-exclamation me-1 text-danger"></i>Sin teléfono
                                                                 {% endif %}
                                                             </small>
                                                         </div>
-                                                        <button onclick="enviarWhatsApp('{{ partido.equipo_visitante.telefono_entrenador }}', 'Recordatorio: Su equipo {{ partido.equipo_visitante.nombre }} tiene programado el partido contra {{ partido.equipo_local.nombre }} el {{ partido.fecha_hora|date:'d/m/Y' }} a las {{ partido.fecha_hora|date:'H:i' }} en el estadio {{ partido.estadio }}.')" 
-                                                                class="btn btn-success btn-sm rounded-pill px-3 {% if not partido.equipo_visitante.telefono_entrenador %}disabled{% endif %}">
+                                                        <button onclick="enviarWhatsApp('{{ partido.equipo_visitante.get_dt_telefono }}', 'Recordatorio: Su equipo {{ partido.equipo_visitante.nombre }} tiene programado el partido contra {{ partido.equipo_local.nombre }} el {{ partido.fecha_hora|date:'d/m/Y' }} a las {{ partido.fecha_hora|date:'H:i' }} en el estadio {{ partido.estadio }}.')" 
+                                                                class="btn btn-success btn-sm rounded-pill px-3 {% if not partido.equipo_visitante.get_dt_telefono %}disabled{% endif %}">
                                                             <i class="fa-brands fa-whatsapp me-1"></i>Enviar
                                                         </button>
                                                     </div>

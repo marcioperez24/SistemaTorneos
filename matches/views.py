@@ -394,11 +394,11 @@ def notificar_whatsapp_mock(request, partido_id):
     vocal_nombre = partido.vocal.get_full_name() if partido.vocal else "Vocal no asignado"
     vocal_tel = partido.vocal.telefono if (partido.vocal and partido.vocal.telefono) else "Sin número"
     
-    dt_local = partido.equipo_local.entrenador or "Sin Entrenador"
-    dt_local_tel = partido.equipo_local.telefono_entrenador or "Sin número"
+    dt_local = partido.equipo_local.get_dt_name()
+    dt_local_tel = partido.equipo_local.get_dt_telefono() or "Sin número"
     
-    dt_vis = partido.equipo_visitante.entrenador or "Sin Entrenador"
-    dt_vis_tel = partido.equipo_visitante.telefono_entrenador or "Sin número"
+    dt_vis = partido.equipo_visitante.get_dt_name()
+    dt_vis_tel = partido.equipo_visitante.get_dt_telefono() or "Sin número"
     
     # Obtener jugadores habilitados
     jugadores_local_count = FichaJugador.objects.filter(equipo=partido.equipo_local, estado_validacion='aprobado').count()
