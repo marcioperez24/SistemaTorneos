@@ -497,7 +497,8 @@
         'local': [
             {% for j in jugadores_local %}
             {
-                id: {{ j.user.id }},
+                id: {{ j.id }},
+                userId: {{ j.user.id }},
                 nombre: "{{ j.user.get_full_name|escapejs }}",
                 camiseta: "{{ j.numero_camiseta|default:'-' }}",
                 foto: "{% if j.foto %}{{ j.foto.url }}{% endif %}",
@@ -508,7 +509,8 @@
         'visitante': [
             {% for j in jugadores_visitante %}
             {
-                id: {{ j.user.id }},
+                id: {{ j.id }},
+                userId: {{ j.user.id }},
                 nombre: "{{ j.user.get_full_name|escapejs }}",
                 camiseta: "{{ j.numero_camiseta|default:'-' }}",
                 foto: "{% if j.foto %}{{ j.foto.url }}{% endif %}",
@@ -561,18 +563,29 @@
             let photoUrl = '';
             let isAssigned = false;
             let assignedPlayerId = '';
+            let assignedUserUserId = '';
 
             if (playerAssigned && playerAssigned.id) {
                 isAssigned = true;
                 assignedPlayerId = playerAssigned.id;
-                activePlayerIds.push(Number(assignedPlayerId));
-                playerName = playerAssigned.nombre;
-                playerShirtText = playerAssigned.camiseta || '-';
-
-                const matchedPlayer = allPlayers.find(p => Number(p.id) === Number(assignedPlayerId));
-                if (matchedPlayer && matchedPlayer.foto) {
-                    hasPhoto = true;
-                    photoUrl = matchedPlayer.foto;
+                
+                // Buscar jugador por su FichaJugador ID o su User ID en allPlayers
+                const matchedPlayer = allPlayers.find(p => Number(p.id) === Number(assignedPlayerId) || Number(p.userId) === Number(assignedPlayerId));
+                
+                if (matchedPlayer) {
+                    assignedUserUserId = matchedPlayer.userId;
+                    activePlayerIds.push(Number(matchedPlayer.id)); // Guardamos FichaJugador ID
+                    playerName = matchedPlayer.nombre;
+                    playerShirtText = matchedPlayer.camiseta || '-';
+                    if (matchedPlayer.foto) {
+                        hasPhoto = true;
+                        photoUrl = matchedPlayer.foto;
+                    }
+                } else {
+                    // Fallback si no está cargado en allPlayers
+                    playerName = playerAssigned.nombre;
+                    playerShirtText = playerAssigned.camiseta || '-';
+                    activePlayerIds.push(Number(assignedPlayerId));
                 }
             }
 
@@ -585,7 +598,7 @@
             if (isAssigned) {
                 nodeDiv.setAttribute('data-bs-toggle', 'modal');
                 nodeDiv.setAttribute('data-bs-target', '#modalEvento');
-                nodeDiv.setAttribute('data-jugador-id', assignedPlayerId);
+                nodeDiv.setAttribute('data-jugador-id', assignedUserUserId || assignedPlayerId);
                 nodeDiv.setAttribute('data-jugador-nombre', playerName);
                 nodeDiv.setAttribute('data-equipo-id', teamData[side].id);
                 nodeDiv.setAttribute('data-equipo-nombre', teamData[side].nombre);
@@ -621,7 +634,7 @@
             card.className = 'sub-item-card';
             card.setAttribute('data-bs-toggle', 'modal');
             card.setAttribute('data-bs-target', '#modalEvento');
-            card.setAttribute('data-jugador-id', p.id);
+            card.setAttribute('data-jugador-id', p.userId); // Submit User ID
             card.setAttribute('data-jugador-nombre', p.nombre);
             card.setAttribute('data-equipo-id', teamData[side].id);
             card.setAttribute('data-equipo-nombre', teamData[side].nombre);

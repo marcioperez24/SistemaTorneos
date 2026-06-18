@@ -362,12 +362,13 @@ def registrar_evento(request, partido_id):
                 if lineup and 'players' in lineup:
                     pos_key_to_replace = None
                     for pos_key, p_info in lineup['players'].items():
-                        if p_info and p_info.get('id') == jugador.id:
+                        p_id = p_info.get('id') if p_info else None
+                        if p_id is not None and (int(p_id) == jugador.id or (ficha_sale and int(p_id) == ficha_sale.id)):
                             pos_key_to_replace = pos_key
                             break
                     if pos_key_to_replace is not None:
                         lineup['players'][pos_key_to_replace] = {
-                            'id': jugador_entra.id,
+                            'id': ficha_entra.id if ficha_entra else jugador_entra.id,
                             'nombre': jugador_entra.get_full_name() or jugador_entra.username,
                             'camiseta': str(ficha_entra.numero_camiseta) if (ficha_entra and ficha_entra.numero_camiseta) else '-'
                         }
