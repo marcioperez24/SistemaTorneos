@@ -291,7 +291,8 @@ def match_day(request, partido_id):
         messages.error(request, "No estás autorizado como vocal o árbitro de este partido.")
         return redirect('vocalia_dashboard')
         
-    # Si está programado, iniciamos el partido automáticamente al abrir la interfaz de campo
+    sync_requested = request.GET.get('sync') == '1'
+    
     if partido.estado == 'programado':
         partido.estado = 'en_curso'
         partido.alineacion_local = partido.equipo_local.alineacion or {}
@@ -299,16 +300,17 @@ def match_day(request, partido_id):
         partido.save()
         messages.info(request, f"¡El partido entre {partido.equipo_local.nombre} y {partido.equipo_visitante.nombre} ha iniciado!")
     else:
-        # Asegurar que existan las alineaciones
         save_needed = False
-        if not partido.alineacion_local or len(partido.alineacion_local) == 0:
+        if sync_requested or not partido.alineacion_local or not partido.alineacion_local.get('players'):
             partido.alineacion_local = partido.equipo_local.alineacion or {}
             save_needed = True
-        if not partido.alineacion_visitante or len(partido.alineacion_visitante) == 0:
+        if sync_requested or not partido.alineacion_visitante or not partido.alineacion_visitante.get('players'):
             partido.alineacion_visitante = partido.equipo_visitante.alineacion or {}
             save_needed = True
         if save_needed:
             partido.save()
+            if sync_requested:
+                messages.success(request, "Alineaciones sincronizadas con las plantillas del club correctamente.")
         
     # Obtener jugadores habilitados (aprobados) de cada equipo
     jugadores_local = FichaJugador.objects.filter(equipo=partido.equipo_local, estado_validacion='aprobado').select_related('user')
