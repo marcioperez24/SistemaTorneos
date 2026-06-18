@@ -97,8 +97,8 @@
                             {% for partido in grupo.list %}
                                 <div class="col-md-6 col-lg-4">
                                     <div class="card card-custom h-100 p-3 bg-white">
-                                        <div class="d-flex justify-content-between align-items-center mb-2.5">
-                                            <span class="badge bg-light text-secondary font-monospace border">
+                                        <div class="d-flex justify-content-between align-items-start mb-2.5">
+                                            <span class="badge bg-light text-secondary font-monospace border text-wrap text-start" style="max-width: 65%;">
                                                 {% if partido.torneo %}
                                                     {{ partido.torneo.nombre }} - {{ partido.get_fase_display }}
                                                 {% else %}
@@ -110,7 +110,7 @@
                                             {% elif partido.estado == 'en_curso' %}
                                                 <span class="badge bg-danger py-1.5 px-2.5 rounded-pill text-uppercase fs-9 animate-pulse"><i class="fa-solid fa-circle-dot me-1"></i>En Vivo</span>
                                             {% else %}
-                                                <span class="badge bg-primary py-1.5 px-2.5 rounded-pill text-uppercase fs-9"><i class="fa-solid fa-clock me-1"></i>Programado</span>
+                                                <span class="badge bg-primary py-1.5 px-2.5 rounded-pill text-uppercase fs-9" style="white-space: nowrap;"><i class="fa-solid fa-clock me-1"></i>Programado</span>
                                             {% endif %}
                                         </div>
 
