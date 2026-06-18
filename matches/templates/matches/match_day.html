@@ -574,8 +574,8 @@
                 isAssigned = true;
                 assignedPlayerId = playerAssigned.id;
                 
-                // Buscar jugador por su FichaJugador ID o su User ID en allPlayers
-                const matchedPlayer = allPlayers.find(p => Number(p.id) === Number(assignedPlayerId) || Number(p.userId) === Number(assignedPlayerId));
+                // Buscar jugador por su FichaJugador ID en allPlayers
+                const matchedPlayer = allPlayers.find(p => Number(p.id) === Number(assignedPlayerId));
                 
                 if (matchedPlayer) {
                     assignedUserUserId = matchedPlayer.userId;
