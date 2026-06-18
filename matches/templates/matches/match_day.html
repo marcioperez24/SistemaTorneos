@@ -167,6 +167,22 @@
         box-shadow: 0 4px 8px rgba(0,0,0,0.05);
         transform: translateY(-1px);
     }
+    .score-logo {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 50%;
+        background-color: white;
+        border: 3px solid rgba(255,255,255,0.8);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    @media (max-width: 576px) {
+        .score-logo {
+            width: 40px;
+            height: 40px;
+            border-width: 2px;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -180,9 +196,18 @@
         </div>
         
         <div class="row align-items-center justify-content-center py-3 g-2">
-            <div class="col-4 text-end px-1 px-sm-3">
-                <h3 class="fw-extrabold mb-0 tracking-wide text-truncate fs-6 fs-sm-5 fs-md-3">{{ partido.equipo_local.nombre|upper }}</h3>
-                <span class="text-white-50 small d-none d-sm-block">{{ partido.equipo_local.get_categoria_display }}</span>
+            <div class="col-4 d-flex align-items-center justify-content-end px-1 px-sm-3">
+                <div class="text-end me-2 me-sm-3">
+                    <h3 class="fw-extrabold mb-0 tracking-wide text-truncate fs-6 fs-sm-5 fs-md-3">{{ partido.equipo_local.nombre|upper }}</h3>
+                    <span class="text-white-50 small d-none d-sm-block">{{ partido.equipo_local.get_categoria_display }}</span>
+                </div>
+                {% if partido.equipo_local.logo %}
+                    <img src="{{ partido.equipo_local.logo.url }}" class="score-logo" alt="Logo {{ partido.equipo_local.nombre }}">
+                {% else %}
+                    <div class="score-logo d-flex align-items-center justify-content-center text-dark">
+                        <i class="fa-solid fa-shield-halved fa-lg text-secondary"></i>
+                    </div>
+                {% endif %}
             </div>
             
             <div class="col-4 text-center px-0 px-sm-2">
@@ -191,9 +216,18 @@
                 </div>
             </div>
             
-            <div class="col-4 text-start px-1 px-sm-3">
-                <h3 class="fw-extrabold mb-0 tracking-wide text-truncate fs-6 fs-sm-5 fs-md-3">{{ partido.equipo_visitante.nombre|upper }}</h3>
-                <span class="text-white-50 small d-none d-sm-block">{{ partido.equipo_visitante.get_categoria_display }}</span>
+            <div class="col-4 d-flex align-items-center justify-content-start px-1 px-sm-3">
+                {% if partido.equipo_visitante.logo %}
+                    <img src="{{ partido.equipo_visitante.logo.url }}" class="score-logo" alt="Logo {{ partido.equipo_visitante.nombre }}">
+                {% else %}
+                    <div class="score-logo d-flex align-items-center justify-content-center text-dark">
+                        <i class="fa-solid fa-shield-halved fa-lg text-secondary"></i>
+                    </div>
+                {% endif %}
+                <div class="text-start ms-2 ms-sm-3">
+                    <h3 class="fw-extrabold mb-0 tracking-wide text-truncate fs-6 fs-sm-5 fs-md-3">{{ partido.equipo_visitante.nombre|upper }}</h3>
+                    <span class="text-white-50 small d-none d-sm-block">{{ partido.equipo_visitante.get_categoria_display }}</span>
+                </div>
             </div>
         </div>
         
