@@ -7,11 +7,12 @@ User = get_user_model()
 class EquipoForm(forms.ModelForm):
     class Meta:
         model = Equipo
-        fields = ['nombre', 'logo', 'categoria']
+        fields = ['nombre', 'logo', 'categoria', 'max_jugadores']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Real Madrid'}),
             'logo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'categoria': forms.Select(attrs={'class': 'form-select'}),
+            'max_jugadores': forms.NumberInput(attrs={'class': 'form-control', 'min': '5', 'max': '50'}),
         }
 
     def __init__(self, *args, **kwargs):

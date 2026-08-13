@@ -102,6 +102,7 @@ class Partido(models.Model):
 class EventoPartido(models.Model):
     TIPOS = (
         ('gol', 'Gol'),
+        ('asistencia', 'Asistencia'),
         ('amarilla', 'Tarjeta Amarilla'),
         ('roja', 'Tarjeta Roja'),
         ('cambio', 'Cambio de Jugador'),

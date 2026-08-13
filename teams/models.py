@@ -26,6 +26,7 @@ class Equipo(models.Model):
         related_name='equipos_dirigidos',
         verbose_name="Dirigente / Representante"
     )
+    max_jugadores = models.IntegerField(default=25, verbose_name="Máximo de Jugadores")
     fecha_creacion = models.DateTimeField(auto_now_add=True)
  
     class Meta:

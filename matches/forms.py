@@ -106,12 +106,14 @@ from .models import Torneo
 class TorneoForm(forms.ModelForm):
     class Meta:
         model = Torneo
-        fields = ['nombre', 'tipo', 'categoria', 'temporada', 'equipos']
+        fields = ['nombre', 'tipo', 'categoria', 'temporada', 'modalidad', 'max_jugadores_por_equipo', 'equipos']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Copa de Campeones 2026'}),
             'tipo': forms.Select(attrs={'class': 'form-select'}),
             'categoria': forms.Select(attrs={'class': 'form-select', 'id': 'id_categoria'}),
             'temporada': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Apertura 2026'}),
+            'modalidad': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Fútbol 11, Fútbol 7'}),
+            'max_jugadores_por_equipo': forms.NumberInput(attrs={'class': 'form-control', 'min': '5', 'max': '50'}),
             'equipos': forms.SelectMultiple(attrs={'class': 'form-select', 'size': '8'}),
         }
         labels = {
@@ -119,6 +121,8 @@ class TorneoForm(forms.ModelForm):
             'tipo': 'Tipo de Competencia',
             'categoria': 'Categoría',
             'temporada': 'Temporada / Año',
+            'modalidad': 'Modalidad',
+            'max_jugadores_por_equipo': 'Máximo de Jugadores por Equipo',
             'equipos': 'Equipos Participantes',
         }
         help_text = {

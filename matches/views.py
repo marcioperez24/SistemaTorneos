@@ -935,39 +935,55 @@ def crear_partido_torneo(request, torneo_id):
 
 
 @login_required
-def estadisticas_tarjetas(request, torneo_id):
+def estadisticas_torneo(request, torneo_id):
     from django.db.models import Count
     from matches.models import EventoPartido
     from teams.models import FichaJugador
     
     torneo = get_object_or_404(Torneo, id=torneo_id)
     
-    eventos_amarillas = EventoPartido.objects.filter(
-        partido__torneo=torneo, 
-        tipo='amarilla', 
-        jugador__isnull=False
-    ).values(
-        'jugador__id', 
-        'jugador__first_name', 
-        'jugador__last_name', 
-        'equipo__nombre'
-    ).annotate(
-        total_amarillas=Count('id')
-    ).order_by('-total_amarillas')
-    
-    estadisticas = []
-    for evt in eventos_amarillas:
-        ficha = FichaJugador.objects.filter(user_id=evt['jugador__id'], torneo=torneo).first()
-        numero_camiseta = ficha.numero_camiseta if ficha else '-'
-        estadisticas.append({
-            'nombre_jugador': f"{evt['jugador__first_name']} {evt['jugador__last_name']}".strip(),
-            'equipo': evt['equipo__nombre'],
-            'numero_camiseta': numero_camiseta,
-            'total_amarillas': evt['total_amarillas']
-        })
+    def get_top_events(event_type):
+        events = EventoPartido.objects.filter(
+            partido__torneo=torneo, 
+            tipo=event_type, 
+            jugador__isnull=False
+        ).values(
+            'jugador__id', 
+            'jugador__first_name', 
+            'jugador__last_name', 
+            'equipo__nombre',
+            'equipo__logo'
+        ).annotate(
+            total=Count('id')
+        ).order_by('-total')[:10]
+        
+        stats = []
+        for evt in events:
+            ficha = FichaJugador.objects.filter(user_id=evt['jugador__id'], torneo=torneo).first()
+            numero_camiseta = ficha.numero_camiseta if ficha else '-'
+            foto_url = ficha.foto.url if ficha and ficha.foto else None
+            logo_url = '/media/' + evt['equipo__logo'] if evt['equipo__logo'] else None
+            
+            stats.append({
+                'nombre_jugador': f"{evt['jugador__first_name']} {evt['jugador__last_name']}".strip(),
+                'equipo': evt['equipo__nombre'],
+                'numero_camiseta': numero_camiseta,
+                'total': evt['total'],
+                'foto_url': foto_url,
+                'logo_url': logo_url
+            })
+        return stats
+
+    top_goleadores = get_top_events('gol')
+    top_asistidores = get_top_events('asistencia')
+    top_amarillas = get_top_events('amarilla')
+    top_rojas = get_top_events('roja')
         
     context = {
         'torneo': torneo,
-        'estadisticas': estadisticas
+        'top_goleadores': top_goleadores,
+        'top_asistidores': top_asistidores,
+        'top_amarillas': top_amarillas,
+        'top_rojas': top_rojas
     }
-    return render(request, 'matches/estadisticas_tarjetas.html', context)
+    return render(request, 'matches/estadisticas_torneo.html', context)

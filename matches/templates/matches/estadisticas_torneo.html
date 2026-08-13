@@ -1,0 +1,84 @@
+{% extends 'teams/base.html' %}
+
+{% block title %}Dashboard Estadísticas - {{ torneo.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8">
+            <h1 class="fw-bold"><i class="fa-solid fa-chart-line text-primary me-2"></i>Estadísticas del Torneo</h1>
+            <p class="text-muted lead">Torneo: {{ torneo.nombre }} - Categoría: {{ torneo.get_categoria_display }}</p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a href="{% url 'detalle_torneo' torneo.id %}" class="btn btn-outline-secondary">
+                <i class="fa-solid fa-arrow-left me-2"></i>Volver al Torneo
+            </a>
+        </div>
+    </div>
+
+    <!-- Pestañas (Tabs) de navegación -->
+    <ul class="nav nav-tabs nav-fill mb-4 border-0 gap-2" id="statsTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active rounded-pill fw-bold" id="goleadores-tab" data-bs-toggle="tab" data-bs-target="#goleadores" type="button" role="tab" aria-controls="goleadores" aria-selected="true">
+                <i class="fa-solid fa-futbol text-success me-1"></i> Goleadores
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill fw-bold" id="asistencias-tab" data-bs-toggle="tab" data-bs-target="#asistencias" type="button" role="tab" aria-controls="asistencias" aria-selected="false">
+                <i class="fa-solid fa-shoe-prints text-info me-1"></i> Asistencias
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill fw-bold" id="amarillas-tab" data-bs-toggle="tab" data-bs-target="#amarillas" type="button" role="tab" aria-controls="amarillas" aria-selected="false">
+                <i class="fa-solid fa-square text-warning me-1"></i> T. Amarillas
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link rounded-pill fw-bold" id="rojas-tab" data-bs-toggle="tab" data-bs-target="#rojas" type="button" role="tab" aria-controls="rojas" aria-selected="false">
+                <i class="fa-solid fa-square text-danger me-1"></i> T. Rojas
+            </button>
+        </li>
+    </ul>
+
+    <!-- Contenido de las pestañas -->
+    <div class="tab-content" id="statsTabContent">
+        <!-- Goleadores -->
+        <div class="tab-pane fade show active" id="goleadores" role="tabpanel" aria-labelledby="goleadores-tab">
+            {% include 'matches/partials/_tabla_stats.html' with stats=top_goleadores icon='fa-futbol text-success' titulo='Goleadores' badge_class='bg-success' %}
+        </div>
+        
+        <!-- Asistencias -->
+        <div class="tab-pane fade" id="asistencias" role="tabpanel" aria-labelledby="asistencias-tab">
+            {% include 'matches/partials/_tabla_stats.html' with stats=top_asistidores icon='fa-shoe-prints text-info' titulo='Asistidores' badge_class='bg-info' %}
+        </div>
+        
+        <!-- Amarillas -->
+        <div class="tab-pane fade" id="amarillas" role="tabpanel" aria-labelledby="amarillas-tab">
+            {% include 'matches/partials/_tabla_stats.html' with stats=top_amarillas icon='fa-square text-warning' titulo='Tarjetas Amarillas' badge_class='bg-warning text-dark' %}
+        </div>
+        
+        <!-- Rojas -->
+        <div class="tab-pane fade" id="rojas" role="tabpanel" aria-labelledby="rojas-tab">
+            {% include 'matches/partials/_tabla_stats.html' with stats=top_rojas icon='fa-square text-danger' titulo='Tarjetas Rojas' badge_class='bg-danger' %}
+        </div>
+    </div>
+</div>
+
+<style>
+.nav-tabs .nav-link {
+    border: 1px solid #dee2e6;
+    color: #495057;
+    background-color: #f8f9fa;
+    transition: all 0.3s;
+}
+.nav-tabs .nav-link:hover {
+    border-color: #dee2e6;
+    background-color: #e9ecef;
+}
+.nav-tabs .nav-link.active {
+    border-color: transparent;
+    background-color: #0d6efd;
+    color: white;
+}
+</style>
+{% endblock %}
