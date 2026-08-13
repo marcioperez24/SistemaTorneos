@@ -951,6 +951,7 @@ def estadisticas_torneo(request, torneo_id):
             'jugador__id', 
             'jugador__first_name', 
             'jugador__last_name', 
+            'equipo__id',
             'equipo__nombre',
             'equipo__logo'
         ).annotate(
@@ -959,8 +960,20 @@ def estadisticas_torneo(request, torneo_id):
         
         stats = []
         for evt in events:
-            ficha = FichaJugador.objects.filter(user_id=evt['jugador__id'], torneo=torneo).first()
-            numero_camiseta = ficha.numero_camiseta if ficha else '-'
+            # Primero intentar buscar la ficha asociada al torneo y equipo
+            ficha = FichaJugador.objects.filter(
+                user_id=evt['jugador__id'], 
+                equipo_id=evt['equipo__id'], 
+                torneo=torneo
+            ).first()
+            if not ficha:
+                # Si no, buscar la ficha del jugador en ese equipo específico (retrocompatibilidad)
+                ficha = FichaJugador.objects.filter(
+                    user_id=evt['jugador__id'], 
+                    equipo_id=evt['equipo__id']
+                ).order_by('-id').first()
+                
+            numero_camiseta = ficha.numero_camiseta if ficha and ficha.numero_camiseta else '-'
             foto_url = ficha.foto.url if ficha and ficha.foto else None
             logo_url = '/media/' + evt['equipo__logo'] if evt['equipo__logo'] else None
             
