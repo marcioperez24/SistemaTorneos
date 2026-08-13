@@ -21,14 +21,6 @@
         <div class="col-md-9">
             <div class="card card-custom p-4 shadow-lg border-top border-primary border-4" style="overflow: visible !important;">
                 
-                <div class="alert alert-warning border-0 shadow-sm mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2 animate__animated animate__fadeIn">
-                    <div>
-                        <i class="fa-solid fa-user-check me-2 text-warning fs-5"></i>
-                        <strong>¿Ya tienes una cuenta registrada en el sistema?</strong> Inicia sesión para autocompletar tu ficha.
-                    </div>
-                    <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-warning btn-sm fw-bold rounded-pill px-4 py-2">Iniciar Sesión</a>
-                </div>
-
                 <div class="alert alert-info border-0 shadow-sm mb-4">
                     <i class="fa-solid fa-circle-info me-2 text-info"></i>
                     <strong>Atención:</strong> Por favor, completa toda tu información de forma precisa. Las imágenes de tu cédula deben ser legibles y tu selfie debe tener una iluminación adecuada para que el carnet digital sea aprobado rápidamente por secretaría.
@@ -100,9 +92,10 @@
                     </h4>
                     
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 mb-3 position-relative">
                             <label class="form-label fw-semibold text-secondary">Número de Cédula</label>
                             {{ form.nro_cedula }}
+                            <ul id="cedula_suggestions" class="list-group position-absolute w-100 shadow" style="display: none; z-index: 1000; top: 100%; max-height: 200px; overflow-y: auto;"></ul>
                             {% if form.nro_cedula.errors %}
                                 <div class="text-danger small mt-1">{{ form.nro_cedula.errors|first }}</div>
                             {% endif %}
@@ -421,55 +414,93 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.appendChild(script);
     }
 
+    // Evitar el enter en el formulario
+    form.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+        }
+    });
+
     // Listener para buscar por cédula y autocompletar
     const cedulaInput = document.querySelector("#id_nro_cedula");
-    if (cedulaInput) {
-        cedulaInput.addEventListener("blur", function() {
+    const suggestionsList = document.querySelector("#cedula_suggestions");
+
+    if (cedulaInput && suggestionsList) {
+        cedulaInput.addEventListener("input", function() {
             const cedula = cedulaInput.value.trim();
-            if (cedula.length >= 5) {
+            if (cedula.length >= 3) {
                 fetch(`/buscar-cedula/?cedula=${cedula}`)
                     .then(response => response.json())
                     .then(data => {
-                        if (data.exists) {
-                            const firstName = document.querySelector("#id_first_name");
-                            const lastName = document.querySelector("#id_last_name");
-                            const phone = document.querySelector("#id_telefono");
-                            const bloodType = document.querySelector("#id_tipo_sangre");
-                            const contactEmerg = document.querySelector("#id_contacto_emergencia");
-                            const phoneEmerg = document.querySelector("#id_telefono_emergencia");
-                            
-                            if (firstName) firstName.value = data.first_name;
-                            if (lastName) lastName.value = data.last_name;
-                            if (phone) {
-                                phone.value = data.telefono;
-                                if (window.iti_telefono) {
-                                    window.iti_telefono.setNumber(data.telefono);
-                                }
-                            }
-                            if (bloodType) bloodType.value = data.tipo_sangre;
-                            if (contactEmerg) contactEmerg.value = data.contacto_emergencia;
-                            if (phoneEmerg) {
-                                phoneEmerg.value = data.telefono_emergencia;
-                                if (window.iti_telefono_emergencia) {
-                                    window.iti_telefono_emergencia.setNumber(data.telefono_emergencia);
-                                }
-                            }
-                            
-                            // Ocultar sección de cuenta
-                            const headers = document.querySelectorAll("h4");
-                            headers.forEach(h => {
-                                if (h.textContent.includes("1. Datos de Acceso") || h.textContent.includes("1. Datos Personales")) {
-                                    h.style.display = "none";
-                                    const fieldsRow = h.nextElementSibling;
-                                    if (fieldsRow) {
-                                        fieldsRow.style.display = "none";
-                                    }
-                                }
+                        suggestionsList.innerHTML = '';
+                        if (data.results && data.results.length > 0) {
+                            data.results.forEach(item => {
+                                const li = document.createElement('li');
+                                li.className = 'list-group-item list-group-item-action cursor-pointer';
+                                li.innerHTML = `<strong>${item.cedula}</strong> - ${item.first_name} ${item.last_name}`;
+                                li.addEventListener('click', function() {
+                                    fillData(item);
+                                });
+                                suggestionsList.appendChild(li);
                             });
+                            suggestionsList.style.display = 'block';
+                        } else {
+                            suggestionsList.style.display = 'none';
                         }
                     });
+            } else {
+                suggestionsList.style.display = 'none';
             }
         });
+
+        // Ocultar sugerencias al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (e.target !== cedulaInput && e.target !== suggestionsList) {
+                suggestionsList.style.display = 'none';
+            }
+        });
+
+        function fillData(data) {
+            cedulaInput.value = data.cedula;
+            suggestionsList.style.display = 'none';
+
+            const firstName = document.querySelector("#id_first_name");
+            const lastName = document.querySelector("#id_last_name");
+            const phone = document.querySelector("#id_telefono");
+            const bloodType = document.querySelector("#id_tipo_sangre");
+            const contactEmerg = document.querySelector("#id_contacto_emergencia");
+            const phoneEmerg = document.querySelector("#id_telefono_emergencia");
+            
+            if (firstName) firstName.value = data.first_name;
+            if (lastName) lastName.value = data.last_name;
+            if (phone) {
+                phone.value = data.telefono;
+                if (window.iti_telefono) {
+                    window.iti_telefono.setNumber(data.telefono);
+                }
+            }
+            if (bloodType) bloodType.value = data.tipo_sangre;
+            if (contactEmerg) contactEmerg.value = data.contacto_emergencia;
+            if (phoneEmerg) {
+                phoneEmerg.value = data.telefono_emergencia;
+                if (window.iti_telefono_emergencia) {
+                    window.iti_telefono_emergencia.setNumber(data.telefono_emergencia);
+                }
+            }
+            
+            // Ocultar sección de cuenta
+            const headers = document.querySelectorAll("h4");
+            headers.forEach(h => {
+                if (h.textContent.includes("1. Datos de Acceso") || h.textContent.includes("1. Datos Personales")) {
+                    h.style.display = "none";
+                    const fieldsRow = h.nextElementSibling;
+                    if (fieldsRow) {
+                        fieldsRow.style.display = "none";
+                        // Remover requeridos para que no bloquee submit si están ocultos (aunque username/email no son requeridos en forms.py por def)
+                    }
+                }
+            });
+        }
     }
 });
 </script>

@@ -486,16 +486,17 @@ def guardar_alineacion(request, equipo_id):
 def buscar_cedula(request):
     from django.http import JsonResponse
     cedula = request.GET.get('cedula', '').strip()
-    if not cedula:
-        return JsonResponse({'exists': False})
+    if not cedula or len(cedula) < 3:
+        return JsonResponse({'results': []})
         
-    ficha = FichaJugador.objects.filter(nro_cedula=cedula).select_related('user').first()
-    if not ficha:
-        ficha = FichaDT.objects.filter(nro_cedula=cedula).select_related('user').first()
-        
-    if ficha:
-        return JsonResponse({
-            'exists': True,
+    fichas_jugador = FichaJugador.objects.filter(nro_cedula__startswith=cedula).select_related('user')[:5]
+    fichas_dt = FichaDT.objects.filter(nro_cedula__startswith=cedula).select_related('user')[:5]
+    
+    resultados = {}
+    
+    for ficha in fichas_jugador:
+        resultados[ficha.nro_cedula] = {
+            'cedula': ficha.nro_cedula,
             'first_name': ficha.user.first_name,
             'last_name': ficha.user.last_name,
             'username': ficha.user.username,
@@ -504,7 +505,21 @@ def buscar_cedula(request):
             'tipo_sangre': ficha.tipo_sangre or '',
             'contacto_emergencia': ficha.contacto_emergencia or '',
             'telefono_emergencia': ficha.telefono_emergencia or '',
-        })
+        }
         
-    return JsonResponse({'exists': False})
+    for ficha in fichas_dt:
+        if ficha.nro_cedula not in resultados:
+            resultados[ficha.nro_cedula] = {
+                'cedula': ficha.nro_cedula,
+                'first_name': ficha.user.first_name,
+                'last_name': ficha.user.last_name,
+                'username': ficha.user.username,
+                'email': ficha.user.email,
+                'telefono': ficha.user.telefono or '',
+                'tipo_sangre': ficha.tipo_sangre or '',
+                'contacto_emergencia': ficha.contacto_emergencia or '',
+                'telefono_emergencia': ficha.telefono_emergencia or '',
+            }
+            
+    return JsonResponse({'results': list(resultados.values())})
 
