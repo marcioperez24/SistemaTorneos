@@ -547,7 +547,8 @@
                 nombre: "{{ j.user.get_full_name|escapejs }}",
                 camiseta: "{{ j.numero_camiseta|default:'-' }}",
                 foto: "{% if j.foto %}{{ j.foto.url }}{% endif %}",
-                sangre: "{{ j.tipo_sangre }}"
+                sangre: "{{ j.tipo_sangre }}",
+                suspendido: {% if j.partidos_suspension > 0 %}true{% else %}false{% endif %}
             },
             {% endfor %}
         ],
@@ -559,7 +560,8 @@
                 nombre: "{{ j.user.get_full_name|escapejs }}",
                 camiseta: "{{ j.numero_camiseta|default:'-' }}",
                 foto: "{% if j.foto %}{{ j.foto.url }}{% endif %}",
-                sangre: "{{ j.tipo_sangre }}"
+                sangre: "{{ j.tipo_sangre }}",
+                suspendido: {% if j.partidos_suspension > 0 %}true{% else %}false{% endif %}
             },
             {% endfor %}
         ]
@@ -641,17 +643,26 @@
 
             let shirtHtml = '';
             if (isAssigned) {
-                nodeDiv.setAttribute('data-bs-toggle', 'modal');
-                nodeDiv.setAttribute('data-bs-target', '#modalEvento');
-                nodeDiv.setAttribute('data-jugador-id', assignedUserUserId || assignedPlayerId);
-                nodeDiv.setAttribute('data-jugador-nombre', playerName);
-                nodeDiv.setAttribute('data-equipo-id', teamData[side].id);
-                nodeDiv.setAttribute('data-equipo-nombre', teamData[side].nombre);
+                // Verificar si está suspendido
+                const isSuspended = allPlayers.find(p => Number(p.id) === Number(assignedPlayerId) && p.suspendido) ? true : false;
+                
+                if (!isSuspended) {
+                    nodeDiv.setAttribute('data-bs-toggle', 'modal');
+                    nodeDiv.setAttribute('data-bs-target', '#modalEvento');
+                    nodeDiv.setAttribute('data-jugador-id', assignedUserUserId || assignedPlayerId);
+                    nodeDiv.setAttribute('data-jugador-nombre', playerName);
+                    nodeDiv.setAttribute('data-equipo-id', teamData[side].id);
+                    nodeDiv.setAttribute('data-equipo-nombre', teamData[side].nombre);
+                } else {
+                    nodeDiv.style.opacity = '0.5';
+                    nodeDiv.style.cursor = 'not-allowed';
+                    playerName = `🚫 ${playerName}`;
+                }
 
                 if (hasPhoto) {
-                    shirtHtml = `<div class="player-shirt" style="background-image: url('${photoUrl}');"><span class="shirt-number-badge">${playerShirtText}</span></div>`;
+                    shirtHtml = `<div class="player-shirt" style="background-image: url('${photoUrl}'); ${isSuspended ? 'filter: grayscale(100%);' : ''}"><span class="shirt-number-badge">${playerShirtText}</span></div>`;
                 } else {
-                    shirtHtml = `<div class="player-shirt bg-warning text-dark"><span class="fw-bold">${playerShirtText}</span></div>`;
+                    shirtHtml = `<div class="player-shirt ${isSuspended ? 'bg-secondary' : 'bg-warning'} text-dark"><span class="fw-bold">${playerShirtText}</span></div>`;
                 }
             } else {
                 shirtHtml = `<div class="player-shirt unassigned">+</div>`;
@@ -659,7 +670,7 @@
 
             nodeDiv.innerHTML = `
                 ${shirtHtml}
-                <span class="player-name-label">${playerName}</span>
+                <span class="player-name-label ${isAssigned && playerName.includes('🚫') ? 'text-danger fw-bold' : ''}">${playerName}</span>
             `;
 
             pitchEl.appendChild(nodeDiv);
@@ -677,18 +688,28 @@
         subs.forEach(p => {
             const card = document.createElement('div');
             card.className = 'sub-item-card';
-            card.setAttribute('data-bs-toggle', 'modal');
-            card.setAttribute('data-bs-target', '#modalEvento');
-            card.setAttribute('data-jugador-id', p.userId); // Submit User ID
-            card.setAttribute('data-jugador-nombre', p.nombre);
-            card.setAttribute('data-equipo-id', teamData[side].id);
-            card.setAttribute('data-equipo-nombre', teamData[side].nombre);
+            if (!p.suspendido) {
+                card.setAttribute('data-bs-toggle', 'modal');
+                card.setAttribute('data-bs-target', '#modalEvento');
+                card.setAttribute('data-jugador-id', p.userId); 
+                card.setAttribute('data-jugador-nombre', p.nombre);
+                card.setAttribute('data-equipo-id', teamData[side].id);
+                card.setAttribute('data-equipo-nombre', teamData[side].nombre);
+            } else {
+                card.style.opacity = '0.5';
+                card.style.cursor = 'not-allowed';
+            }
+
+            let pNameHtml = `<span class="fw-bold fs-7 d-block">${p.nombre}</span>`;
+            if (p.suspendido) {
+                pNameHtml = `<span class="fw-bold fs-7 d-block text-danger" title="Jugador Suspendido"><i class="fa-solid fa-ban me-1"></i>${p.nombre}</span>`;
+            }
 
             card.innerHTML = `
                 <div class="d-flex align-items-center">
-                    ${p.foto ? `<img src="${p.foto}" alt="${p.nombre}" class="rounded-circle border me-2" style="width: 28px; height: 28px; object-fit: cover;">` : `<div class="bg-secondary rounded-circle text-white d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px; font-size: 10px;"><i class="fa-solid fa-user"></i></div>`}
+                    ${p.foto ? `<img src="${p.foto}" alt="${p.nombre}" class="rounded-circle border me-2" style="width: 28px; height: 28px; object-fit: cover; ${p.suspendido ? 'filter: grayscale(100%);' : ''}">` : `<div class="bg-secondary rounded-circle text-white d-flex align-items-center justify-content-center me-2" style="width: 28px; height: 28px; font-size: 10px;"><i class="fa-solid fa-user"></i></div>`}
                     <div>
-                        <span class="fw-bold fs-7 d-block">${p.nombre}</span>
+                        ${pNameHtml}
                     </div>
                 </div>
                 <span class="badge bg-secondary-subtle text-secondary font-monospace fw-bold">#${p.camiseta}</span>

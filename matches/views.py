@@ -6,8 +6,9 @@ from datetime import timedelta
 from teams.models import Equipo, FichaJugador
 from .models import Partido, EventoPartido, Torneo
 from django.contrib.auth import get_user_model
-from django.db.models import Q, F
+from django.db.models import Q, F, Count
 from .forms import ArbitroForm, VocalForm, TorneoForm
+from finances.models import MultaTarjeta
 
 User = get_user_model()
 
@@ -381,7 +382,7 @@ def registrar_evento(request, partido_id):
                         partido.save()
         
         # Registrar evento
-        EventoPartido.objects.create(
+        evento = EventoPartido.objects.create(
             partido=partido,
             tipo=tipo,
             minuto=minuto,
@@ -389,6 +390,37 @@ def registrar_evento(request, partido_id):
             equipo=equipo,
             detalle=detalle_str
         )
+        
+        if tipo in ['amarilla', 'roja']:
+            # Crear multa en el sistema de finanzas
+            monto_multa = partido.torneo.costo_amarilla if tipo == 'amarilla' else partido.torneo.costo_roja
+            MultaTarjeta.objects.create(
+                partido=partido,
+                evento=evento,
+                equipo=equipo,
+                jugador=jugador,
+                monto=monto_multa,
+                motivo=tipo
+            )
+            
+            if tipo == 'amarilla':
+                # Buscar ficha jugador para el equipo y torneo
+                ficha = FichaJugador.objects.filter(user=jugador, equipo=equipo, torneo=partido.torneo).first()
+                if not ficha:
+                    ficha = FichaJugador.objects.filter(user=jugador, equipo=equipo).order_by('-id').first()
+                
+                if ficha:
+                    # Contar amarillas en el torneo actual
+                    amarillas_count = EventoPartido.objects.filter(
+                        partido__torneo=partido.torneo,
+                        tipo='amarilla',
+                        jugador=jugador
+                    ).count()
+                    
+                    if amarillas_count > 0 and amarillas_count % partido.torneo.limite_amarillas_suspension == 0:
+                        ficha.partidos_suspension += 1
+                        ficha.save()
+                        messages.warning(request, f"⚠️ ¡ALERTA! El jugador ha acumulado {amarillas_count} amarillas y se le ha aplicado 1 partido de suspensión.")
         
         # Si es gol, sumamos al marcador
         if tipo == 'gol':
@@ -420,6 +452,8 @@ def cerrar_partido(request, partido_id):
             if firma_vocal_data:
                 partido.firma_vocal = True
                 partido.firma_vocal_img = firma_vocal_data
+                if partido.estado != 'finalizado':
+                    _descontar_suspensiones(partido)
                 partido.estado = 'finalizado'
                 partido.save()
                 messages.success(request, "Acta de partido cerrada y firmada exitosamente por el Vocal de Mesa.")
@@ -431,6 +465,8 @@ def cerrar_partido(request, partido_id):
             firma_arbitro_data = request.POST.get('firma_arbitro_data')
             if firma_arbitro_data:
                 partido.firma_arbitro_img = firma_arbitro_data
+                if partido.estado != 'finalizado':
+                    _descontar_suspensiones(partido)
                 partido.estado = 'finalizado'
                 partido.save()
                 messages.success(request, "Acta de partido cerrada y firmada exitosamente por el Árbitro.")
@@ -449,12 +485,26 @@ def cerrar_partido(request, partido_id):
             if firma_arbitro_data:
                 partido.firma_arbitro_img = firma_arbitro_data
                 
+            if partido.estado != 'finalizado':
+                _descontar_suspensiones(partido)
             partido.estado = 'finalizado'
             partido.save()
             messages.success(request, "Acta de partido cerrada y finalizada por el Administrador.")
             return redirect('vocalia_dashboard')
             
     return redirect('match_day', partido_id=partido.id)
+
+
+def _descontar_suspensiones(partido):
+    # Todos los jugadores de estos equipos que estén suspendidos descuentan 1 partido cumplido
+    fichas_suspendidas = FichaJugador.objects.filter(
+        Q(equipo=partido.equipo_local) | Q(equipo=partido.equipo_visitante),
+        torneo=partido.torneo,
+        partidos_suspension__gt=0
+    )
+    for ficha in fichas_suspendidas:
+        ficha.partidos_suspension -= 1
+        ficha.save()
 
 
 @login_required

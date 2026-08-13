@@ -13,6 +13,9 @@ class Torneo(models.Model):
     temporada = models.CharField(max_length=50, default="Temporada 2026", verbose_name="Temporada")
     modalidad = models.CharField(max_length=50, default="Fútbol 11", verbose_name="Modalidad (ej. Fútbol 11, Fútbol 7)")
     max_jugadores_por_equipo = models.IntegerField(default=25, verbose_name="Máximo de Jugadores por Equipo")
+    limite_amarillas_suspension = models.IntegerField(default=3, verbose_name="Límite Amarillas para Suspensión")
+    costo_amarilla = models.DecimalField(max_digits=10, decimal_places=2, default=50.00, verbose_name="Costo de Tarjeta Amarilla (C$)")
+    costo_roja = models.DecimalField(max_digits=10, decimal_places=2, default=150.00, verbose_name="Costo de Tarjeta Roja (C$)")
     equipos = models.ManyToManyField(Equipo, related_name='torneos', verbose_name="Equipos Participantes")
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 

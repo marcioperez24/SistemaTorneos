@@ -129,6 +129,7 @@ class FichaJugador(models.Model):
     )
     motivo_rechazo = models.TextField(blank=True, null=True, verbose_name="Motivo de Rechazo")
     fecha_aprobacion = models.DateTimeField(blank=True, null=True, verbose_name="Fecha de Aprobación")
+    partidos_suspension = models.IntegerField(default=0, verbose_name="Partidos de Suspensión Pendientes")
     aprobado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.SET_NULL, 

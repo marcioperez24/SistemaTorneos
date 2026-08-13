@@ -106,7 +106,7 @@ from .models import Torneo
 class TorneoForm(forms.ModelForm):
     class Meta:
         model = Torneo
-        fields = ['nombre', 'tipo', 'categoria', 'temporada', 'modalidad', 'max_jugadores_por_equipo', 'equipos']
+        fields = ['nombre', 'tipo', 'categoria', 'temporada', 'modalidad', 'max_jugadores_por_equipo', 'limite_amarillas_suspension', 'costo_amarilla', 'equipos']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Copa de Campeones 2026'}),
             'tipo': forms.Select(attrs={'class': 'form-select'}),
@@ -114,6 +114,8 @@ class TorneoForm(forms.ModelForm):
             'temporada': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Apertura 2026'}),
             'modalidad': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Fútbol 11, Fútbol 7'}),
             'max_jugadores_por_equipo': forms.NumberInput(attrs={'class': 'form-control', 'min': '5', 'max': '50'}),
+            'limite_amarillas_suspension': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'max': '10'}),
+            'costo_amarilla': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01'}),
             'equipos': forms.SelectMultiple(attrs={'class': 'form-select', 'size': '8'}),
         }
         labels = {
@@ -123,6 +125,8 @@ class TorneoForm(forms.ModelForm):
             'temporada': 'Temporada / Año',
             'modalidad': 'Modalidad',
             'max_jugadores_por_equipo': 'Máximo de Jugadores por Equipo',
+            'limite_amarillas_suspension': 'Límite de Amarillas para Suspensión',
+            'costo_amarilla': 'Costo de Tarjeta Amarilla (C$)',
             'equipos': 'Equipos Participantes',
         }
         help_text = {
