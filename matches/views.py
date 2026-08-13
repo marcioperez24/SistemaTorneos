@@ -934,3 +934,40 @@ def crear_partido_torneo(request, torneo_id):
     return redirect('detalle_torneo', torneo_id=torneo.id)
 
 
+@login_required
+def estadisticas_tarjetas(request, torneo_id):
+    from django.db.models import Count
+    from matches.models import EventoPartido
+    from teams.models import FichaJugador
+    
+    torneo = get_object_or_404(Torneo, id=torneo_id)
+    
+    eventos_amarillas = EventoPartido.objects.filter(
+        partido__torneo=torneo, 
+        tipo='amarilla', 
+        jugador__isnull=False
+    ).values(
+        'jugador__id', 
+        'jugador__first_name', 
+        'jugador__last_name', 
+        'equipo__nombre'
+    ).annotate(
+        total_amarillas=Count('id')
+    ).order_by('-total_amarillas')
+    
+    estadisticas = []
+    for evt in eventos_amarillas:
+        ficha = FichaJugador.objects.filter(user_id=evt['jugador__id'], torneo=torneo).first()
+        numero_camiseta = ficha.numero_camiseta if ficha else '-'
+        estadisticas.append({
+            'nombre_jugador': f"{evt['jugador__first_name']} {evt['jugador__last_name']}".strip(),
+            'equipo': evt['equipo__nombre'],
+            'numero_camiseta': numero_camiseta,
+            'total_amarillas': evt['total_amarillas']
+        })
+        
+    context = {
+        'torneo': torneo,
+        'estadisticas': estadisticas
+    }
+    return render(request, 'matches/estadisticas_tarjetas.html', context)
