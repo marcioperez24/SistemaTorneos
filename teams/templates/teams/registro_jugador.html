@@ -488,18 +488,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // Ocultar sección de cuenta
-            const headers = document.querySelectorAll("h4");
-            headers.forEach(h => {
-                if (h.textContent.includes("1. Datos de Acceso") || h.textContent.includes("1. Datos Personales")) {
-                    h.style.display = "none";
-                    const fieldsRow = h.nextElementSibling;
-                    if (fieldsRow) {
-                        fieldsRow.style.display = "none";
-                        // Remover requeridos para que no bloquee submit si están ocultos (aunque username/email no son requeridos en forms.py por def)
-                    }
-                }
-            });
+            // Ocultar solo campos de cuenta si existen (para no confundir al usuario existente)
+            const usernameInput = document.querySelector("#id_username");
+            if (usernameInput && usernameInput.closest('.col-md-6')) {
+                usernameInput.closest('.col-md-6').style.display = 'none';
+                usernameInput.removeAttribute('required'); // Por si acaso
+            }
+            
+            const emailInput = document.querySelector("#id_email");
+            if (emailInput && emailInput.closest('.col-md-6')) {
+                emailInput.closest('.col-md-6').style.display = 'none';
+                emailInput.removeAttribute('required');
+            }
+            
+            const passwordInput = document.querySelector("#id_password");
+            if (passwordInput && passwordInput.closest('.col-md-12')) {
+                passwordInput.closest('.col-md-12').style.display = 'none';
+                passwordInput.removeAttribute('required');
+            }
         }
     }
 });
