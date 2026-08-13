@@ -373,9 +373,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Inicializar intl-tel-input en el teléfono de contacto
+    // Inicializar intl-tel-input en el teléfono de contacto y el teléfono de emergencia
     const phoneInput = document.querySelector("#id_telefono");
-    if (phoneInput) {
+    const emergencyPhoneInput = document.querySelector("#id_telefono_emergencia");
+    if (phoneInput || emergencyPhoneInput) {
         // Cargar intl-tel-input de forma dinámica
         const link = document.createElement('link');
         link.rel = 'stylesheet';
@@ -385,20 +386,90 @@ document.addEventListener('DOMContentLoaded', function() {
         const script = document.createElement('script');
         script.src = 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/intlTelInput.min.js';
         script.onload = function() {
-            const iti = window.intlTelInput(phoneInput, {
-                initialCountry: "ec",
-                preferredCountries: ["ec", "ni", "cr", "pa", "co", "pe", "us"],
-                utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js",
-                separateDialCode: true,
-            });
+            let iti_personal = null;
+            let iti_emergencia = null;
+
+            if (phoneInput) {
+                iti_personal = window.intlTelInput(phoneInput, {
+                    initialCountry: "ec",
+                    preferredCountries: ["ec", "ni", "cr", "pa", "co", "pe", "us"],
+                    utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js",
+                    separateDialCode: true,
+                });
+                window.iti_telefono = iti_personal;
+            }
+
+            if (emergencyPhoneInput) {
+                iti_emergencia = window.intlTelInput(emergencyPhoneInput, {
+                    initialCountry: "ec",
+                    preferredCountries: ["ec", "ni", "cr", "pa", "co", "pe", "us"],
+                    utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js",
+                    separateDialCode: true,
+                });
+                window.iti_telefono_emergencia = iti_emergencia;
+            }
 
             form.addEventListener("submit", function() {
-                if (phoneInput.value.trim()) {
-                    phoneInput.value = iti.getNumber();
+                if (phoneInput && phoneInput.value.trim() && iti_personal) {
+                    phoneInput.value = iti_personal.getNumber();
+                }
+                if (emergencyPhoneInput && emergencyPhoneInput.value.trim() && iti_emergencia) {
+                    emergencyPhoneInput.value = iti_emergencia.getNumber();
                 }
             });
         };
         document.body.appendChild(script);
+    }
+
+    // Listener para buscar por cédula y autocompletar
+    const cedulaInput = document.querySelector("#id_nro_cedula");
+    if (cedulaInput) {
+        cedulaInput.addEventListener("blur", function() {
+            const cedula = cedulaInput.value.trim();
+            if (cedula.length >= 5) {
+                fetch(`/buscar-cedula/?cedula=${cedula}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.exists) {
+                            const firstName = document.querySelector("#id_first_name");
+                            const lastName = document.querySelector("#id_last_name");
+                            const phone = document.querySelector("#id_telefono");
+                            const bloodType = document.querySelector("#id_tipo_sangre");
+                            const contactEmerg = document.querySelector("#id_contacto_emergencia");
+                            const phoneEmerg = document.querySelector("#id_telefono_emergencia");
+                            
+                            if (firstName) firstName.value = data.first_name;
+                            if (lastName) lastName.value = data.last_name;
+                            if (phone) {
+                                phone.value = data.telefono;
+                                if (window.iti_telefono) {
+                                    window.iti_telefono.setNumber(data.telefono);
+                                }
+                            }
+                            if (bloodType) bloodType.value = data.tipo_sangre;
+                            if (contactEmerg) contactEmerg.value = data.contacto_emergencia;
+                            if (phoneEmerg) {
+                                phoneEmerg.value = data.telefono_emergencia;
+                                if (window.iti_telefono_emergencia) {
+                                    window.iti_telefono_emergencia.setNumber(data.telefono_emergencia);
+                                }
+                            }
+                            
+                            // Ocultar sección de cuenta
+                            const headers = document.querySelectorAll("h4");
+                            headers.forEach(h => {
+                                if (h.textContent.includes("1. Datos de Acceso") || h.textContent.includes("1. Datos Personales")) {
+                                    h.style.display = "none";
+                                    const fieldsRow = h.nextElementSibling;
+                                    if (fieldsRow) {
+                                        fieldsRow.style.display = "none";
+                                    }
+                                }
+                            });
+                        }
+                    });
+            }
+        });
     }
 });
 </script>

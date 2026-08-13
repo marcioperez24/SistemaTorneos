@@ -247,10 +247,23 @@ def registro_jugador(request, token):
             
     # Si no tiene cuenta o está logueado pero es su primera ficha (ej. admin o nuevo usuario)
     if request.method == 'POST':
+        nro_cedula = request.POST.get('nro_cedula', '').strip()
+        existing_user = None
+        if nro_cedula:
+            f_jug = FichaJugador.objects.filter(nro_cedula=nro_cedula).first()
+            if f_jug:
+                existing_user = f_jug.user
+            else:
+                f_dt = FichaDT.objects.filter(nro_cedula=nro_cedula).first()
+                if f_dt:
+                    existing_user = f_dt.user
+                    
+        user_to_use = request.user if request.user.is_authenticated else existing_user
+        
         if tipo == 'dt':
-            form = DTRegistrationForm(request.POST, request.FILES, user=request.user if request.user.is_authenticated else None)
+            form = DTRegistrationForm(request.POST, request.FILES, user=user_to_use)
         else:
-            form = PlayerRegistrationForm(request.POST, request.FILES, user=request.user if request.user.is_authenticated else None)
+            form = PlayerRegistrationForm(request.POST, request.FILES, user=user_to_use)
             
         if form.is_valid():
             ficha = form.save(equipo=invitacion.equipo)
@@ -259,10 +272,11 @@ def registro_jugador(request, token):
             ficha.save()
             return redirect('registro_exito')
     else:
+        form_user = request.user if request.user.is_authenticated else None
         if tipo == 'dt':
-            form = DTRegistrationForm(user=request.user if request.user.is_authenticated else None)
+            form = DTRegistrationForm(user=form_user)
         else:
-            form = PlayerRegistrationForm(user=request.user if request.user.is_authenticated else None)
+            form = PlayerRegistrationForm(user=form_user)
             
     template_name = 'teams/registro_dt.html' if tipo == 'dt' else 'teams/registro_jugador.html'
     return render(request, template_name, {
@@ -468,4 +482,29 @@ def guardar_alineacion(request, equipo_id):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
             
     return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
+
+def buscar_cedula(request):
+    from django.http import JsonResponse
+    cedula = request.GET.get('cedula', '').strip()
+    if not cedula:
+        return JsonResponse({'exists': False})
+        
+    ficha = FichaJugador.objects.filter(nro_cedula=cedula).select_related('user').first()
+    if not ficha:
+        ficha = FichaDT.objects.filter(nro_cedula=cedula).select_related('user').first()
+        
+    if ficha:
+        return JsonResponse({
+            'exists': True,
+            'first_name': ficha.user.first_name,
+            'last_name': ficha.user.last_name,
+            'username': ficha.user.username,
+            'email': ficha.user.email,
+            'telefono': ficha.user.telefono or '',
+            'tipo_sangre': ficha.tipo_sangre or '',
+            'contacto_emergencia': ficha.contacto_emergencia or '',
+            'telefono_emergencia': ficha.telefono_emergencia or '',
+        })
+        
+    return JsonResponse({'exists': False})
 
