@@ -93,8 +93,19 @@
             
             <div class="row align-items-center justify-content-center py-3 g-2">
                 <div class="col-5 text-end text-sm-end text-wrap">
-                    <h3 class="fw-extrabold mb-0 fs-3">{{ partido.equipo_local.nombre|upper }}</h3>
-                    <span class="text-white-50 small">{{ partido.equipo_local.get_categoria_display }}</span>
+                    <div class="d-flex align-items-center justify-content-end gap-3">
+                        <div>
+                            <h3 class="fw-extrabold mb-0 fs-3">{{ partido.equipo_local.nombre|upper }}</h3>
+                            <span class="text-white-50 small">{{ partido.equipo_local.get_categoria_display }}</span>
+                        </div>
+                        {% if partido.equipo_local.logo %}
+                            <img src="{{ partido.equipo_local.logo.url }}" alt="{{ partido.equipo_local.nombre }}" class="rounded-circle border border-white shadow-sm" style="width: 60px; height: 60px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-primary bg-gradient text-white rounded-circle border border-white shadow-sm d-flex align-items-center justify-content-center fw-bold" style="width: 60px; height: 60px; font-size: 20px;">
+                                {{ partido.equipo_local.nombre|slice:":2"|upper }}
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
                 
                 <div class="col-2 text-center">
@@ -104,8 +115,19 @@
                 </div>
                 
                 <div class="col-5 text-start text-sm-start text-wrap">
-                    <h3 class="fw-extrabold mb-0 fs-3">{{ partido.equipo_visitante.nombre|upper }}</h3>
-                    <span class="text-white-50 small">{{ partido.equipo_visitante.get_categoria_display }}</span>
+                    <div class="d-flex align-items-center justify-content-start gap-3">
+                        {% if partido.equipo_visitante.logo %}
+                            <img src="{{ partido.equipo_visitante.logo.url }}" alt="{{ partido.equipo_visitante.nombre }}" class="rounded-circle border border-white shadow-sm" style="width: 60px; height: 60px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-primary bg-gradient text-white rounded-circle border border-white shadow-sm d-flex align-items-center justify-content-center fw-bold" style="width: 60px; height: 60px; font-size: 20px;">
+                                {{ partido.equipo_visitante.nombre|slice:":2"|upper }}
+                            </div>
+                        {% endif %}
+                        <div>
+                            <h3 class="fw-extrabold mb-0 fs-3">{{ partido.equipo_visitante.nombre|upper }}</h3>
+                            <span class="text-white-50 small">{{ partido.equipo_visitante.get_categoria_display }}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -128,33 +150,86 @@
         <div class="col-md-6">
             <h4 class="fw-bold mb-3 text-secondary"><i class="fa-solid fa-history me-2 text-primary"></i>Cronología del Partido</h4>
             <div class="card card-custom p-4 bg-white h-100">
-                <div class="list-group list-group-flush">
-                    {% for ev in eventos %}
-                        <div class="list-group-item px-0 py-3 d-flex align-items-center justify-content-between">
-                            <div>
-                                <span class="badge bg-dark font-monospace text-warning me-2">{{ ev.minuto }}'</span>
-                                <span class="fw-bold text-dark">{{ ev.jugador.get_full_name|default:ev.jugador.username }}</span>
-                                <span class="text-muted">({{ ev.equipo.nombre }})</span>
-                            </div>
-                            <div>
-                                {% if ev.tipo == 'gol' %}
-                                    <span class="badge bg-success px-2 py-1.5 rounded-pill text-white"><i class="fa-solid fa-futbol me-1"></i>Gol</span>
-                                {% elif ev.tipo == 'amarilla' %}
-                                    <span class="badge bg-warning text-dark px-2 py-1.5 rounded-pill"><i class="fa-solid fa-square-full me-1"></i>Amarilla</span>
-                                {% elif ev.tipo == 'roja' %}
-                                    <span class="badge bg-danger px-2 py-1.5 rounded-pill text-white"><i class="fa-solid fa-square-full me-1"></i>Roja</span>
-                                {% else %}
-                                    <span class="badge bg-info text-dark px-2 py-1.5 rounded-pill"><i class="fa-solid fa-right-left me-1"></i>Cambio</span>
-                                {% endif %}
-                            </div>
+                <div class="row">
+                    <!-- Eventos Local -->
+                    <div class="col-6 border-end pe-3">
+                        <h6 class="fw-bold text-primary mb-3 text-uppercase text-center border-bottom pb-2">{{ partido.equipo_local.nombre }}</h6>
+                        <div class="list-group list-group-flush">
+                            {% for ev in eventos_local %}
+                                <div class="list-group-item px-0 py-2 border-0 border-bottom d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-dark font-monospace text-warning px-1" style="font-size: 0.65rem;">{{ ev.minuto }}'</span>
+                                        
+                                        <div class="position-relative">
+                                            {% if ev.ficha_jugador and ev.ficha_jugador.foto %}
+                                                <img src="{{ ev.ficha_jugador.foto.url }}" alt="Foto" class="rounded-circle border" style="width: 28px; height: 28px; object-fit: cover;">
+                                            {% else %}
+                                                <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 28px; height: 28px; font-size: 10px;">
+                                                    <i class="fa-solid fa-user"></i>
+                                                </div>
+                                            {% endif %}
+                                            {% if ev.ficha_jugador %}
+                                                <span class="badge bg-danger border border-white rounded-circle p-1 position-absolute" style="font-size: 0.55rem; bottom: -4px; right: -4px; z-index: 2;">{{ ev.ficha_jugador.dorsal }}</span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <span class="fw-bold text-dark fs-8 text-truncate" style="max-width: 80px;" title="{{ ev.jugador.get_full_name|default:ev.jugador.username }}">{{ ev.jugador.get_full_name|default:ev.jugador.username }}</span>
+                                    </div>
+                                    <div>
+                                        {% if ev.tipo == 'gol' %}<i class="fa-solid fa-futbol text-success" title="Gol"></i>
+                                        {% elif ev.tipo == 'amarilla' %}<i class="fa-solid fa-square-full text-warning" title="Amarilla"></i>
+                                        {% elif ev.tipo == 'roja' %}<i class="fa-solid fa-square-full text-danger" title="Roja"></i>
+                                        {% else %}<i class="fa-solid fa-right-left text-info" title="Cambio"></i>{% endif %}
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <div class="text-center py-4 text-muted fs-8">Sin incidencias</div>
+                            {% endfor %}
                         </div>
-                    {% empty %}
-                        <div class="text-center py-5 text-muted">
-                            <i class="fa-regular fa-folder-open fa-3x mb-3"></i>
-                            <p class="mb-0">No se registraron incidencias (goles, tarjetas, cambios) durante este partido.</p>
+                    </div>
+                    <!-- Eventos Visitante -->
+                    <div class="col-6 ps-3">
+                        <h6 class="fw-bold text-primary mb-3 text-uppercase text-center border-bottom pb-2">{{ partido.equipo_visitante.nombre }}</h6>
+                        <div class="list-group list-group-flush">
+                            {% for ev in eventos_visitante %}
+                                <div class="list-group-item px-0 py-2 border-0 border-bottom d-flex align-items-center justify-content-between flex-row-reverse">
+                                    <div class="d-flex align-items-center gap-2 flex-row-reverse">
+                                        <span class="badge bg-dark font-monospace text-warning px-1" style="font-size: 0.65rem;">{{ ev.minuto }}'</span>
+                                        
+                                        <div class="position-relative">
+                                            {% if ev.ficha_jugador and ev.ficha_jugador.foto %}
+                                                <img src="{{ ev.ficha_jugador.foto.url }}" alt="Foto" class="rounded-circle border" style="width: 28px; height: 28px; object-fit: cover;">
+                                            {% else %}
+                                                <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 28px; height: 28px; font-size: 10px;">
+                                                    <i class="fa-solid fa-user"></i>
+                                                </div>
+                                            {% endif %}
+                                            {% if ev.ficha_jugador %}
+                                                <span class="badge bg-danger border border-white rounded-circle p-1 position-absolute" style="font-size: 0.55rem; bottom: -4px; right: -4px; z-index: 2;">{{ ev.ficha_jugador.dorsal }}</span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <span class="fw-bold text-dark fs-8 text-truncate text-end" style="max-width: 80px;" title="{{ ev.jugador.get_full_name|default:ev.jugador.username }}">{{ ev.jugador.get_full_name|default:ev.jugador.username }}</span>
+                                    </div>
+                                    <div>
+                                        {% if ev.tipo == 'gol' %}<i class="fa-solid fa-futbol text-success" title="Gol"></i>
+                                        {% elif ev.tipo == 'amarilla' %}<i class="fa-solid fa-square-full text-warning" title="Amarilla"></i>
+                                        {% elif ev.tipo == 'roja' %}<i class="fa-solid fa-square-full text-danger" title="Roja"></i>
+                                        {% else %}<i class="fa-solid fa-right-left text-info" title="Cambio"></i>{% endif %}
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <div class="text-center py-4 text-muted fs-8">Sin incidencias</div>
+                            {% endfor %}
                         </div>
-                    {% endfor %}
+                    </div>
                 </div>
+                {% if not eventos_local and not eventos_visitante %}
+                    <div class="text-center py-3 text-muted border-top mt-3">
+                        <i class="fa-regular fa-folder-open fa-2x mb-2"></i>
+                        <p class="mb-0 small">No se registraron incidencias en este partido.</p>
+                    </div>
+                {% endif %}
             </div>
         </div>
 
