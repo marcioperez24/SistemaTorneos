@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import PagoInscripcion, MultaTarjeta, MovimientoCaja
+from .models import PagoInscripcion, MultaTarjeta, MovimientoCaja, CobroEquipo
 
 @admin.register(PagoInscripcion)
 class PagoInscripcionAdmin(admin.ModelAdmin):
@@ -18,3 +18,9 @@ class MovimientoCajaAdmin(admin.ModelAdmin):
     list_display = ('tipo', 'monto', 'concepto', 'fecha', 'registrado_por')
     list_filter = ('tipo', 'fecha')
     search_fields = ('concepto',)
+
+@admin.register(CobroEquipo)
+class CobroEquipoAdmin(admin.ModelAdmin):
+    list_display = ('concepto', 'equipo', 'monto', 'estado', 'fecha_emision')
+    list_filter = ('estado', 'concepto')
+    search_fields = ('equipo__nombre', 'descripcion')

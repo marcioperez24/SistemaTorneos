@@ -9,6 +9,7 @@ from .models import Equipo, InvitacionEquipo, FichaJugador, FichaDT
 from .forms import EquipoForm, PlayerRegistrationForm, DTRegistrationForm
 from django.contrib.auth.forms import AuthenticationForm
 from matches.models import Torneo
+from finances.models import PagoInscripcion, MultaTarjeta, CobroEquipo
 
 def clean_phone_for_whatsapp(phone):
     if not phone:
@@ -88,6 +89,52 @@ def club_portal(request):
     # Obtener el nuevo enlace de la sesión y eliminarlo para que solo aparezca una vez
     nuevo_enlace = request.session.pop('nuevo_enlace', None)
     nuevo_enlace_equipo_id = request.session.pop('nuevo_enlace_equipo_id', None)
+    
+    torneos = Torneo.objects.all().order_by('-fecha_creacion')
+    
+    # Procesar historial de pagos para cada equipo
+    for equipo in equipos:
+        historial = []
+        
+        # 1. Inscripciones
+        for pago in PagoInscripcion.objects.filter(equipo=equipo):
+            historial.append({
+                'concepto': "Inscripción de Torneo",
+                'monto': pago.monto,
+                'estado': pago.estado,
+                'fecha': pago.fecha_pago,
+                'tipo': 'inscripcion'
+            })
+            
+        # 2. Multas por tarjetas
+        for multa in MultaTarjeta.objects.filter(equipo=equipo).select_related('jugador'):
+            nombre_jugador = multa.jugador.get_full_name() or multa.jugador.username
+            historial.append({
+                'concepto': f"{multa.get_motivo_display()} - {nombre_jugador}",
+                'monto': multa.monto,
+                'estado': multa.estado,
+                'fecha': multa.fecha_pago,
+                'tipo': 'multa'
+            })
+            
+        # 3. Cobros Adicionales (Arbitraje, etc)
+        for cobro in CobroEquipo.objects.filter(equipo=equipo):
+            desc = f" ({cobro.descripcion})" if cobro.descripcion else ""
+            historial.append({
+                'concepto': f"{cobro.get_concepto_display()}{desc}",
+                'monto': cobro.monto,
+                'estado': cobro.estado,
+                'fecha': cobro.fecha_pago or cobro.fecha_emision,
+                'tipo': 'cobro_adicional'
+            })
+            
+        # Ordenar historial por fecha (los nulos al principio o usar timezone.now() para comparables)
+        def sort_date(item):
+            # Si no hay fecha (ej. pendiente), usar la fecha actual para que aparezcan primero
+            return item['fecha'] or timezone.now()
+            
+        historial.sort(key=sort_date, reverse=True)
+        equipo.historial_pagos = historial
     
     torneos = Torneo.objects.all().order_by('-fecha_creacion')
     

@@ -1,83 +1,112 @@
-from django.db import models
-from django.conf import settings
-from teams.models import Equipo
-from matches.models import Partido, EventoPartido
+from django.db import models
+from django.conf import settings
+from teams.models import Equipo
+from matches.models import Partido, EventoPartido
+
+class PagoInscripcion(models.Model):
+    ESTADOS = (
+        ('pendiente', 'Pendiente'),
+        ('pagado', 'Pagado'),
+    )
+    METODOS = (
+        ('efectivo', 'Efectivo'),
+        ('transferencia', 'Transferencia Bancaria'),
+        ('billetera_movil', 'Billetera Móvil'),
+    )
+
+    equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='pagos_inscripcion', verbose_name="Equipo")
+    monto = models.DecimalField(max_digits=10, decimal_places=2, default=1500.00, verbose_name="Monto ($)")
+    fecha_pago = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de Pago")
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente', verbose_name="Estado de Pago")
+    metodo_pago = models.CharField(max_length=50, choices=METODOS, null=True, blank=True, verbose_name="Método de Pago")
+    comprobante = models.ImageField(upload_to="comprobantes/", null=True, blank=True, verbose_name="Comprobante / Recibo")
+    notas = models.TextField(blank=True, null=True, verbose_name="Notas/Observaciones")
+
+    class Meta:
+        verbose_name = "Pago de Inscripción"
+        verbose_name_plural = "Pagos de Inscripciones"
+
+    def __str__(self):
+        return f"Inscripción {self.equipo.nombre} - {self.get_estado_display()} ({self.monto} $)"
+
+
+class MultaTarjeta(models.Model):
+    ESTADOS = (
+        ('pendiente', 'Pendiente de Pago'),
+        ('pagado', 'Pagado'),
+    )
+    MOTIVOS = (
+        ('amarilla', 'Tarjeta Amarilla ($ 50.00)'),
+        ('roja', 'Tarjeta Roja ($ 150.00)'),
+    )
+
+    partido = models.ForeignKey(Partido, on_delete=models.CASCADE, related_name='multas', verbose_name="Partido")
+    evento = models.OneToOneField(EventoPartido, on_delete=models.CASCADE, related_name='multa_tarjeta', verbose_name="Incidencia de Tarjeta")
+    equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='multas', verbose_name="Equipo Sancionado")
+    jugador = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='multas', verbose_name="Jugador Sancionado")
+    monto = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Monto de Multa ($)")
+    motivo = models.CharField(max_length=20, choices=MOTIVOS, verbose_name="Motivo Sanción")
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente', verbose_name="Estado de Pago")
+    fecha_pago = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de Pago de Multa")
+
+    class Meta:
+        verbose_name = "Multa por Tarjeta"
+        verbose_name_plural = "Multas por Tarjetas"
+
+    def __str__(self):
+        return f"Multa {self.get_motivo_display()} - {self.jugador.username} ({self.get_estado_display()})"
+
+
+class MovimientoCaja(models.Model):
+    TIPOS = (
+        ('ingreso', 'Ingreso (+)'),
+        ('egreso', 'Egreso (-)'),
+    )
+
+    tipo = models.CharField(max_length=20, choices=TIPOS, verbose_name="Tipo de Movimiento")
+    monto = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Monto ($)")
+    concepto = models.CharField(max_length=255, verbose_name="Concepto/Descripción")
+    fecha = models.DateTimeField(auto_now_add=True, verbose_name="Fecha y Hora")
+    registrado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        related_name='movimientos_caja',
+        verbose_name="Registrado Por"
+    )
+
+    class Meta:
+        verbose_name = "Movimiento de Caja"
+        verbose_name_plural = "Movimientos de Caja"
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} - {self.concepto} ({self.monto} $)"
 
-class PagoInscripcion(models.Model):
-    ESTADOS = (
-        ('pendiente', 'Pendiente'),
-        ('pagado', 'Pagado'),
+
+class CobroEquipo(models.Model):
+    CONCEPTO_CHOICES = (
+        ('arbitraje', 'Cuota de Arbitraje'),
+        ('inscripcion', 'Cuota de Inscripción'),
+        ('multa', 'Multa / Sanción Disciplinaria'),
+        ('otro', 'Otro Cobro'),
     )
-    METODOS = (
-        ('efectivo', 'Efectivo'),
-        ('transferencia', 'Transferencia Bancaria'),
-        ('billetera_movil', 'Billetera Móvil'),
-    )
-
-    equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='pagos_inscripcion', verbose_name="Equipo")
-    monto = models.DecimalField(max_digits=10, decimal_places=2, default=1500.00, verbose_name="Monto ($)")
-    fecha_pago = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de Pago")
-    estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente', verbose_name="Estado de Pago")
-    metodo_pago = models.CharField(max_length=50, choices=METODOS, null=True, blank=True, verbose_name="Método de Pago")
-    comprobante = models.ImageField(upload_to="comprobantes/", null=True, blank=True, verbose_name="Comprobante / Recibo")
-    notas = models.TextField(blank=True, null=True, verbose_name="Notas/Observaciones")
-
-    class Meta:
-        verbose_name = "Pago de Inscripción"
-        verbose_name_plural = "Pagos de Inscripciones"
-
-    def __str__(self):
-        return f"Inscripción {self.equipo.nombre} - {self.get_estado_display()} ({self.monto} $)"
-
-
-class MultaTarjeta(models.Model):
     ESTADOS = (
         ('pendiente', 'Pendiente de Pago'),
         ('pagado', 'Pagado'),
     )
-    MOTIVOS = (
-        ('amarilla', 'Tarjeta Amarilla ($ 50.00)'),
-        ('roja', 'Tarjeta Roja ($ 150.00)'),
-    )
 
-    partido = models.ForeignKey(Partido, on_delete=models.CASCADE, related_name='multas', verbose_name="Partido")
-    evento = models.OneToOneField(EventoPartido, on_delete=models.CASCADE, related_name='multa_tarjeta', verbose_name="Incidencia de Tarjeta")
-    equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='multas', verbose_name="Equipo Sancionado")
-    jugador = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='multas', verbose_name="Jugador Sancionado")
-    monto = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Monto de Multa ($)")
-    motivo = models.CharField(max_length=20, choices=MOTIVOS, verbose_name="Motivo Sanción")
-    estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente', verbose_name="Estado de Pago")
-    fecha_pago = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de Pago de Multa")
-
-    class Meta:
-        verbose_name = "Multa por Tarjeta"
-        verbose_name_plural = "Multas por Tarjetas"
-
-    def __str__(self):
-        return f"Multa {self.get_motivo_display()} - {self.jugador.username} ({self.get_estado_display()})"
-
-
-class MovimientoCaja(models.Model):
-    TIPOS = (
-        ('ingreso', 'Ingreso (+)'),
-        ('egreso', 'Egreso (-)'),
-    )
-
-    tipo = models.CharField(max_length=20, choices=TIPOS, verbose_name="Tipo de Movimiento")
+    equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='cobros_adicionales', verbose_name="Equipo")
+    concepto = models.CharField(max_length=50, choices=CONCEPTO_CHOICES, verbose_name="Concepto")
+    descripcion = models.CharField(max_length=255, blank=True, null=True, verbose_name="Descripción Detallada")
     monto = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Monto ($)")
-    concepto = models.CharField(max_length=255, verbose_name="Concepto/Descripción")
-    fecha = models.DateTimeField(auto_now_add=True, verbose_name="Fecha y Hora")
-    registrado_por = models.ForeignKey(
-        settings.AUTH_USER_MODEL, 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        related_name='movimientos_caja',
-        verbose_name="Registrado Por"
-    )
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente', verbose_name="Estado")
+    fecha_emision = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Emisión")
+    fecha_pago = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de Pago")
 
     class Meta:
-        verbose_name = "Movimiento de Caja"
-        verbose_name_plural = "Movimientos de Caja"
+        verbose_name = "Cobro a Equipo"
+        verbose_name_plural = "Cobros a Equipos"
+        ordering = ['-fecha_emision']
 
     def __str__(self):
-        return f"{self.get_tipo_display()} - {self.concepto} ({self.monto} $)"
+        return f"{self.get_concepto_display()} - {self.equipo.nombre} ({self.monto} $)"

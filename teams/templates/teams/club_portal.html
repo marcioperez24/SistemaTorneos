@@ -318,6 +318,13 @@
                                 <i class="fa-solid fa-chalkboard-user me-2 text-warning"></i>Alineación Táctica
                             </button>
                         </li>
+                        {% if request.user.role != 'jugador' %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold text-uppercase fs-7 py-2.5" id="finances-tab{{ equipo.id }}" data-bs-toggle="tab" data-bs-target="#finances-pane{{ equipo.id }}" type="button" role="tab" aria-controls="finances-pane{{ equipo.id }}" aria-selected="false">
+                                <i class="fa-solid fa-file-invoice-dollar me-2 text-success"></i>Estado de Cuenta
+                            </button>
+                        </li>
+                        {% endif %}
                     </ul>
 
                     <div class="tab-content" id="teamTabContent{{ equipo.id }}">
@@ -561,6 +568,61 @@
                             </div>
                         </div>
                     </div> <!-- /tactics-pane -->
+                    
+                    {% if request.user.role != 'jugador' %}
+                    <!-- PANEL 3: FINANZAS -->
+                    <div class="tab-pane fade" id="finances-pane{{ equipo.id }}" role="tabpanel" aria-labelledby="finances-tab{{ equipo.id }}">
+                        {% if not equipo.historial_pagos %}
+                            <div class="text-center py-5 text-muted bg-light rounded-4">
+                                <i class="fa-solid fa-receipt fa-3x mb-3 text-black-50"></i>
+                                <h5>No hay historial de pagos registrado</h5>
+                                <p class="small">Aquí aparecerán las multas, inscripciones y cuotas de arbitraje del club.</p>
+                            </div>
+                        {% else %}
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light text-uppercase fs-7 tracking-wider">
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Concepto</th>
+                                            <th>Monto</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for pago in equipo.historial_pagos %}
+                                            <tr>
+                                                <td class="text-muted fs-8 font-monospace">
+                                                    {% if pago.fecha %}{{ pago.fecha|date:"d/m/Y H:i" }}{% else %}-{% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if pago.tipo == 'inscripcion' %}
+                                                        <i class="fa-solid fa-trophy text-warning me-2" title="Inscripción"></i>
+                                                    {% elif pago.tipo == 'multa' %}
+                                                        <i class="fa-solid fa-square-full text-danger me-2" title="Multa Disciplinaria"></i>
+                                                    {% else %}
+                                                        <i class="fa-solid fa-money-bill-wave text-success me-2" title="Cobro Adicional"></i>
+                                                    {% endif %}
+                                                    <span class="fw-bold">{{ pago.concepto }}</span>
+                                                </td>
+                                                <td class="font-monospace fw-bold text-dark fs-6">
+                                                    $ {{ pago.monto }}
+                                                </td>
+                                                <td>
+                                                    {% if pago.estado == 'pagado' %}
+                                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill"><i class="fa-solid fa-check me-1"></i>Pagado</span>
+                                                    {% else %}
+                                                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-2 rounded-pill"><i class="fa-solid fa-clock me-1"></i>Pendiente</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endif %}
+                    </div> <!-- /finances-pane -->
+                    {% endif %}
                 </div> <!-- /tab-content -->
                 
                 <script>
