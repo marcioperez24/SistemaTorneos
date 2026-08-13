@@ -93,13 +93,13 @@
                                         <span class="badge bg-secondary px-2.5 py-1.5 rounded-pill fs-8"><i class="fa-solid fa-users-rectangle me-1"></i>{{ t.equipos.count }} Equipos</span>
                                     </td>
                                     <td class="py-3 text-end px-3">
-                                        <div class="d-flex justify-content-end gap-2">
-                                            <a href="{% url 'detalle_torneo' t.id %}" class="btn btn-sm btn-custom-primary rounded-pill px-3 py-1.5 align-middle shadow-sm fs-8">
+                                        <div class="d-flex justify-content-end align-items-center gap-2">
+                                            <a href="{% url 'detalle_torneo' t.id %}" class="btn btn-sm btn-custom-primary rounded-pill px-3 py-1 d-flex align-items-center shadow-sm fs-8" style="height: 34px;">
                                                 <i class="fa-solid fa-gears me-1"></i>Gestionar
                                             </a>
-                                            <form method="POST" action="{% url 'eliminar_torneo' t.id %}" onsubmit="return confirm('¿Estás seguro de que deseas eliminar permanentemente el torneo {{ t.nombre }}? Todos los partidos asociados y estadísticas se borrarán para siempre.');" class="d-inline">
+                                            <form method="POST" action="{% url 'eliminar_torneo' t.id %}" onsubmit="return confirm('¿Estás seguro de que deseas eliminar permanentemente el torneo {{ t.nombre }}? Todos los partidos asociados y estadísticas se borrarán para siempre.');" class="d-inline m-0">
                                                 {% csrf_token %}
-                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle p-2 d-inline-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="Eliminar Torneo">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle p-0 d-flex align-items-center justify-content-center shadow-sm" style="width: 34px; height: 34px;" title="Eliminar Torneo">
                                                     <i class="fa-solid fa-trash-can fs-8"></i>
                                                 </button>
                                             </form>
