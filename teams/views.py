@@ -4,9 +4,25 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta
+import urllib.parse
 from .models import Equipo, InvitacionEquipo, FichaJugador, FichaDT
 from .forms import EquipoForm, PlayerRegistrationForm, DTRegistrationForm
 from django.contrib.auth.forms import AuthenticationForm
+
+def clean_phone_for_whatsapp(phone):
+    if not phone:
+        return None
+    # Remove all non-digits
+    digits = ''.join(c for c in str(phone) if c.isdigit())
+    if not digits:
+        return None
+    # If starts with 0 and has 10 digits (Ecuadorian mobile: 09xxxxxxxx), remove leading 0
+    if len(digits) == 10 and digits.startswith('0'):
+        digits = digits[1:]
+    # Prepend Ecuador country code 593 if not present
+    if not digits.startswith('593'):
+        digits = '593' + digits
+    return digits
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -244,7 +260,17 @@ def aprobar_jugador(request, ficha_id):
     ficha.save()
     
     rol_str = "Director Técnico" if tipo == 'dt' else "Jugador"
-    messages.success(request, f"El carnet de {ficha.user.get_full_name() or ficha.user.username} ({rol_str}) ha sido Aprobado y Habilitado.")
+    nombre_completo = ficha.user.get_full_name() or ficha.user.username
+    equipo_nombre = ficha.equipo.nombre if ficha.equipo else "su club"
+    
+    messages.success(request, f"El carnet de {nombre_completo} ({rol_str}) ha sido Aprobado y Habilitado.")
+    
+    telefono = clean_phone_for_whatsapp(ficha.user.telefono)
+    if telefono:
+        mensaje = f"¡Hola {nombre_completo}! Tu registro como {rol_str} para el equipo '{equipo_nombre}' ha sido APROBADO y HABILITADO con éxito. 🏆⚽"
+        url_mensaje = f"https://api.whatsapp.com/send?phone={telefono}&text={urllib.parse.quote(mensaje)}"
+        return redirect(url_mensaje)
+        
     return redirect('secretaria_dashboard')
 
 @login_required
@@ -265,7 +291,17 @@ def rechazar_jugador(request, ficha_id):
         ficha.motivo_rechazo = motivo
         ficha.save()
         rol_str = "Director Técnico" if tipo == 'dt' else "Jugador"
-        messages.warning(request, f"El carnet de {ficha.user.get_full_name() or ficha.user.username} ({rol_str}) ha sido Rechazado.")
+        nombre_completo = ficha.user.get_full_name() or ficha.user.username
+        equipo_nombre = ficha.equipo.nombre if ficha.equipo else "su club"
+        
+        messages.warning(request, f"El carnet de {nombre_completo} ({rol_str}) ha sido Rechazado.")
+        
+        telefono = clean_phone_for_whatsapp(ficha.user.telefono)
+        if telefono:
+            mensaje = f"¡Hola {nombre_completo}! Tu registro como {rol_str} para el equipo '{equipo_nombre}' ha sido RECHAZADO.\n\nMotivo del rechazo: {motivo}\n\nPor favor, ingresa al portal del club para corregir tu información."
+            url_mensaje = f"https://api.whatsapp.com/send?phone={telefono}&text={urllib.parse.quote(mensaje)}"
+            return redirect(url_mensaje)
+            
     return redirect('secretaria_dashboard')
 
 @login_required
