@@ -38,6 +38,14 @@ class CustomUser(AbstractUser):
             }
             return self.role in defaults.get(module_name, [])
 
+    @property
+    def ficha_jugador(self):
+        return self.fichas_jugador.first()
+
+    @property
+    def ficha_dt(self):
+        return self.fichas_dt.first()
+
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"
 

@@ -1,0 +1,238 @@
+{% extends 'teams/base.html' %}
+{% block title %}Completar Registro - {{ equipo.nombre }}{% endblock %}
+
+{% block content %}
+<div class="gradient-header text-center py-5">
+    <div class="container d-flex flex-column align-items-center">
+        {% if equipo.logo %}
+            <img src="{{ equipo.logo.url }}" alt="{{ equipo.nombre }}" class="rounded-circle border mb-3 shadow" style="width: 90px; height: 90px; object-fit: cover; border-color: #fff !important; border-width: 3px !important;">
+        {% else %}
+            <div class="bg-white text-primary rounded-circle border mb-3 shadow d-flex align-items-center justify-content-center fw-bold" style="width: 90px; height: 90px; font-size: 2.2rem; border-color: #fff !important; border-width: 3px !important;">
+                {{ equipo.nombre|slice:":2"|upper }}
+            </div>
+        {% endif %}
+        <h1 class="fw-bold fs-2"><i class="fa-solid fa-user-check me-2 text-warning animate__animated animate__bounceIn"></i>Confirmar Registro en Equipo</h1>
+        <p class="lead mb-0 text-white-50">Vas a unirte al club <strong class="text-white">{{ equipo.nombre }}</strong> en la categoría <strong>{{ equipo.get_categoria_display }}</strong>.</p>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card card-custom p-4 shadow-lg border-top border-primary border-4" style="overflow: visible !important;">
+                
+                <div class="alert alert-success border-0 shadow-sm mb-4 d-flex align-items-center">
+                    <i class="fa-solid fa-circle-check fa-lg text-success me-3"></i>
+                    <div>
+                        <strong>Cuenta detectada:</strong> Estás autenticado como <strong class="text-primary">{{ request.user.get_full_name|default:request.user.username }}</strong>. 
+                        Tus documentos de identidad y selfie se copiarán automáticamente de tu registro previo.
+                    </div>
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <h4 class="fw-bold mb-3 text-primary border-bottom pb-2">
+                        <i class="fa-solid fa-circle-info me-2"></i>1. Resumen de tus Datos
+                    </h4>
+                    
+                    <div class="row mb-4 bg-light p-3 rounded-3 border g-3">
+                        <div class="col-sm-6">
+                            <span class="text-secondary small d-block">Nombre Completo:</span>
+                            <strong class="text-dark">{{ request.user.get_full_name|default:request.user.username }}</strong>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-secondary small d-block">Teléfono de Contacto:</span>
+                            <strong class="text-dark">{{ request.user.telefono|default:"No registrado" }}</strong>
+                        </div>
+                        {% if ficha_anterior %}
+                            <div class="col-sm-6">
+                                <span class="text-secondary small d-block">Cédula de Identidad:</span>
+                                <strong class="text-dark font-monospace">{{ ficha_anterior.nro_cedula|default:"No registrada" }}</strong>
+                            </div>
+                            <div class="col-sm-6">
+                                <span class="text-secondary small d-block">Tipo de Sangre:</span>
+                                <strong class="text-dark font-monospace">{{ ficha_anterior.tipo_sangre|default:"O+" }}</strong>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <h4 class="fw-bold mb-3 text-primary border-bottom pb-2">
+                        <i class="fa-solid fa-signature me-2"></i>2. Completar Ficha del Equipo
+                    </h4>
+
+                    {% if tipo == 'jugador' %}
+                        <div class="mb-4 col-md-6">
+                            <label for="numero_camiseta" class="form-label fw-bold text-secondary">Número de Camiseta para este Equipo</label>
+                            <input type="number" name="numero_camiseta" id="numero_camiseta" class="form-control" placeholder="Ej. 10" required min="1" max="99">
+                            <div class="form-text text-muted small mt-1">Elige el dorsal que usarás en el equipo {{ equipo.nombre }}.</div>
+                        </div>
+                    {% endif %}
+
+                    <!-- Pizarra de Firma Digital -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-secondary d-block">Firma Electrónica / Firma Digital</label>
+                        <p class="text-muted small">Haz clic en el botón de abajo para dibujar tu firma digital en la pizarrita táctil.</p>
+                        
+                        <button type="button" class="btn btn-outline-primary rounded-pill px-4 py-2" data-bs-toggle="modal" data-bs-target="#signatureModal">
+                            <i class="fa-solid fa-signature me-1.5"></i>Abrir Pizarrita para Firmar
+                        </button>
+                        
+                        <div id="firma_preview_container" style="display: none;" class="text-center mt-3 animate__animated animate__fadeIn">
+                            <span class="text-muted d-block small mb-1">Tu firma registrada:</span>
+                            <div class="p-2 border rounded bg-white shadow-sm d-inline-block">
+                                <img id="firma_preview_img" src="" alt="Firma del Jugador" style="max-height: 80px; width: auto; display: block;">
+                            </div>
+                        </div>
+                        
+                        <input type="hidden" name="firma_imagen" id="id_firma_imagen">
+                    </div>
+
+                    <button type="submit" class="btn btn-custom-primary w-100 py-3 text-uppercase fw-bold shadow mt-2">
+                        <i class="fa-solid fa-circle-check me-2"></i>Confirmar Inscripción en {{ equipo.nombre }}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Dibujar Firma (Pizarrita) -->
+<div class="modal fade" id="signatureModal" data-bs-backdrop="static" tabindex="-1" aria-labelledby="signatureModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-dark text-white rounded-top-4 py-3">
+                <h5 class="modal-title fw-bold" id="signatureModalLabel">
+                    <i class="fa-solid fa-signature text-warning me-2"></i>Pizarrita de Firma Digital
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center bg-light p-4">
+                <p class="small text-muted mb-3">Dibuja tu firma oficial con tu dedo en la pantalla táctil o usando el cursor del mouse.</p>
+                <div class="canvas-container border border-3 border-dark rounded-3 overflow-hidden shadow-sm mx-auto" style="max-width: 100%; width: 400px; height: 200px; background-color: #1e1e1e; position: relative;">
+                    <canvas id="signatureCanvas" width="400" height="200" style="cursor: crosshair; display: block;"></canvas>
+                    <div style="position: absolute; bottom: 20px; left: 10%; right: 10%; border-top: 1px dashed rgba(255,255,255,0.2); pointer-events: none;"></div>
+                    <span style="position: absolute; bottom: 5px; left: 10%; font-size: 8px; color: rgba(255,255,255,0.4); pointer-events: none; font-family: sans-serif;">LÍNEA DE FIRMA</span>
+                </div>
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="button" class="btn btn-outline-secondary py-2 px-3 rounded-pill" id="clearCanvasBtn">
+                        <i class="fa-solid fa-eraser me-1"></i>Limpiar Pizarra
+                    </button>
+                    <button type="button" class="btn btn-success py-2 px-4 fw-bold rounded-pill shadow-sm" id="saveSignatureBtn">
+                        <i class="fa-solid fa-check me-1"></i>Confirmar Firma
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const canvas = document.getElementById('signatureCanvas');
+    const ctx = canvas.getContext('2d');
+    const clearBtn = document.getElementById('clearCanvasBtn');
+    const saveBtn = document.getElementById('saveSignatureBtn');
+    const hiddenInput = document.getElementById('id_firma_imagen');
+    const previewContainer = document.getElementById('firma_preview_container');
+    const previewImg = document.getElementById('firma_preview_img');
+    const form = document.querySelector('form');
+    const signatureModalEl = document.getElementById('signatureModal');
+    const signatureModal = new bootstrap.Modal(signatureModalEl);
+
+    let drawing = false;
+
+    // Configuración de trazo blanco sobre pizarra negra
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    function getMousePos(canvasDom, touchOrMouseEvent) {
+        const rect = canvasDom.getBoundingClientRect();
+        const scaleX = canvasDom.width / rect.width;
+        const scaleY = canvasDom.height / rect.height;
+        
+        let clientX, clientY;
+        if (touchOrMouseEvent.touches && touchOrMouseEvent.touches.length > 0) {
+            clientX = touchOrMouseEvent.touches[0].clientX;
+            clientY = touchOrMouseEvent.touches[0].clientY;
+        } else {
+            clientX = touchOrMouseEvent.clientX;
+            clientY = touchOrMouseEvent.clientY;
+        }
+        
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
+    }
+
+    function startDrawing(e) {
+        drawing = true;
+        const pos = getMousePos(canvas, e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+        e.preventDefault();
+    }
+
+    function draw(e) {
+        if (!drawing) return;
+        const pos = getMousePos(canvas, e);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        e.preventDefault();
+    }
+
+    function stopDrawing() {
+        drawing = false;
+    }
+
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseleave', stopDrawing);
+
+    canvas.addEventListener('touchstart', startDrawing, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    canvas.addEventListener('touchend', stopDrawing);
+
+    clearBtn.addEventListener('click', function() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    saveBtn.addEventListener('click', function() {
+        const buffer = new Uint32Array(ctx.getImageData(0, 0, canvas.width, canvas.height).data.buffer);
+        const hasDrawn = buffer.some(color => color !== 0);
+        
+        if (!hasDrawn) {
+            alert('Por favor, dibuja tu firma sobre la pizarrita antes de confirmar.');
+            return;
+        }
+
+        const dataURL = canvas.toDataURL('image/png');
+        hiddenInput.value = dataURL;
+        previewImg.src = dataURL;
+        previewContainer.style.display = 'block';
+        
+        signatureModal.hide();
+    });
+
+    signatureModalEl.addEventListener('shown.bs.modal', function () {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+    });
+
+    form.addEventListener('submit', function(e) {
+        if (!hiddenInput.value) {
+            e.preventDefault();
+            alert('Debes dibujar y guardar tu firma en la pizarrita para poder inscribirte.');
+            signatureModal.show();
+        }
+    });
+});
+</script>
+{% endblock %}

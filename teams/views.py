@@ -26,6 +26,9 @@ def clean_phone_for_whatsapp(phone):
 
 def login_view(request):
     if request.user.is_authenticated:
+        next_url = request.GET.get('next') or request.POST.get('next')
+        if next_url:
+            return redirect(next_url)
         return redirect('club_portal')
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
@@ -36,6 +39,9 @@ def login_view(request):
             if user is not None:
                 login(request, user)
                 messages.success(request, f"¡Bienvenido, {user.username}!")
+                next_url = request.GET.get('next') or request.POST.get('next')
+                if next_url:
+                    return redirect(next_url)
                 return redirect('club_portal')
         else:
             messages.error(request, "Usuario o contraseña incorrectos.")
@@ -171,6 +177,74 @@ def registro_jugador(request, token):
         
     tipo = invitacion.tipo
     
+    # Si el usuario ya está autenticado (tiene cuenta en el sistema)
+    if request.user.is_authenticated:
+        # Validar si ya está registrado en este equipo
+        if tipo == 'dt':
+            ya_registrado = FichaDT.objects.filter(user=request.user, equipo=invitacion.equipo).exists()
+        else:
+            ya_registrado = FichaJugador.objects.filter(user=request.user, equipo=invitacion.equipo).exists()
+            
+        if ya_registrado:
+            return render(request, 'teams/registro_error.html', {
+                'error': f'Ya te encuentras registrado en el equipo {invitacion.equipo.nombre}.',
+                'hide_navbar': False
+            })
+            
+        # Buscar su registro anterior para copiar archivos
+        if tipo == 'dt':
+            ficha_anterior = FichaDT.objects.filter(user=request.user).order_by('-id').first()
+        else:
+            ficha_anterior = FichaJugador.objects.filter(user=request.user).order_by('-id').first()
+            
+        if request.method == 'POST':
+            if tipo == 'dt':
+                nueva_ficha = FichaDT(
+                    user=request.user,
+                    equipo=invitacion.equipo,
+                    estado_validacion='pendiente',
+                    fecha_firma=timezone.now(),
+                    firma_digital=True,
+                    firma_imagen=request.POST.get('firma_imagen')
+                )
+                if ficha_anterior:
+                    nueva_ficha.foto = ficha_anterior.foto
+                    nueva_ficha.cedula_frontal = ficha_anterior.cedula_frontal
+                    nueva_ficha.cedula_posterior = ficha_anterior.cedula_posterior
+                    nueva_ficha.nro_cedula = ficha_anterior.nro_cedula
+                    nueva_ficha.tipo_sangre = ficha_anterior.tipo_sangre
+                    nueva_ficha.contacto_emergencia = ficha_anterior.contacto_emergencia
+                    nueva_ficha.telefono_emergencia = ficha_anterior.telefono_emergencia
+                nueva_ficha.save()
+            else:
+                nueva_ficha = FichaJugador(
+                    user=request.user,
+                    equipo=invitacion.equipo,
+                    numero_camiseta=request.POST.get('numero_camiseta'),
+                    estado_validacion='pendiente',
+                    fecha_firma=timezone.now(),
+                    firma_digital=True,
+                    firma_imagen=request.POST.get('firma_imagen')
+                )
+                if ficha_anterior:
+                    nueva_ficha.foto = ficha_anterior.foto
+                    nueva_ficha.cedula_frontal = ficha_anterior.cedula_frontal
+                    nueva_ficha.cedula_posterior = ficha_anterior.cedula_posterior
+                    nueva_ficha.nro_cedula = ficha_anterior.nro_cedula
+                    nueva_ficha.tipo_sangre = ficha_anterior.tipo_sangre
+                    nueva_ficha.contacto_emergencia = ficha_anterior.contacto_emergencia
+                    nueva_ficha.telefono_emergencia = ficha_anterior.telefono_emergencia
+                nueva_ficha.save()
+                
+            return redirect('registro_exito')
+            
+        return render(request, 'teams/registro_existente.html', {
+            'equipo': invitacion.equipo,
+            'tipo': tipo,
+            'ficha_anterior': ficha_anterior,
+            'hide_navbar': False
+        })
+        
     if request.method == 'POST':
         if tipo == 'dt':
             form = DTRegistrationForm(request.POST, request.FILES)

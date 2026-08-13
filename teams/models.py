@@ -88,10 +88,10 @@ class FichaJugador(models.Model):
         ('rechazado', 'Rechazado'),
     )
 
-    user = models.OneToOneField(
+    user = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE, 
-        related_name='ficha_jugador',
+        related_name='fichas_jugador',
         verbose_name="Usuario Jugador"
     )
     equipo = models.ForeignKey(
@@ -154,10 +154,10 @@ class FichaDT(models.Model):
         ('rechazado', 'Rechazado'),
     )
 
-    user = models.OneToOneField(
+    user = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE, 
-        related_name='ficha_dt',
+        related_name='fichas_dt',
         verbose_name="Usuario DT"
     )
     equipo = models.ForeignKey(

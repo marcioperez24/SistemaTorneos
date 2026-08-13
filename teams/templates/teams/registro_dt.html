@@ -19,8 +19,16 @@
 <div class="container mb-5">
     <div class="row justify-content-center">
         <div class="col-md-9">
-            <div class="card card-custom p-4 shadow-lg border-top border-warning border-4">
+            <div class="card card-custom p-4 shadow-lg border-top border-warning border-4" style="overflow: visible !important;">
                 
+                <div class="alert alert-warning border-0 shadow-sm mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2 animate__animated animate__fadeIn">
+                    <div>
+                        <i class="fa-solid fa-user-check me-2 text-warning fs-5"></i>
+                        <strong>¿Ya tienes una cuenta registrada en el sistema?</strong> Inicia sesión para autocompletar tu ficha.
+                    </div>
+                    <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-warning btn-sm fw-bold rounded-pill px-4 py-2">Iniciar Sesión</a>
+                </div>
+
                 <div class="alert alert-info border-0 shadow-sm mb-4">
                     <i class="fa-solid fa-circle-info me-2 text-info"></i>
                     <strong>Atención:</strong> Por favor, completa tu información de forma precisa. Las imágenes de tu cédula deben ser legibles y tu selfie debe tener una iluminación adecuada para que el carnet oficial de DT sea aprobado rápidamente por secretaría.
@@ -337,6 +345,34 @@ document.addEventListener('DOMContentLoaded', function() {
             signatureModal.show();
         }
     });
+
+    // Inicializar intl-tel-input en el teléfono de contacto
+    const phoneInput = document.querySelector("#id_telefono");
+    if (phoneInput) {
+        // Cargar intl-tel-input de forma dinámica
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/css/intlTelInput.css';
+        document.head.appendChild(link);
+
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/intlTelInput.min.js';
+        script.onload = function() {
+            const iti = window.intlTelInput(phoneInput, {
+                initialCountry: "ec",
+                preferredCountries: ["ec", "ni", "cr", "pa", "co", "pe", "us"],
+                utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js",
+                separateDialCode: true,
+            });
+
+            form.addEventListener("submit", function() {
+                if (phoneInput.value.trim()) {
+                    phoneInput.value = iti.getNumber();
+                }
+            });
+        };
+        document.body.appendChild(script);
+    }
 });
 </script>
 {% endblock %}
