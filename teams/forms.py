@@ -25,12 +25,12 @@ class EquipoForm(forms.ModelForm):
 
 class PlayerRegistrationForm(forms.ModelForm):
     # Campos de User
-    username = forms.CharField(max_length=150, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Usuario único'}))
-    email = forms.EmailField(widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'ejemplo@correo.com'}))
+    username = forms.CharField(max_length=150, required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Usuario único'}))
+    email = forms.EmailField(required=False, widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'ejemplo@correo.com'}))
     first_name = forms.CharField(max_length=150, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tus nombres'}))
     last_name = forms.CharField(max_length=150, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tus apellidos'}))
     telefono = forms.CharField(max_length=20, label="Teléfono de Contacto", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. +593987654321'}))
-    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Crea una contraseña segura'}))
+    password = forms.CharField(required=False, widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Crea una contraseña segura'}))
 
     class Meta:
         model = FichaJugador
@@ -53,30 +53,58 @@ class PlayerRegistrationForm(forms.ModelForm):
             'firma_imagen': forms.HiddenInput(),
         }
 
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if self.user:
+            # Eliminar campos de cuenta ya que ya está logueado
+            self.fields.pop('username', None)
+            self.fields.pop('email', None)
+            self.fields.pop('password', None)
+            # Inicializar nombres y teléfono del usuario existente
+            self.fields['first_name'].initial = self.user.first_name
+            self.fields['last_name'].initial = self.user.last_name
+            self.fields['telefono'].initial = self.user.telefono
+
     def clean_username(self):
+        if self.user:
+            return None
         username = self.cleaned_data.get('username')
+        if not username:
+            raise forms.ValidationError("Este campo es obligatorio.")
         if User.objects.filter(username=username).exists():
             raise forms.ValidationError("Este nombre de usuario ya está registrado.")
         return username
 
     def clean_email(self):
+        if self.user:
+            return None
         email = self.cleaned_data.get('email')
+        if not email:
+            raise forms.ValidationError("Este campo es obligatorio.")
         if User.objects.filter(email=email).exists():
             raise forms.ValidationError("Este correo electrónico ya está registrado.")
         return email
 
     def save(self, commit=True, equipo=None):
-        # 1. Crear el CustomUser
-        user = User.objects.create_user(
-            username=self.cleaned_data['username'],
-            email=self.cleaned_data['email'],
-            password=self.cleaned_data['password'],
-            first_name=self.cleaned_data['first_name'],
-            last_name=self.cleaned_data['last_name'],
-            role='jugador'
-        )
-        user.telefono = self.cleaned_data['telefono']
-        user.save()
+        if self.user:
+            user = self.user
+            user.first_name = self.cleaned_data['first_name']
+            user.last_name = self.cleaned_data['last_name']
+            user.telefono = self.cleaned_data['telefono']
+            user.save()
+        else:
+            # 1. Crear el CustomUser
+            user = User.objects.create_user(
+                username=self.cleaned_data['username'],
+                email=self.cleaned_data['email'],
+                password=self.cleaned_data['password'],
+                first_name=self.cleaned_data['first_name'],
+                last_name=self.cleaned_data['last_name'],
+                role='jugador'
+            )
+            user.telefono = self.cleaned_data['telefono']
+            user.save()
         
         # 2. Crear la FichaJugador
         ficha = super().save(commit=False)
@@ -91,12 +119,12 @@ class PlayerRegistrationForm(forms.ModelForm):
 
 class DTRegistrationForm(forms.ModelForm):
     # Campos de User
-    username = forms.CharField(max_length=150, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Usuario único'}))
-    email = forms.EmailField(widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'ejemplo@correo.com'}))
+    username = forms.CharField(max_length=150, required=False, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Usuario único'}))
+    email = forms.EmailField(required=False, widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'ejemplo@correo.com'}))
     first_name = forms.CharField(max_length=150, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tus nombres'}))
     last_name = forms.CharField(max_length=150, widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Tus apellidos'}))
     telefono = forms.CharField(max_length=20, label="Teléfono de Contacto", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. +593987654321'}))
-    password = forms.CharField(widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Crea una contraseña segura'}))
+    password = forms.CharField(required=False, widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Crea una contraseña segura'}))
 
     class Meta:
         model = FichaDT
@@ -118,30 +146,58 @@ class DTRegistrationForm(forms.ModelForm):
             'firma_imagen': forms.HiddenInput(),
         }
 
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if self.user:
+            # Eliminar campos de cuenta ya que ya está logueado
+            self.fields.pop('username', None)
+            self.fields.pop('email', None)
+            self.fields.pop('password', None)
+            # Inicializar nombres y teléfono del usuario existente
+            self.fields['first_name'].initial = self.user.first_name
+            self.fields['last_name'].initial = self.user.last_name
+            self.fields['telefono'].initial = self.user.telefono
+
     def clean_username(self):
+        if self.user:
+            return None
         username = self.cleaned_data.get('username')
+        if not username:
+            raise forms.ValidationError("Este campo es obligatorio.")
         if User.objects.filter(username=username).exists():
             raise forms.ValidationError("Este nombre de usuario ya está registrado.")
         return username
 
     def clean_email(self):
+        if self.user:
+            return None
         email = self.cleaned_data.get('email')
+        if not email:
+            raise forms.ValidationError("Este campo es obligatorio.")
         if User.objects.filter(email=email).exists():
             raise forms.ValidationError("Este correo electrónico ya está registrado.")
         return email
 
     def save(self, commit=True, equipo=None):
-        # 1. Crear el CustomUser
-        user = User.objects.create_user(
-            username=self.cleaned_data['username'],
-            email=self.cleaned_data['email'],
-            password=self.cleaned_data['password'],
-            first_name=self.cleaned_data['first_name'],
-            last_name=self.cleaned_data['last_name'],
-            role='dt'
-        )
-        user.telefono = self.cleaned_data['telefono']
-        user.save()
+        if self.user:
+            user = self.user
+            user.first_name = self.cleaned_data['first_name']
+            user.last_name = self.cleaned_data['last_name']
+            user.telefono = self.cleaned_data['telefono']
+            user.save()
+        else:
+            # 1. Crear el CustomUser
+            user = User.objects.create_user(
+                username=self.cleaned_data['username'],
+                email=self.cleaned_data['email'],
+                password=self.cleaned_data['password'],
+                first_name=self.cleaned_data['first_name'],
+                last_name=self.cleaned_data['last_name'],
+                role='dt'
+            )
+            user.telefono = self.cleaned_data['telefono']
+            user.save()
         
         # 2. Crear la FichaDT
         ficha = super().save(commit=False)

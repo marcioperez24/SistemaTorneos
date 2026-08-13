@@ -197,17 +197,18 @@ def registro_jugador(request, token):
         else:
             ficha_anterior = FichaJugador.objects.filter(user=request.user).order_by('-id').first()
             
-        if request.method == 'POST':
-            if tipo == 'dt':
-                nueva_ficha = FichaDT(
-                    user=request.user,
-                    equipo=invitacion.equipo,
-                    estado_validacion='pendiente',
-                    fecha_firma=timezone.now(),
-                    firma_digital=True,
-                    firma_imagen=request.POST.get('firma_imagen')
-                )
-                if ficha_anterior:
+        # Si tiene un registro anterior, mostramos la pantalla simplificada y rápida
+        if ficha_anterior:
+            if request.method == 'POST':
+                if tipo == 'dt':
+                    nueva_ficha = FichaDT(
+                        user=request.user,
+                        equipo=invitacion.equipo,
+                        estado_validacion='pendiente',
+                        fecha_firma=timezone.now(),
+                        firma_digital=True,
+                        firma_imagen=request.POST.get('firma_imagen')
+                    )
                     nueva_ficha.foto = ficha_anterior.foto
                     nueva_ficha.cedula_frontal = ficha_anterior.cedula_frontal
                     nueva_ficha.cedula_posterior = ficha_anterior.cedula_posterior
@@ -215,18 +216,17 @@ def registro_jugador(request, token):
                     nueva_ficha.tipo_sangre = ficha_anterior.tipo_sangre
                     nueva_ficha.contacto_emergencia = ficha_anterior.contacto_emergencia
                     nueva_ficha.telefono_emergencia = ficha_anterior.telefono_emergencia
-                nueva_ficha.save()
-            else:
-                nueva_ficha = FichaJugador(
-                    user=request.user,
-                    equipo=invitacion.equipo,
-                    numero_camiseta=request.POST.get('numero_camiseta'),
-                    estado_validacion='pendiente',
-                    fecha_firma=timezone.now(),
-                    firma_digital=True,
-                    firma_imagen=request.POST.get('firma_imagen')
-                )
-                if ficha_anterior:
+                    nueva_ficha.save()
+                else:
+                    nueva_ficha = FichaJugador(
+                        user=request.user,
+                        equipo=invitacion.equipo,
+                        numero_camiseta=request.POST.get('numero_camiseta'),
+                        estado_validacion='pendiente',
+                        fecha_firma=timezone.now(),
+                        firma_digital=True,
+                        firma_imagen=request.POST.get('firma_imagen')
+                    )
                     nueva_ficha.foto = ficha_anterior.foto
                     nueva_ficha.cedula_frontal = ficha_anterior.cedula_frontal
                     nueva_ficha.cedula_posterior = ficha_anterior.cedula_posterior
@@ -234,22 +234,23 @@ def registro_jugador(request, token):
                     nueva_ficha.tipo_sangre = ficha_anterior.tipo_sangre
                     nueva_ficha.contacto_emergencia = ficha_anterior.contacto_emergencia
                     nueva_ficha.telefono_emergencia = ficha_anterior.telefono_emergencia
-                nueva_ficha.save()
+                    nueva_ficha.save()
+                    
+                return redirect('registro_exito')
                 
-            return redirect('registro_exito')
+            return render(request, 'teams/registro_existente.html', {
+                'equipo': invitacion.equipo,
+                'tipo': tipo,
+                'ficha_anterior': ficha_anterior,
+                'hide_navbar': False
+            })
             
-        return render(request, 'teams/registro_existente.html', {
-            'equipo': invitacion.equipo,
-            'tipo': tipo,
-            'ficha_anterior': ficha_anterior,
-            'hide_navbar': False
-        })
-        
+    # Si no tiene cuenta o está logueado pero es su primera ficha (ej. admin o nuevo usuario)
     if request.method == 'POST':
         if tipo == 'dt':
-            form = DTRegistrationForm(request.POST, request.FILES)
+            form = DTRegistrationForm(request.POST, request.FILES, user=request.user if request.user.is_authenticated else None)
         else:
-            form = PlayerRegistrationForm(request.POST, request.FILES)
+            form = PlayerRegistrationForm(request.POST, request.FILES, user=request.user if request.user.is_authenticated else None)
             
         if form.is_valid():
             ficha = form.save(equipo=invitacion.equipo)
@@ -259,15 +260,15 @@ def registro_jugador(request, token):
             return redirect('registro_exito')
     else:
         if tipo == 'dt':
-            form = DTRegistrationForm()
+            form = DTRegistrationForm(user=request.user if request.user.is_authenticated else None)
         else:
-            form = PlayerRegistrationForm()
+            form = PlayerRegistrationForm(user=request.user if request.user.is_authenticated else None)
             
     template_name = 'teams/registro_dt.html' if tipo == 'dt' else 'teams/registro_jugador.html'
     return render(request, template_name, {
         'form': form,
         'equipo': invitacion.equipo,
-        'hide_navbar': True
+        'hide_navbar': False if request.user.is_authenticated else True
     })
 
 def registro_exito(request):
