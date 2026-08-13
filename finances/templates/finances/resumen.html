@@ -18,7 +18,7 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <span class="text-secondary fw-semibold small uppercase tracking-wider">Caja Chica / Balance</span>
-                        <h2 class="fw-bold mb-0 mt-1 {% if balance >= 0 %}text-success{% else %}text-danger{% endif %}">C$ {{ balance|floatformat:2 }}</h2>
+                        <h2 class="fw-bold mb-0 mt-1 {% if balance >= 0 %}text-success{% else %}text-danger{% endif %}">$ {{ balance|floatformat:2 }}</h2>
                     </div>
                     <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
                         <i class="fa-solid fa-scale-balanced fa-xl"></i>
@@ -32,7 +32,7 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <span class="text-secondary fw-semibold small uppercase tracking-wider">Total Ingresos</span>
-                        <h2 class="fw-bold text-success mb-0 mt-1">C$ {{ total_ingresos|floatformat:2 }}</h2>
+                        <h2 class="fw-bold text-success mb-0 mt-1">$ {{ total_ingresos|floatformat:2 }}</h2>
                     </div>
                     <div class="bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
                         <i class="fa-solid fa-circle-arrow-up fa-xl"></i>
@@ -46,7 +46,7 @@
                 <div class="d-flex align-items-center justify-content-between">
                     <div>
                         <span class="text-secondary fw-semibold small uppercase tracking-wider">Total Egresos</span>
-                        <h2 class="fw-bold text-danger mb-0 mt-1">C$ {{ total_egresos|floatformat:2 }}</h2>
+                        <h2 class="fw-bold text-danger mb-0 mt-1">$ {{ total_egresos|floatformat:2 }}</h2>
                     </div>
                     <div class="bg-danger-subtle text-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
                         <i class="fa-solid fa-circle-arrow-down fa-xl"></i>
@@ -109,7 +109,7 @@
                                         </div>
                                     </td>
                                     <td>{{ pago.equipo.get_categoria_display }}</td>
-                                    <td class="text-center font-monospace fw-semibold">C$ {{ pago.monto|floatformat:2 }}</td>
+                                    <td class="text-center font-monospace fw-semibold">$ {{ pago.monto|floatformat:2 }}</td>
                                     <td class="text-center">
                                         {% if pago.estado == 'pagado' %}
                                             <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1.5"><i class="fa-solid fa-circle-check me-1"></i>Pagado</span>
@@ -170,12 +170,12 @@
                                     <td class="fw-semibold text-secondary">{{ multa.equipo.nombre }}</td>
                                     <td class="text-center">
                                         {% if multa.motivo == 'amarilla' %}
-                                            <span class="badge bg-warning text-dark py-1.5 px-3 rounded-pill"><i class="fa-solid fa-square-full me-1"></i>Amarilla (C$ 50)</span>
+                                            <span class="badge bg-warning text-dark py-1.5 px-3 rounded-pill"><i class="fa-solid fa-square-full me-1"></i>Amarilla ($ 50)</span>
                                         {% else %}
-                                            <span class="badge bg-danger py-1.5 px-3 rounded-pill"><i class="fa-solid fa-square-full me-1"></i>Roja (C$ 150)</span>
+                                            <span class="badge bg-danger py-1.5 px-3 rounded-pill"><i class="fa-solid fa-square-full me-1"></i>Roja ($ 150)</span>
                                         {% endif %}
                                     </td>
-                                    <td class="text-center font-monospace fw-bold text-dark">C$ {{ multa.monto|floatformat:2 }}</td>
+                                    <td class="text-center font-monospace fw-bold text-dark">$ {{ multa.monto|floatformat:2 }}</td>
                                     <td class="text-center">
                                         {% if multa.estado == 'pagated' or multa.estado == 'pagado' %}
                                             <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1.5"><i class="fa-solid fa-check me-1"></i>Cobrado</span>
@@ -187,7 +187,7 @@
                                     <td class="text-end">
                                         {% if multa.estado == 'pendiente' %}
                                             <a href="{% url 'pagar_multa' multa.id %}" class="btn btn-outline-success btn-sm px-3 rounded-pill">
-                                                <i class="fa-solid fa-check me-1"></i>Cobrar C$ {{ multa.monto|floatformat:0 }}
+                                                <i class="fa-solid fa-check me-1"></i>Cobrar $ {{ multa.monto|floatformat:0 }}
                                             </a>
                                         {% else %}
                                             <span class="text-success small fw-semibold"><i class="fa-solid fa-check-double me-1"></i>Cobrado</span>
@@ -240,7 +240,7 @@
                                         {% endif %}
                                     </td>
                                     <td class="text-end font-monospace fw-bold {% if mov.tipo == 'ingreso' %}text-success{% else %}text-danger{% endif %}">
-                                        {% if mov.tipo == 'ingreso' %}+{% else %}-{% endif %} C$ {{ mov.monto|floatformat:2 }}
+                                        {% if mov.tipo == 'ingreso' %}+{% else %}-{% endif %} $ {{ mov.monto|floatformat:2 }}
                                     </td>
                                 </tr>
                             {% empty %}
@@ -268,9 +268,9 @@
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label fw-semibold text-secondary">Monto del gasto (C$)</label>
+                        <label class="form-label fw-semibold text-secondary">Monto del gasto ($)</label>
                         <div class="input-group">
-                            <span class="input-group-text">C$</span>
+                            <span class="input-group-text">$</span>
                             <input type="number" class="form-control" name="monto" min="1" step="0.01" placeholder="Ej. 300.00" required>
                         </div>
                     </div>
@@ -301,7 +301,7 @@
                 <div class="modal-body">
                     <div class="mb-3 bg-light p-3 rounded-3 fs-7">
                         Equipo: <strong class="text-dark uppercase d-block mt-1" id="lbl-pago-equipo">CLUB</strong>
-                        Monto Fijo: <strong class="text-primary font-monospace d-block mt-1">C$ 1,500.00</strong>
+                        Monto Fijo: <strong class="text-primary font-monospace d-block mt-1">$ 1,500.00</strong>
                     </div>
                     
                     <div class="mb-3">

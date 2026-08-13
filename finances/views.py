@@ -122,6 +122,6 @@ def registrar_egreso(request):
             concepto=f"Gasto: {concepto}",
             registrado_por=request.user
         )
-        messages.warning(request, f"Egreso de C$ {monto} registrado en la caja chica.")
+        messages.warning(request, f"Egreso de $ {monto} registrado en la caja chica.")
         
     return redirect('resumen_financiero')

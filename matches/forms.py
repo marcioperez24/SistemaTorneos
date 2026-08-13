@@ -126,7 +126,7 @@ class TorneoForm(forms.ModelForm):
             'modalidad': 'Modalidad',
             'max_jugadores_por_equipo': 'Máximo de Jugadores por Equipo',
             'limite_amarillas_suspension': 'Límite de Amarillas para Suspensión',
-            'costo_amarilla': 'Costo de Tarjeta Amarilla (C$)',
+            'costo_amarilla': 'Costo de Tarjeta Amarilla ($)',
             'equipos': 'Equipos Participantes',
         }
         help_text = {
