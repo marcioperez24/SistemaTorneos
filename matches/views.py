@@ -594,9 +594,15 @@ def detalle_partido(request, partido_id):
     jugadores_local = FichaJugador.objects.filter(equipo=partido.equipo_local, torneo=partido.torneo, estado_validacion='aprobado').select_related('user')
     jugadores_visitante = FichaJugador.objects.filter(equipo=partido.equipo_visitante, torneo=partido.torneo, estado_validacion='aprobado').select_related('user')
     
-    # Preparar lookup de fichas para la cronología (sin filtro de estado para incluir a todos)
-    fichas_todas = FichaJugador.objects.filter(torneo=partido.torneo).select_related('user')
-    fichas_lookup = {ficha.user_id: ficha for ficha in fichas_todas}
+    # Preparar lookup de fichas para la cronología
+    user_ids = [ev.jugador_id for ev in eventos if ev.jugador_id]
+    fichas_todas = FichaJugador.objects.filter(user_id__in=user_ids).select_related('user')
+    
+    fichas_lookup = {}
+    for ficha in fichas_todas:
+        # Priorizar fichas que pertenecen al torneo actual
+        if ficha.user_id not in fichas_lookup or ficha.torneo_id == partido.torneo_id:
+            fichas_lookup[ficha.user_id] = ficha
         
     eventos_local = []
     eventos_visitante = []
