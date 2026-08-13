@@ -590,16 +590,13 @@ def detalle_partido(request, partido_id):
     partido = get_object_or_404(Partido, id=partido_id)
     eventos = EventoPartido.objects.filter(partido=partido).select_related('jugador', 'equipo').order_by('minuto', 'id')
     
-    # Obtener jugadores alineados de cada equipo que están habilitados en este torneo
+    # Obtener jugadores alineados de cada equipo que están habilitados en este torneo (para otras vistas si se usan)
     jugadores_local = FichaJugador.objects.filter(equipo=partido.equipo_local, torneo=partido.torneo, estado_validacion='aprobado').select_related('user')
     jugadores_visitante = FichaJugador.objects.filter(equipo=partido.equipo_visitante, torneo=partido.torneo, estado_validacion='aprobado').select_related('user')
     
-    # Preparar lookup de fichas para la cronología
-    fichas_lookup = {}
-    for ficha in jugadores_local:
-        fichas_lookup[ficha.user_id] = ficha
-    for ficha in jugadores_visitante:
-        fichas_lookup[ficha.user_id] = ficha
+    # Preparar lookup de fichas para la cronología (sin filtro de estado para incluir a todos)
+    fichas_todas = FichaJugador.objects.filter(torneo=partido.torneo).select_related('user')
+    fichas_lookup = {ficha.user_id: ficha for ficha in fichas_todas}
         
     eventos_local = []
     eventos_visitante = []
