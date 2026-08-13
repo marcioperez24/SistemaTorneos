@@ -9,6 +9,7 @@ class Torneo(models.Model):
     )
     nombre = models.CharField(max_length=100, unique=True, verbose_name="Nombre del Torneo / Liga")
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='liga', verbose_name="Tipo de Campeonato")
+    categoria = models.CharField(max_length=20, choices=Equipo.CATEGORIAS, default='senior', verbose_name="Categoría")
     temporada = models.CharField(max_length=50, default="Temporada 2026", verbose_name="Temporada")
     equipos = models.ManyToManyField(Equipo, related_name='torneos', verbose_name="Equipos Participantes")
     fecha_creacion = models.DateTimeField(auto_now_add=True)

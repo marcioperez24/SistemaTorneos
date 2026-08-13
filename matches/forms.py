@@ -106,16 +106,18 @@ from .models import Torneo
 class TorneoForm(forms.ModelForm):
     class Meta:
         model = Torneo
-        fields = ['nombre', 'tipo', 'temporada', 'equipos']
+        fields = ['nombre', 'tipo', 'categoria', 'temporada', 'equipos']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Copa de Campeones 2026'}),
             'tipo': forms.Select(attrs={'class': 'form-select'}),
+            'categoria': forms.Select(attrs={'class': 'form-select', 'id': 'id_categoria'}),
             'temporada': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Apertura 2026'}),
             'equipos': forms.SelectMultiple(attrs={'class': 'form-select', 'size': '8'}),
         }
         labels = {
             'nombre': 'Nombre del Torneo / Liga',
             'tipo': 'Tipo de Competencia',
+            'categoria': 'Categoría',
             'temporada': 'Temporada / Año',
             'equipos': 'Equipos Participantes',
         }

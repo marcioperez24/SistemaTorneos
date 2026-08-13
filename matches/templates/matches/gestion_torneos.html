@@ -169,7 +169,7 @@
                                     <div class="row g-2 m-0">
                                         {% for team in field.field.queryset %}
                                             <div class="col-12 px-0">
-                                                <div class="card team-select-card p-2.5 d-flex flex-row align-items-center justify-content-between" data-value="{{ team.id }}" onclick="toggleTeamSelection(this)">
+                                                <div class="card team-select-card p-2.5 d-flex flex-row align-items-center justify-content-between" data-value="{{ team.id }}" data-category="{{ team.categoria }}" onclick="toggleTeamSelection(this)">
                                                     <div class="d-flex align-items-center">
                                                         {% if team.logo %}
                                                             <img src="{{ team.logo.url }}" alt="{{ team.nombre }}" class="rounded-circle border me-2.5 shadow-sm" style="width: 34px; height: 34px; object-fit: cover;">
@@ -243,18 +243,53 @@
     function filterTeams() {
         const query = document.getElementById('teamSearchInput').value.toUpperCase();
         const cards = document.querySelectorAll('.team-select-card');
+        const catSelect = document.getElementById('id_categoria');
+        const selectedCat = catSelect ? catSelect.value : '';
         
         cards.forEach(card => {
             const teamName = card.querySelector('.fw-bold').textContent.toUpperCase();
-            const teamCategory = card.querySelector('.badge').textContent.toUpperCase();
+            const teamCategory = card.getAttribute('data-category');
             const containerCol = card.closest('.col-12');
             
-            if (teamName.includes(query) || teamCategory.includes(query)) {
+            // Must match both search query and current category filter
+            if ((teamName.includes(query)) && (!selectedCat || teamCategory === selectedCat)) {
                 containerCol.style.setProperty('display', '', 'important');
             } else {
                 containerCol.style.setProperty('display', 'none', 'important');
             }
         });
+    }
+
+    function filterTeamsByCategory() {
+        const catSelect = document.getElementById('id_categoria');
+        if (!catSelect) return;
+        const selectedCat = catSelect.value;
+        const cards = document.querySelectorAll('.team-select-card');
+        const select = document.getElementById('id_equipos');
+        
+        cards.forEach(card => {
+            const teamCat = card.getAttribute('data-category');
+            const containerCol = card.closest('.col-12');
+            
+            if (selectedCat === "" || teamCat === selectedCat) {
+                containerCol.style.setProperty('display', '', 'important');
+            } else {
+                containerCol.style.setProperty('display', 'none', 'important');
+                // Deselect if it was selected
+                const val = card.getAttribute('data-value');
+                const option = select.querySelector(`option[value="${val}"]`);
+                if (option && option.selected) {
+                    option.selected = false;
+                    card.classList.remove('selected');
+                    const icon = card.querySelector('.checkbox-indicator i');
+                    if (icon) {
+                        icon.classList.remove('fa-solid', 'fa-circle-check');
+                        icon.classList.add('fa-regular', 'fa-circle-check');
+                    }
+                }
+            }
+        });
+        updateSelectedCount();
     }
 
     function updateSelectedCount() {
@@ -267,6 +302,12 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         const select = document.getElementById('id_equipos');
+        const catSelect = document.getElementById('id_categoria');
+        
+        if (catSelect) {
+            catSelect.addEventListener('change', filterTeamsByCategory);
+        }
+        
         if (select) {
             const selectedValues = Array.from(select.selectedOptions).map(opt => opt.value);
             const cards = document.querySelectorAll('.team-select-card');
@@ -284,6 +325,9 @@
             });
             updateSelectedCount();
         }
+        
+        // Initial filter on load
+        filterTeamsByCategory();
     });
 </script>
 {% endblock %}

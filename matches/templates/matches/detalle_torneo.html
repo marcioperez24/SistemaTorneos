@@ -11,7 +11,7 @@
             <h1 class="fw-bold mb-0 display-6">{{ torneo.nombre|upper }}</h1>
         </div>
         <p class="text-white-50 mb-0 fs-5">
-            Temporada: <strong>{{ torneo.temporada }}</strong> | Formato: 
+            Categoría: <strong class="text-warning">{{ torneo.get_categoria_display }}</strong> | Temporada: <strong>{{ torneo.temporada }}</strong> | Formato: 
             <strong>
                 {% if torneo.tipo == 'liga' %}
                     Liga (Todos contra todos)

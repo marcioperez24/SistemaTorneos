@@ -675,7 +675,7 @@ def detalle_torneo(request, torneo_id):
     equipos = torneo.equipos.all()
     partidos = Partido.objects.filter(torneo=torneo).select_related('equipo_local', 'equipo_visitante', 'vocal', 'arbitro').order_by('jornada', 'fecha_hora')
     
-    todos_equipos = Equipo.objects.all().order_by('nombre')
+    todos_equipos = Equipo.objects.filter(categoria=torneo.categoria).order_by('nombre')
     todos_arbitros = User.objects.filter(role='arbitro').order_by('first_name', 'last_name')
     todos_vocales = User.objects.filter(role='vocal').order_by('first_name', 'last_name')
     
@@ -693,8 +693,8 @@ def detalle_torneo(request, torneo_id):
         for p in partidos:
             partidos_por_jornada.setdefault(p.jornada, []).append(p)
             
-    # Equipos no asignados a este torneo
-    equipos_no_asignados = Equipo.objects.exclude(id__in=equipos.values_list('id', flat=True))
+    # Equipos no asignados a este torneo que pertenezcan a la misma categoría del torneo
+    equipos_no_asignados = Equipo.objects.filter(categoria=torneo.categoria).exclude(id__in=equipos.values_list('id', flat=True))
     
     # Manejar POST para asignar equipos manualmente
     if request.method == 'POST':
@@ -703,8 +703,11 @@ def detalle_torneo(request, torneo_id):
             equipo_id = request.POST.get('equipo_id')
             if equipo_id:
                 equipo = get_object_or_404(Equipo, id=equipo_id)
-                torneo.equipos.add(equipo)
-                messages.success(request, f"Equipo '{equipo.nombre}' asignado al torneo '{torneo.nombre}'.")
+                if equipo.categoria != torneo.categoria:
+                    messages.error(request, f"El equipo '{equipo.nombre}' ({equipo.get_categoria_display()}) no pertenece a la categoría de este torneo ({torneo.get_categoria_display()}).")
+                else:
+                    torneo.equipos.add(equipo)
+                    messages.success(request, f"Equipo '{equipo.nombre}' asignado al torneo '{torneo.nombre}'.")
                 return redirect('detalle_torneo', torneo_id=torneo.id)
         elif action == 'quitar_equipo':
             equipo_id = request.POST.get('equipo_id')

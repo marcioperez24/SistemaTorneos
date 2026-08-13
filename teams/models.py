@@ -9,10 +9,12 @@ class Equipo(models.Model):
         ('master', 'Máster (Mayores de 40)'),
         ('supermaster', 'Supermáster (Mayores de 50)'),
         ('juvenil', 'Juvenil (Sub-18)'),
+        ('u15', 'Sub-15 (U-15)'),
+        ('u12', 'Sub-12 (U-12)'),
         ('femenino', 'Femenino Libre'),
     )
     
-    nombre = models.CharField(max_length=100, unique=True, verbose_name="Nombre del Equipo")
+    nombre = models.CharField(max_length=100, verbose_name="Nombre del Equipo")
     logo = models.ImageField(upload_to='logos_equipos/', null=True, blank=True, verbose_name="Escudo/Logo")
     categoria = models.CharField(max_length=20, choices=CATEGORIAS, default='senior', verbose_name="Categoría")
     entrenador = models.CharField(max_length=100, blank=True, null=True, verbose_name="Entrenador / DT")
@@ -25,10 +27,11 @@ class Equipo(models.Model):
         verbose_name="Dirigente / Representante"
     )
     fecha_creacion = models.DateTimeField(auto_now_add=True)
-
+ 
     class Meta:
         verbose_name = "Equipo"
         verbose_name_plural = "Equipos"
+        unique_together = ('nombre', 'categoria')
 
     def __str__(self):
         return f"{self.nombre} ({self.get_categoria_display()})"
