@@ -110,7 +110,7 @@
                     <div class="d-flex flex-column align-items-end pe-2">
                         {% for ev in eventos_local %}
                             <div class="d-flex align-items-center justify-content-end mb-2 gap-2 text-white">
-                                <span class="fs-8 fw-semibold text-truncate" style="max-width: 130px;" title="{{ ev.jugador.get_full_name|default:ev.jugador.username }}">{{ ev.jugador.get_full_name|default:ev.jugador.username }}</span>
+                                <span class="fs-8 fw-semibold">{{ ev.jugador.get_full_name|default:ev.jugador.username }}</span>
                                 
                                 <div class="position-relative mx-1">
                                     {% if ev.ficha_jugador and ev.ficha_jugador.foto %}
@@ -183,7 +183,7 @@
                                     {% endif %}
                                 </div>
                                 
-                                <span class="fs-8 fw-semibold text-truncate" style="max-width: 130px;" title="{{ ev.jugador.get_full_name|default:ev.jugador.username }}">{{ ev.jugador.get_full_name|default:ev.jugador.username }}</span>
+                                <span class="fs-8 fw-semibold">{{ ev.jugador.get_full_name|default:ev.jugador.username }}</span>
                             </div>
                         {% endfor %}
                     </div>
