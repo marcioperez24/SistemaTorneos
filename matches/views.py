@@ -312,9 +312,9 @@ def match_day(request, partido_id):
             if sync_requested:
                 messages.success(request, "Alineaciones sincronizadas con las plantillas del club correctamente.")
         
-    # Obtener jugadores habilitados (aprobados) de cada equipo
-    jugadores_local = FichaJugador.objects.filter(equipo=partido.equipo_local, estado_validacion='aprobado').select_related('user')
-    jugadores_visitante = FichaJugador.objects.filter(equipo=partido.equipo_visitante, estado_validacion='aprobado').select_related('user')
+    # Obtener jugadores habilitados (aprobados) de cada equipo para este torneo específico
+    jugadores_local = FichaJugador.objects.filter(equipo=partido.equipo_local, torneo=partido.torneo, estado_validacion='aprobado').select_related('user')
+    jugadores_visitante = FichaJugador.objects.filter(equipo=partido.equipo_visitante, torneo=partido.torneo, estado_validacion='aprobado').select_related('user')
     
     # Eventos actuales del partido
     eventos = EventoPartido.objects.filter(partido=partido).select_related('jugador', 'equipo').order_by('-minuto', '-id')
@@ -353,8 +353,8 @@ def registrar_evento(request, partido_id):
             jugador_entra_id = request.POST.get('jugador_entra_id')
             if jugador_entra_id:
                 jugador_entra = get_object_or_404(User, id=jugador_entra_id)
-                ficha_sale = FichaJugador.objects.filter(user=jugador, equipo=equipo).first()
-                ficha_entra = FichaJugador.objects.filter(user=jugador_entra, equipo=equipo).first()
+                ficha_sale = FichaJugador.objects.filter(user=jugador, equipo=equipo, torneo=partido.torneo).first()
+                ficha_entra = FichaJugador.objects.filter(user=jugador_entra, equipo=equipo, torneo=partido.torneo).first()
                 n_sale = f"#{ficha_sale.numero_camiseta}" if (ficha_sale and ficha_sale.numero_camiseta) else ""
                 n_entra = f"#{ficha_entra.numero_camiseta}" if (ficha_entra and ficha_entra.numero_camiseta) else ""
                 detalle_str = f"Entra {jugador_entra.get_full_name() or jugador_entra.username} {n_entra} por {jugador.get_full_name() or jugador.username} {n_sale}"
@@ -475,8 +475,8 @@ def notificar_whatsapp_mock(request, partido_id):
     dt_vis_tel = partido.equipo_visitante.get_dt_telefono() or "Sin número"
     
     # Obtener jugadores habilitados
-    jugadores_local_count = FichaJugador.objects.filter(equipo=partido.equipo_local, estado_validacion='aprobado').count()
-    jugadores_visitante_count = FichaJugador.objects.filter(equipo=partido.equipo_visitante, estado_validacion='aprobado').count()
+    jugadores_local_count = FichaJugador.objects.filter(equipo=partido.equipo_local, torneo=partido.torneo, estado_validacion='aprobado').count()
+    jugadores_visitante_count = FichaJugador.objects.filter(equipo=partido.equipo_visitante, torneo=partido.torneo, estado_validacion='aprobado').count()
     
     messages.info(
         request, 
@@ -540,9 +540,9 @@ def detalle_partido(request, partido_id):
     partido = get_object_or_404(Partido, id=partido_id)
     eventos = EventoPartido.objects.filter(partido=partido).select_related('jugador', 'equipo').order_by('minuto', 'id')
     
-    # Obtener jugadores alineados de cada equipo que están habilitados
-    jugadores_local = FichaJugador.objects.filter(equipo=partido.equipo_local, estado_validacion='aprobado').select_related('user')
-    jugadores_visitante = FichaJugador.objects.filter(equipo=partido.equipo_visitante, estado_validacion='aprobado').select_related('user')
+    # Obtener jugadores alineados de cada equipo que están habilitados en este torneo
+    jugadores_local = FichaJugador.objects.filter(equipo=partido.equipo_local, torneo=partido.torneo, estado_validacion='aprobado').select_related('user')
+    jugadores_visitante = FichaJugador.objects.filter(equipo=partido.equipo_visitante, torneo=partido.torneo, estado_validacion='aprobado').select_related('user')
     
     context = {
         'partido': partido,

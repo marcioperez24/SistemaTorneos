@@ -271,14 +271,14 @@
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
                                 <li>
-                                    <a class="dropdown-item py-2" href="{% url 'generar_invitacion' equipo.id %}?tipo=jugador">
+                                    <button class="dropdown-item py-2" onclick="openInviteModal({{ equipo.id }}, 'jugador', '{{ equipo.nombre|escapejs }}')">
                                         <i class="fa-solid fa-user me-2 text-primary"></i>Invitación para Jugador
-                                    </a>
+                                    </button>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item py-2" href="{% url 'generar_invitacion' equipo.id %}?tipo=dt">
+                                    <button class="dropdown-item py-2" onclick="openInviteModal({{ equipo.id }}, 'dt', '{{ equipo.nombre|escapejs }}')">
                                         <i class="fa-solid fa-user-tie me-2 text-warning"></i>Invitación para DT / Staff
-                                    </a>
+                                    </button>
                                 </li>
                             </ul>
                         </div>
@@ -337,6 +337,7 @@
                                         <th>Foto</th>
                                         <th>Nombre Completo</th>
                                         <th>Cédula</th>
+                                        <th>Torneo / Categoría</th>
                                         <th>Camiseta</th>
                                         <th>Tipo Sangre</th>
                                         <th>Contacto Emergencia</th>
@@ -365,6 +366,9 @@
                                                 {% endif %}
                                             </td>
                                             <td class="font-monospace text-secondary">{{ jugador.nro_cedula|default:"-" }}</td>
+                                            <td>
+                                                <span class="badge bg-secondary px-2 py-1">{{ jugador.torneo.nombre|default:"Sin Torneo" }}</span>
+                                            </td>
                                             <td>
                                                 <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace fw-bold px-2.5 py-1.5" style="font-size: 0.85rem;">
                                                     #{{ jugador.numero_camiseta|default:"-" }}
@@ -606,10 +610,53 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para Seleccionar Torneo al Generar Invitación -->
+<div class="modal fade" id="inviteModal" tabindex="-1" aria-labelledby="inviteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-primary text-white rounded-top-4 py-3">
+                <h5 class="modal-title fw-bold" id="inviteModalLabel">
+                    <i class="fa-solid fa-link text-white me-2"></i>Generar Enlace de Invitación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="mb-3">Estás a punto de generar un enlace de registro para <strong id="inviteEquipoName" class="text-primary"></strong> como <strong id="inviteTipoName"></strong>.</p>
+                <form id="inviteForm" method="GET" action="">
+                    <input type="hidden" name="tipo" id="inviteTipoInput" value="jugador">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-secondary">Selecciona el Torneo / Categoría</label>
+                        <select class="form-select" name="torneo_id" required>
+                            <option value="">-- Elige un torneo --</option>
+                            {% for torneo in torneos %}
+                                <option value="{{ torneo.id }}">{{ torneo.nombre }} ({{ torneo.get_categoria_display }}) - Max. {{ torneo.max_jugadores_por_equipo }} jug.</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">El jugador solo podrá registrarse en tu equipo para el torneo seleccionado.</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm rounded-pill">
+                        <i class="fa-solid fa-share-nodes me-2"></i>Generar Enlace de Registro
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+    function openInviteModal(equipoId, tipo, equipoNombre) {
+        document.getElementById('inviteEquipoName').textContent = equipoNombre;
+        document.getElementById('inviteTipoName').textContent = tipo === 'jugador' ? 'Jugador' : 'Cuerpo Técnico';
+        document.getElementById('inviteTipoInput').value = tipo;
+        document.getElementById('inviteForm').action = `/equipos/${equipoId}/invitacion/`;
+        
+        var modal = new bootstrap.Modal(document.getElementById('inviteModal'));
+        modal.show();
+    }
+
     function copyInviteLink() {
         var copyText = document.getElementById("inviteLinkInput");
         copyText.select();

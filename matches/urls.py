@@ -36,5 +36,6 @@ urlpatterns = [
     path('torneos/eliminar/<int:torneo_id>/', views.eliminar_torneo, name='eliminar_torneo'),
     path('torneos/<int:torneo_id>/generar/', views.generar_fixture_torneo, name='generar_fixture_torneo'),
     path('torneos/<int:torneo_id>/crear-partido/', views.crear_partido_torneo, name='crear_partido_torneo'),
+    path('torneos/<int:torneo_id>/estadisticas/tarjetas/', views.estadisticas_tarjetas, name='estadisticas_tarjetas'),
 ]
 

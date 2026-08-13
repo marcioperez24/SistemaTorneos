@@ -63,6 +63,7 @@ class InvitacionEquipo(models.Model):
         ('dt', 'Director Técnico / Staff'),
     )
     equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='invitaciones')
+    torneo = models.ForeignKey('matches.Torneo', on_delete=models.CASCADE, related_name='invitaciones', null=True, blank=True)
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='jugador', verbose_name="Tipo de Invitado")
     creado_en = models.DateTimeField(auto_now_add=True)
@@ -101,6 +102,14 @@ class FichaJugador(models.Model):
         blank=True, 
         related_name='jugadores',
         verbose_name="Equipo"
+    )
+    torneo = models.ForeignKey(
+        'matches.Torneo',
+        on_delete=models.CASCADE,
+        related_name='fichas_jugadores',
+        verbose_name="Torneo / Liga",
+        null=True, 
+        blank=True
     )
     
     # Documentos
@@ -141,6 +150,7 @@ class FichaJugador(models.Model):
     class Meta:
         verbose_name = "Ficha de Jugador"
         verbose_name_plural = "Fichas de Jugadores"
+        unique_together = ('user', 'torneo')
 
     def __str__(self):
         equipo_str = self.equipo.nombre if self.equipo else "Sin Equipo"
@@ -167,6 +177,14 @@ class FichaDT(models.Model):
         blank=True, 
         related_name='cuerpo_tecnico',
         verbose_name="Equipo"
+    )
+    torneo = models.ForeignKey(
+        'matches.Torneo',
+        on_delete=models.CASCADE,
+        related_name='fichas_dts',
+        verbose_name="Torneo / Liga",
+        null=True, 
+        blank=True
     )
     
     # Documentos e Identificación
@@ -206,6 +224,7 @@ class FichaDT(models.Model):
     class Meta:
         verbose_name = "Ficha de Director Técnico"
         verbose_name_plural = "Fichas de Directores Técnicos"
+        unique_together = ('user', 'torneo')
 
     def __str__(self):
         equipo_str = self.equipo.nombre if self.equipo else "Sin Equipo"

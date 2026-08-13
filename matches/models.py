@@ -11,6 +11,8 @@ class Torneo(models.Model):
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='liga', verbose_name="Tipo de Campeonato")
     categoria = models.CharField(max_length=20, choices=Equipo.CATEGORIAS, default='senior', verbose_name="Categoría")
     temporada = models.CharField(max_length=50, default="Temporada 2026", verbose_name="Temporada")
+    modalidad = models.CharField(max_length=50, default="Fútbol 11", verbose_name="Modalidad (ej. Fútbol 11, Fútbol 7)")
+    max_jugadores_por_equipo = models.IntegerField(default=25, verbose_name="Máximo de Jugadores por Equipo")
     equipos = models.ManyToManyField(Equipo, related_name='torneos', verbose_name="Equipos Participantes")
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 

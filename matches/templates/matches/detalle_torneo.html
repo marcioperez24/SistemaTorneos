@@ -122,6 +122,12 @@
                 {% if equipos|length < 2 %}
                     <div class="text-danger small mt-2 fs-9"><i class="fa-solid fa-triangle-exclamation me-1"></i>Inscribe al menos 2 equipos para habilitar los fixtures automáticos.</div>
                 {% endif %}
+                
+                <hr class="my-3">
+                <h6 class="fw-bold text-secondary mb-2 fs-8 text-uppercase">Estadísticas del Torneo</h6>
+                <a href="{% url 'estadisticas_tarjetas' torneo.id %}" class="btn btn-outline-warning text-dark w-100 py-2 fw-bold fs-8 border-warning">
+                    <i class="fa-solid fa-note-sticky me-2"></i>Ver Tabla de Tarjetas Amarillas
+                </a>
             </div>
         </div>
 

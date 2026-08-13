@@ -8,6 +8,7 @@ import urllib.parse
 from .models import Equipo, InvitacionEquipo, FichaJugador, FichaDT
 from .forms import EquipoForm, PlayerRegistrationForm, DTRegistrationForm
 from django.contrib.auth.forms import AuthenticationForm
+from matches.models import Torneo
 
 def clean_phone_for_whatsapp(phone):
     if not phone:
@@ -88,8 +89,11 @@ def club_portal(request):
     nuevo_enlace = request.session.pop('nuevo_enlace', None)
     nuevo_enlace_equipo_id = request.session.pop('nuevo_enlace_equipo_id', None)
     
+    torneos = Torneo.objects.all().order_by('-fecha_creacion')
+    
     context = {
         'equipos': equipos,
+        'torneos': torneos,
         'nuevo_enlace': nuevo_enlace,
         'nuevo_enlace_equipo_id': nuevo_enlace_equipo_id,
     }
@@ -145,13 +149,21 @@ def generar_invitacion(request, equipo_id):
     if tipo not in ['jugador', 'dt']:
         tipo = 'jugador'
         
-    # Desactivar invitaciones anteriores para este equipo de este tipo
-    InvitacionEquipo.objects.filter(equipo=equipo, tipo=tipo, activo=True).update(activo=False)
+    torneo_id = request.GET.get('torneo_id')
+    if not torneo_id:
+        messages.error(request, "Debe seleccionar un torneo para generar la invitación.")
+        return redirect('club_portal')
+        
+    torneo = get_object_or_404(Torneo, id=torneo_id)
+        
+    # Desactivar invitaciones anteriores para este equipo, torneo y tipo
+    InvitacionEquipo.objects.filter(equipo=equipo, torneo=torneo, tipo=tipo, activo=True).update(activo=False)
     
     # Crear nueva invitación válida por 48 horas
     expira = timezone.now() + timedelta(hours=48)
     invitacion = InvitacionEquipo.objects.create(
         equipo=equipo,
+        torneo=torneo,
         tipo=tipo,
         expira_en=expira
     )
@@ -179,17 +191,26 @@ def registro_jugador(request, token):
     
     # Si el usuario ya está autenticado (tiene cuenta en el sistema)
     if request.user.is_authenticated:
-        # Validar si ya está registrado en este equipo
+        # Validar si ya está registrado en este torneo (independientemente del equipo)
         if tipo == 'dt':
-            ya_registrado = FichaDT.objects.filter(user=request.user, equipo=invitacion.equipo).exists()
+            ya_registrado_torneo = FichaDT.objects.filter(user=request.user, torneo=invitacion.torneo).exists()
         else:
-            ya_registrado = FichaJugador.objects.filter(user=request.user, equipo=invitacion.equipo).exists()
+            ya_registrado_torneo = FichaJugador.objects.filter(user=request.user, torneo=invitacion.torneo).exists()
             
-        if ya_registrado:
+        if ya_registrado_torneo:
             return render(request, 'teams/registro_error.html', {
-                'error': f'Ya te encuentras registrado en el equipo {invitacion.equipo.nombre}.',
+                'error': f'Ya te encuentras registrado en otro equipo para el torneo {invitacion.torneo.nombre}. Un jugador/DT no puede estar en dos equipos distintos en el mismo torneo.',
                 'hide_navbar': False
             })
+            
+        if tipo == 'jugador' and invitacion.torneo:
+            # Validar límite de jugadores
+            num_jugadores_actuales = FichaJugador.objects.filter(equipo=invitacion.equipo, torneo=invitacion.torneo).count()
+            if num_jugadores_actuales >= invitacion.torneo.max_jugadores_por_equipo:
+                return render(request, 'teams/registro_error.html', {
+                    'error': f'El equipo {invitacion.equipo.nombre} ya ha alcanzado el límite máximo de jugadores ({invitacion.torneo.max_jugadores_por_equipo}) permitidos en el torneo {invitacion.torneo.nombre}.',
+                    'hide_navbar': False
+                })
             
         # Buscar su registro anterior para copiar archivos
         if tipo == 'dt':
@@ -204,6 +225,7 @@ def registro_jugador(request, token):
                     nueva_ficha = FichaDT(
                         user=request.user,
                         equipo=invitacion.equipo,
+                        torneo=invitacion.torneo,
                         estado_validacion='pendiente',
                         fecha_firma=timezone.now(),
                         firma_digital=True,
@@ -221,6 +243,7 @@ def registro_jugador(request, token):
                     nueva_ficha = FichaJugador(
                         user=request.user,
                         equipo=invitacion.equipo,
+                        torneo=invitacion.torneo,
                         numero_camiseta=request.POST.get('numero_camiseta'),
                         estado_validacion='pendiente',
                         fecha_firma=timezone.now(),
@@ -266,7 +289,24 @@ def registro_jugador(request, token):
             form = PlayerRegistrationForm(request.POST, request.FILES, user=user_to_use)
             
         if form.is_valid():
+            # Check tournament constraints again for unauthenticated flow
+            if tipo == 'dt':
+                ya_registrado_torneo = FichaDT.objects.filter(user=user_to_use, torneo=invitacion.torneo).exists() if user_to_use else False
+            else:
+                ya_registrado_torneo = FichaJugador.objects.filter(user=user_to_use, torneo=invitacion.torneo).exists() if user_to_use else False
+                
+            if ya_registrado_torneo:
+                messages.error(request, f'Ya te encuentras registrado en el torneo {invitacion.torneo.nombre}.')
+                return redirect(request.path)
+                
+            if tipo == 'jugador' and invitacion.torneo:
+                num_jugadores_actuales = FichaJugador.objects.filter(equipo=invitacion.equipo, torneo=invitacion.torneo).count()
+                if num_jugadores_actuales >= invitacion.torneo.max_jugadores_por_equipo:
+                    messages.error(request, f'El equipo ya alcanzó el máximo de jugadores ({invitacion.torneo.max_jugadores_por_equipo}) permitidos en este torneo.')
+                    return redirect(request.path)
+                    
             ficha = form.save(equipo=invitacion.equipo)
+            ficha.torneo = invitacion.torneo
             # Firmando digitalmente con la fecha actual
             ficha.fecha_firma = timezone.now()
             ficha.save()
