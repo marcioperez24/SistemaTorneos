@@ -12,20 +12,6 @@
 <div class="container mb-5">
     <!-- Panel de Estadísticas Financieras -->
     <div class="row g-3 mb-4">
-        <!-- Balance General -->
-        <div class="col-md-4">
-            <div class="card card-custom p-4 bg-white border-start border-primary border-4 h-100">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
-                        <span class="text-secondary fw-semibold small uppercase tracking-wider">Caja Chica / Balance</span>
-                        <h2 class="fw-bold mb-0 mt-1 {% if balance >= 0 %}text-success{% else %}text-danger{% endif %}">$ {{ balance|floatformat:2 }}</h2>
-                    </div>
-                    <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
-                        <i class="fa-solid fa-scale-balanced fa-xl"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
         <!-- Total Ingresos -->
         <div class="col-md-4">
             <div class="card card-custom p-4 bg-white border-start border-success border-4 h-100">
@@ -50,6 +36,20 @@
                     </div>
                     <div class="bg-danger-subtle text-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
                         <i class="fa-solid fa-circle-arrow-down fa-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Balance General -->
+        <div class="col-md-4">
+            <div class="card card-custom p-4 bg-white border-start border-primary border-4 h-100">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-secondary fw-semibold small uppercase tracking-wider">Caja Chica / Balance</span>
+                        <h2 class="fw-bold mb-0 mt-1 {% if balance >= 0 %}text-success{% else %}text-danger{% endif %}">$ {{ balance|floatformat:2 }}</h2>
+                    </div>
+                    <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 55px; height: 55px;">
+                        <i class="fa-solid fa-scale-balanced fa-xl"></i>
                     </div>
                 </div>
             </div>
