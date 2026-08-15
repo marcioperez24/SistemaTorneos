@@ -55,6 +55,46 @@
             margin-top: 50px !important;
             padding-top: 5px !important;
         }
+        .event-text {
+            color: black !important;
+        }
+        .event-icon {
+            color: #444 !important;
+        }
+        .print-row {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+        }
+        .print-col-35 {
+            width: 35% !important;
+            flex: 0 0 35% !important;
+        }
+        .print-col-30 {
+            width: 30% !important;
+            flex: 0 0 30% !important;
+        }
+        .print-col-50 {
+            width: 50% !important;
+            flex: 0 0 50% !important;
+        }
+        .card, .match-header-bg {
+            page-break-inside: avoid !important;
+        }
+        /* Make sure events don't get squished */
+        .event-text {
+            color: black !important;
+            font-size: 10px !important;
+        }
+        .event-text img, .event-text .bg-secondary {
+            width: 18px !important;
+            height: 18px !important;
+        }
+    }
+    @media screen {
+        .event-text {
+            color: white !important;
+        }
     }
 </style>
 {% endblock %}
@@ -91,106 +131,106 @@
                 {% endif %}
             </div>
             
-            <div class="row align-items-center justify-content-center py-3 g-4 g-md-2">
-                <!-- EQUIPO LOCAL -->
-                <div class="col-12 col-md-5 text-center text-md-end text-wrap">
-                    <div class="d-flex flex-column flex-md-row align-items-center justify-content-center justify-content-md-end gap-3 mb-3 mb-md-4">
-                        <div class="order-2 order-md-1">
-                            <h3 class="fw-extrabold mb-0 fs-4 fs-md-3">{{ partido.equipo_local.nombre|upper }}</h3>
-                            <span class="text-white-50 small">{{ partido.equipo_local.get_categoria_display }}</span>
-                        </div>
-                        <div class="order-1 order-md-2">
-                            {% if partido.equipo_local.logo %}
-                                <img src="{{ partido.equipo_local.logo.url }}" alt="{{ partido.equipo_local.nombre }}" class="rounded-circle border border-white shadow-sm" style="width: 60px; height: 60px; object-fit: cover;">
-                            {% else %}
-                                <div class="bg-primary bg-gradient text-white rounded-circle border border-white shadow-sm d-flex align-items-center justify-content-center fw-bold" style="width: 60px; height: 60px; font-size: 20px;">
-                                    {{ partido.equipo_local.nombre|slice:":2"|upper }}
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
+            <div class="row align-items-center justify-content-center py-3 print-row">
+                <div class="col-12 d-flex justify-content-between align-items-start px-1 px-md-4 print-row" style="width: 100%;">
                     
-                    <div class="d-flex flex-column align-items-center align-items-md-end pe-0 pe-md-2">
+                    <!-- EQUIPO LOCAL -->
+                    <div class="d-flex flex-column align-items-center text-center print-col-35" style="width: 35%;">
+                        {% if partido.equipo_local.logo %}
+                            <img src="{{ partido.equipo_local.logo.url }}" alt="{{ partido.equipo_local.nombre }}" class="rounded-circle border border-white shadow-sm mb-2" style="width: 60px; height: 60px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-primary bg-gradient text-white rounded-circle border border-white shadow-sm d-flex align-items-center justify-content-center fw-bold mb-2" style="width: 60px; height: 60px; font-size: 20px;">
+                                {{ partido.equipo_local.nombre|slice:":2"|upper }}
+                            </div>
+                        {% endif %}
+                        <h3 class="fw-extrabold mb-0 fs-5 fs-md-4 text-break">{{ partido.equipo_local.nombre|upper }}</h3>
+                        <span class="text-white-50 small">{{ partido.equipo_local.get_categoria_display }}</span>
+                    </div>
+
+                    <!-- MARCADOR -->
+                    <div class="text-center print-col-30" style="width: 30%; margin-top: 10px;">
+                        <div class="d-inline-block bg-white text-dark fw-black rounded-4 px-3 py-2 shadow fs-3 font-monospace mb-1">
+                            {{ partido.goles_local }} - {{ partido.goles_visitante }}
+                        </div>
+                        {% if partido.estado == 'finalizado' %}
+                            <div class="text-white-50 small fw-bold">FINAL</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- EQUIPO VISITANTE -->
+                    <div class="d-flex flex-column align-items-center text-center print-col-35" style="width: 35%;">
+                        {% if partido.equipo_visitante.logo %}
+                            <img src="{{ partido.equipo_visitante.logo.url }}" alt="{{ partido.equipo_visitante.nombre }}" class="rounded-circle border border-white shadow-sm mb-2" style="width: 60px; height: 60px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-primary bg-gradient text-white rounded-circle border border-white shadow-sm d-flex align-items-center justify-content-center fw-bold mb-2" style="width: 60px; height: 60px; font-size: 20px;">
+                                {{ partido.equipo_visitante.nombre|slice:":2"|upper }}
+                            </div>
+                        {% endif %}
+                        <h3 class="fw-extrabold mb-0 fs-5 fs-md-4 text-break">{{ partido.equipo_visitante.nombre|upper }}</h3>
+                        <span class="text-white-50 small">{{ partido.equipo_visitante.get_categoria_display }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- EVENTOS DEL PARTIDO -->
+            <div class="row mt-2 px-1 px-md-4 print-row w-100 m-0">
+                <!-- Eventos Local -->
+                <div class="col-6 border-end border-white-50 pe-2 pe-md-3 print-col-50">
+                    <div class="d-flex flex-column align-items-end">
                         {% for ev in eventos_local %}
-                            <div class="d-flex align-items-center justify-content-center justify-content-md-end mb-2 gap-2 text-white">
-                                <span class="fs-8 fw-semibold">{{ ev.jugador.get_full_name|default:ev.jugador.username }}</span>
+                            <div class="d-flex flex-wrap align-items-center justify-content-end mb-2 gap-1 gap-md-2 event-text w-100">
+                                <span class="fs-8 fw-semibold text-end text-break" style="max-width: 140px;">{{ ev.jugador.get_full_name|default:ev.jugador.username }}</span>
                                 
                                 <div class="position-relative mx-1">
                                     {% if ev.ficha_jugador and ev.ficha_jugador.foto %}
-                                        <img src="{{ ev.ficha_jugador.foto.url }}" alt="Foto" class="rounded-circle border border-white shadow-sm" style="width: 28px; height: 28px; object-fit: cover;">
+                                        <img src="{{ ev.ficha_jugador.foto.url }}" alt="Foto" class="rounded-circle border border-white shadow-sm" style="width: 24px; height: 24px; object-fit: cover;">
                                     {% else %}
-                                        <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center border border-white shadow-sm" style="width: 28px; height: 28px; font-size: 10px;">
+                                        <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center border border-white shadow-sm" style="width: 24px; height: 24px; font-size: 10px;">
                                             <i class="fa-solid fa-user text-white"></i>
                                         </div>
                                     {% endif %}
                                     {% if ev.ficha_jugador %}
-                                        <span class="badge bg-danger border border-white rounded-circle p-0 position-absolute d-flex align-items-center justify-content-center shadow-sm" style="font-size: 0.55rem; width: 16px; height: 16px; bottom: -4px; left: -6px; z-index: 2;">{{ ev.ficha_jugador.numero_camiseta }}</span>
+                                        <span class="badge bg-danger border border-white rounded-circle p-0 position-absolute d-flex align-items-center justify-content-center shadow-sm" style="font-size: 0.5rem; width: 14px; height: 14px; bottom: -4px; left: -4px; z-index: 2;">{{ ev.ficha_jugador.numero_camiseta }}</span>
                                     {% endif %}
                                 </div>
                                 
-                                {% if ev.tipo == 'gol' %}<i class="fa-solid fa-futbol text-white" title="Gol"></i>
+                                {% if ev.tipo == 'gol' %}<i class="fa-solid fa-futbol event-icon" title="Gol"></i>
                                 {% elif ev.tipo == 'amarilla' %}<i class="fa-solid fa-square-full text-warning" title="Amarilla"></i>
                                 {% elif ev.tipo == 'roja' %}<i class="fa-solid fa-square-full text-danger" title="Roja"></i>
                                 {% else %}<i class="fa-solid fa-right-left text-info" title="Cambio"></i>{% endif %}
                                 
-                                <span class="badge bg-white text-dark font-monospace px-1 ms-1" style="font-size: 0.65rem;">{{ ev.minuto }}'</span>
+                                <span class="badge bg-white text-dark font-monospace px-1 ms-1" style="font-size: 0.6rem;">{{ ev.minuto }}'</span>
                             </div>
                         {% endfor %}
                     </div>
                 </div>
                 
-                <!-- MARCADOR (CENTRO) -->
-                <div class="col-12 col-md-2 text-center py-2 py-md-0 my-3 my-md-0 border-top border-bottom border-md-0 border-white-50">
-                    <div class="d-inline-block bg-white text-dark fw-black rounded-4 px-4 py-2 shadow fs-2 font-monospace mb-2">
-                        {{ partido.goles_local }} - {{ partido.goles_visitante }}
-                    </div>
-                    {% if partido.estado == 'finalizado' %}
-                        <div class="text-white-50 small mt-1 fw-bold">FINAL</div>
-                    {% endif %}
-                </div>
-                
-                <!-- EQUIPO VISITANTE -->
-                <div class="col-12 col-md-5 text-center text-md-start text-wrap">
-                    <div class="d-flex flex-column flex-md-row align-items-center justify-content-center justify-content-md-start gap-3 mb-3 mb-md-4">
-                        <div>
-                            {% if partido.equipo_visitante.logo %}
-                                <img src="{{ partido.equipo_visitante.logo.url }}" alt="{{ partido.equipo_visitante.nombre }}" class="rounded-circle border border-white shadow-sm" style="width: 60px; height: 60px; object-fit: cover;">
-                            {% else %}
-                                <div class="bg-primary bg-gradient text-white rounded-circle border border-white shadow-sm d-flex align-items-center justify-content-center fw-bold" style="width: 60px; height: 60px; font-size: 20px;">
-                                    {{ partido.equipo_visitante.nombre|slice:":2"|upper }}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div>
-                            <h3 class="fw-extrabold mb-0 fs-4 fs-md-3">{{ partido.equipo_visitante.nombre|upper }}</h3>
-                            <span class="text-white-50 small">{{ partido.equipo_visitante.get_categoria_display }}</span>
-                        </div>
-                    </div>
-                    
-                    <div class="d-flex flex-column align-items-center align-items-md-start ps-0 ps-md-2">
+                <!-- Eventos Visitante -->
+                <div class="col-6 ps-2 ps-md-3 print-col-50">
+                    <div class="d-flex flex-column align-items-start">
                         {% for ev in eventos_visitante %}
-                            <div class="d-flex align-items-center justify-content-center justify-content-md-start mb-2 gap-2 text-white">
-                                <span class="badge bg-white text-dark font-monospace px-1 me-1" style="font-size: 0.65rem;">{{ ev.minuto }}'</span>
+                            <div class="d-flex flex-wrap align-items-center justify-content-start mb-2 gap-1 gap-md-2 event-text w-100">
+                                <span class="badge bg-white text-dark font-monospace px-1 me-1" style="font-size: 0.6rem;">{{ ev.minuto }}'</span>
                                 
-                                {% if ev.tipo == 'gol' %}<i class="fa-solid fa-futbol text-white" title="Gol"></i>
+                                {% if ev.tipo == 'gol' %}<i class="fa-solid fa-futbol event-icon" title="Gol"></i>
                                 {% elif ev.tipo == 'amarilla' %}<i class="fa-solid fa-square-full text-warning" title="Amarilla"></i>
                                 {% elif ev.tipo == 'roja' %}<i class="fa-solid fa-square-full text-danger" title="Roja"></i>
                                 {% else %}<i class="fa-solid fa-right-left text-info" title="Cambio"></i>{% endif %}
                                 
                                 <div class="position-relative mx-1">
                                     {% if ev.ficha_jugador and ev.ficha_jugador.foto %}
-                                        <img src="{{ ev.ficha_jugador.foto.url }}" alt="Foto" class="rounded-circle border border-white shadow-sm" style="width: 28px; height: 28px; object-fit: cover;">
+                                        <img src="{{ ev.ficha_jugador.foto.url }}" alt="Foto" class="rounded-circle border border-white shadow-sm" style="width: 24px; height: 24px; object-fit: cover;">
                                     {% else %}
-                                        <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center border border-white shadow-sm" style="width: 28px; height: 28px; font-size: 10px;">
+                                        <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center border border-white shadow-sm" style="width: 24px; height: 24px; font-size: 10px;">
                                             <i class="fa-solid fa-user text-white"></i>
                                         </div>
                                     {% endif %}
                                     {% if ev.ficha_jugador %}
-                                        <span class="badge bg-danger border border-white rounded-circle p-0 position-absolute d-flex align-items-center justify-content-center shadow-sm" style="font-size: 0.55rem; width: 16px; height: 16px; bottom: -4px; right: -6px; z-index: 2;">{{ ev.ficha_jugador.numero_camiseta }}</span>
+                                        <span class="badge bg-danger border border-white rounded-circle p-0 position-absolute d-flex align-items-center justify-content-center shadow-sm" style="font-size: 0.5rem; width: 14px; height: 14px; bottom: -4px; right: -4px; z-index: 2;">{{ ev.ficha_jugador.numero_camiseta }}</span>
                                     {% endif %}
                                 </div>
                                 
-                                <span class="fs-8 fw-semibold">{{ ev.jugador.get_full_name|default:ev.jugador.username }}</span>
+                                <span class="fs-8 fw-semibold text-start text-break" style="max-width: 140px;">{{ ev.jugador.get_full_name|default:ev.jugador.username }}</span>
                             </div>
                         {% endfor %}
                     </div>
