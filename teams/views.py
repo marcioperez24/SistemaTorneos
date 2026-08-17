@@ -40,20 +40,20 @@ def login_view(request):
             user = authenticate(username=username, password=password)
             if user is not None:
                 login(request, user)
-                messages.success(request, f"¡Bienvenido, {user.username}!")
+                messages.success(request, f"Â¡Bienvenido, {user.username}!")
                 next_url = request.GET.get('next') or request.POST.get('next')
                 if next_url:
                     return redirect(next_url)
                 return redirect('club_portal')
         else:
-            messages.error(request, "Usuario o contraseña incorrectos.")
+            messages.error(request, "Usuario o contraseÃ±a incorrectos.")
     else:
         form = AuthenticationForm()
     return render(request, 'teams/login.html', {'form': form, 'hide_navbar': True})
 
 def logout_view(request):
     logout(request)
-    messages.info(request, "Has cerrado sesión correctamente.")
+    messages.info(request, "Has cerrado sesiÃ³n correctamente.")
     return redirect('login')
 
 @login_required
@@ -62,7 +62,7 @@ def club_portal(request):
     if request.user.role == 'jugador':
         try:
             ficha = request.user.ficha_jugador
-            # Si no está aprobado, lo mandamos a la pantalla de validación en curso/rechazo
+            # Si no estÃ¡ aprobado, lo mandamos a la pantalla de validaciÃ³n en curso/rechazo
             if ficha.estado_validacion != 'aprobado':
                 return render(request, 'teams/registro_exito.html', {'ficha': ficha, 'hide_navbar': False})
         except FichaJugador.DoesNotExist:
@@ -78,7 +78,7 @@ def club_portal(request):
     if request.user.role in ['superadmin', 'comision'] or request.user.is_superuser:
         equipos = Equipo.objects.all()
     elif request.user.role == 'jugador':
-        # Mostrar únicamente el equipo al que pertenece el jugador
+        # Mostrar Ãºnicamente el equipo al que pertenece el jugador
         if request.user.ficha_jugador.equipo:
             equipos = Equipo.objects.filter(id=request.user.ficha_jugador.equipo.id)
         else:
@@ -86,7 +86,7 @@ def club_portal(request):
     else:
         equipos = Equipo.objects.filter(dirigente=request.user)
     
-    # Obtener el nuevo enlace de la sesión y eliminarlo para que solo aparezca una vez
+    # Obtener el nuevo enlace de la sesiÃ³n y eliminarlo para que solo aparezca una vez
     nuevo_enlace = request.session.pop('nuevo_enlace', None)
     nuevo_enlace_equipo_id = request.session.pop('nuevo_enlace_equipo_id', None)
     
@@ -99,7 +99,7 @@ def club_portal(request):
         # 1. Inscripciones
         for pago in PagoInscripcion.objects.filter(equipo=equipo):
             historial.append({
-                'concepto': "Inscripción de Torneo",
+                'concepto': "InscripciÃ³n de Torneo",
                 'monto': pago.monto,
                 'estado': pago.estado,
                 'fecha': pago.fecha_pago,
@@ -166,10 +166,10 @@ def crear_equipo(request):
 @login_required
 def editar_equipo(request, equipo_id):
     if not request.user.has_module_access('equipos'):
-        messages.error(request, "No tienes permisos para acceder al Módulo de Equipos.")
+        messages.error(request, "No tienes permisos para acceder al MÃ³dulo de Equipos.")
         return redirect('club_portal')
         
-    # Obtener equipo. Permitir edición si es superadmin, superuser, o el dirigente del equipo
+    # Obtener equipo. Permitir ediciÃ³n si es superadmin, superuser, o el dirigente del equipo
     if request.user.role == 'superadmin' or request.user.is_superuser:
         equipo = get_object_or_404(Equipo, id=equipo_id)
     else:
@@ -198,15 +198,28 @@ def generar_invitacion(request, equipo_id):
         
     torneo_id = request.GET.get('torneo_id')
     if not torneo_id:
-        messages.error(request, "Debe seleccionar un torneo para generar la invitación.")
+        messages.error(request, "Debe seleccionar un torneo para generar la invitaciÃ³n.")
         return redirect('club_portal')
         
     torneo = get_object_or_404(Torneo, id=torneo_id)
         
+    if tipo == 'jugador':
+        # Validar lÃ­mite de jugadores excluyendo lesionados y rechazados
+        from django.db.models import Q
+        num_jugadores_actuales = FichaJugador.objects.filter(
+            equipo=equipo, 
+            torneo=torneo,
+            es_lesionado=False
+        ).exclude(estado_validacion='rechazado').count()
+        
+        if num_jugadores_actuales >= torneo.max_jugadores_por_equipo:
+            messages.error(request, f"No se puede generar invitaciÃ³n. El equipo ya ha alcanzado el lÃ­mite de {torneo.max_jugadores_por_equipo} jugadores activos.")
+            return redirect('club_portal')
+        
     # Desactivar invitaciones anteriores para este equipo, torneo y tipo
     InvitacionEquipo.objects.filter(equipo=equipo, torneo=torneo, tipo=tipo, activo=True).update(activo=False)
     
-    # Crear nueva invitación válida por 48 horas
+    # Crear nueva invitaciÃ³n vÃ¡lida por 48 horas
     expira = timezone.now() + timedelta(hours=48)
     invitacion = InvitacionEquipo.objects.create(
         equipo=equipo,
@@ -217,10 +230,10 @@ def generar_invitacion(request, equipo_id):
     
     # Construir URL absoluta del enlace
     enlace = request.build_absolute_uri(f"/invitacion/{invitacion.token}/")
-    tipo_display = "Director Técnico" if tipo == 'dt' else "Jugador"
-    messages.success(request, f"¡Enlace de invitación para {tipo_display} generado con éxito! Válido por 48 horas.")
+    tipo_display = "Director TÃ©cnico" if tipo == 'dt' else "Jugador"
+    messages.success(request, f"Â¡Enlace de invitaciÃ³n para {tipo_display} generado con Ã©xito! VÃ¡lido por 48 horas.")
     
-    # Guardamos en la sesión para poder mostrarlo fácilmente en la redirección
+    # Guardamos en la sesiÃ³n para poder mostrarlo fÃ¡cilmente en la redirecciÃ³n
     request.session['nuevo_enlace'] = enlace
     request.session['nuevo_enlace_equipo_id'] = equipo.id
     return redirect('club_portal')
@@ -230,15 +243,15 @@ def registro_jugador(request, token):
     
     if not invitacion.esta_valida():
         return render(request, 'teams/registro_error.html', {
-            'error': 'Este enlace de invitación ha expirado o ya no está activo.',
+            'error': 'Este enlace de invitaciÃ³n ha expirado o ya no estÃ¡ activo.',
             'hide_navbar': True
         })
         
     tipo = invitacion.tipo
     
-    # Si el usuario ya está autenticado (tiene cuenta en el sistema)
+    # Si el usuario ya estÃ¡ autenticado (tiene cuenta en el sistema)
     if request.user.is_authenticated:
-        # Validar si ya está registrado en este torneo (independientemente del equipo)
+        # Validar si ya estÃ¡ registrado en este torneo (independientemente del equipo)
         if tipo == 'dt':
             ya_registrado_torneo = FichaDT.objects.filter(user=request.user, torneo=invitacion.torneo).exists()
         else:
@@ -251,11 +264,16 @@ def registro_jugador(request, token):
             })
             
         if tipo == 'jugador' and invitacion.torneo:
-            # Validar límite de jugadores
-            num_jugadores_actuales = FichaJugador.objects.filter(equipo=invitacion.equipo, torneo=invitacion.torneo).count()
+            # Validar lÃ­mite de jugadores
+            num_jugadores_actuales = FichaJugador.objects.filter(
+                equipo=invitacion.equipo, 
+                torneo=invitacion.torneo,
+                es_lesionado=False
+            ).exclude(estado_validacion='rechazado').count()
+            
             if num_jugadores_actuales >= invitacion.torneo.max_jugadores_por_equipo:
                 return render(request, 'teams/registro_error.html', {
-                    'error': f'El equipo {invitacion.equipo.nombre} ya ha alcanzado el límite máximo de jugadores ({invitacion.torneo.max_jugadores_por_equipo}) permitidos en el torneo {invitacion.torneo.nombre}.',
+                    'error': f'El equipo {invitacion.equipo.nombre} ya ha alcanzado el lÃ­mite mÃ¡ximo de jugadores ({invitacion.torneo.max_jugadores_por_equipo}) permitidos en el torneo {invitacion.torneo.nombre}.',
                     'hide_navbar': False
                 })
             
@@ -265,7 +283,7 @@ def registro_jugador(request, token):
         else:
             ficha_anterior = FichaJugador.objects.filter(user=request.user).order_by('-id').first()
             
-        # Si tiene un registro anterior, mostramos la pantalla simplificada y rápida
+        # Si tiene un registro anterior, mostramos la pantalla simplificada y rÃ¡pida
         if ficha_anterior:
             if request.method == 'POST':
                 if tipo == 'dt':
@@ -315,7 +333,7 @@ def registro_jugador(request, token):
                 'hide_navbar': False
             })
             
-    # Si no tiene cuenta o está logueado pero es su primera ficha (ej. admin o nuevo usuario)
+    # Si no tiene cuenta o estÃ¡ logueado pero es su primera ficha (ej. admin o nuevo usuario)
     if request.method == 'POST':
         nro_cedula = request.POST.get('nro_cedula', '').strip()
         existing_user = None
@@ -349,7 +367,7 @@ def registro_jugador(request, token):
             if tipo == 'jugador' and invitacion.torneo:
                 num_jugadores_actuales = FichaJugador.objects.filter(equipo=invitacion.equipo, torneo=invitacion.torneo).count()
                 if num_jugadores_actuales >= invitacion.torneo.max_jugadores_por_equipo:
-                    messages.error(request, f'El equipo ya alcanzó el máximo de jugadores ({invitacion.torneo.max_jugadores_por_equipo}) permitidos en este torneo.')
+                    messages.error(request, f'El equipo ya alcanzÃ³ el mÃ¡ximo de jugadores ({invitacion.torneo.max_jugadores_por_equipo}) permitidos en este torneo.')
                     return redirect(request.path)
                     
             ficha = form.save(equipo=invitacion.equipo)
@@ -378,7 +396,7 @@ def registro_exito(request):
 @login_required
 def secretaria_dashboard(request):
     if not request.user.has_module_access('secretaria'):
-        messages.error(request, "No tienes permisos para acceder al Módulo de Secretaría.")
+        messages.error(request, "No tienes permisos para acceder al MÃ³dulo de SecretarÃ­a.")
         return redirect('club_portal')
         
     pendientes_jugadores = FichaJugador.objects.filter(estado_validacion='pendiente').select_related('user', 'equipo')
@@ -394,7 +412,7 @@ def secretaria_dashboard(request):
         pendientes.append(pdt)
         
     # Ordenar por fecha_firma o fecha de registro (o id)
-    # FichaDT no tiene fecha_firma en la base de datos pero sí firma_digital, usemos el ID
+    # FichaDT no tiene fecha_firma en la base de datos pero sÃ­ firma_digital, usemos el ID
     pendientes.sort(key=lambda x: x.id)
 
     historial_jugadores = FichaJugador.objects.exclude(estado_validacion='pendiente').select_related('user', 'equipo')
@@ -435,7 +453,7 @@ def aprobar_jugador(request, ficha_id):
     ficha.aprobado_por = request.user
     ficha.save()
     
-    rol_str = "Director Técnico" if tipo == 'dt' else "Jugador"
+    rol_str = "Director TÃ©cnico" if tipo == 'dt' else "Jugador"
     nombre_completo = ficha.user.get_full_name() or ficha.user.username
     equipo_nombre = ficha.equipo.nombre if ficha.equipo else "su club"
     
@@ -443,7 +461,7 @@ def aprobar_jugador(request, ficha_id):
     
     telefono = clean_phone_for_whatsapp(ficha.user.telefono)
     if telefono:
-        mensaje = f"¡Hola {nombre_completo}! Tu registro como {rol_str} para el equipo '{equipo_nombre}' ha sido APROBADO y HABILITADO con éxito. 🏆⚽"
+        mensaje = f"Â¡Hola {nombre_completo}! Tu registro como {rol_str} para el equipo '{equipo_nombre}' ha sido APROBADO y HABILITADO con Ã©xito. ðâ½"
         url_mensaje = f"https://api.whatsapp.com/send?phone={telefono}&text={urllib.parse.quote(mensaje)}"
         return redirect(url_mensaje)
         
@@ -462,11 +480,11 @@ def rechazar_jugador(request, ficha_id):
         ficha = get_object_or_404(FichaJugador, id=ficha_id)
         
     if request.method == 'POST':
-        motivo = request.POST.get('motivo_rechazo', 'Documentación ilegible o incompleta.')
+        motivo = request.POST.get('motivo_rechazo', 'DocumentaciÃ³n ilegible o incompleta.')
         ficha.estado_validacion = 'rechazado'
         ficha.motivo_rechazo = motivo
         ficha.save()
-        rol_str = "Director Técnico" if tipo == 'dt' else "Jugador"
+        rol_str = "Director TÃ©cnico" if tipo == 'dt' else "Jugador"
         nombre_completo = ficha.user.get_full_name() or ficha.user.username
         equipo_nombre = ficha.equipo.nombre if ficha.equipo else "su club"
         
@@ -474,7 +492,7 @@ def rechazar_jugador(request, ficha_id):
         
         telefono = clean_phone_for_whatsapp(ficha.user.telefono)
         if telefono:
-            mensaje = f"¡Hola {nombre_completo}! Tu registro como {rol_str} para el equipo '{equipo_nombre}' ha sido RECHAZADO.\n\nMotivo del rechazo: {motivo}\n\nPor favor, ingresa al portal del club para corregir tu información."
+            mensaje = f"Â¡Hola {nombre_completo}! Tu registro como {rol_str} para el equipo '{equipo_nombre}' ha sido RECHAZADO.\n\nMotivo del rechazo: {motivo}\n\nPor favor, ingresa al portal del club para corregir tu informaciÃ³n."
             url_mensaje = f"https://api.whatsapp.com/send?phone={telefono}&text={urllib.parse.quote(mensaje)}"
             return redirect(url_mensaje)
             
@@ -498,12 +516,12 @@ def ver_carnet(request, ficha_id):
         return redirect('club_portal')
         
     if ficha.estado_validacion != 'aprobado':
-        messages.error(request, "Este carnet aún no está habilitado.")
+        messages.error(request, "Este carnet aÃºn no estÃ¡ habilitado.")
         return redirect('club_portal')
         
-    # URL de verificación pública
+    # URL de verificaciÃ³n pÃºblica
     verif_url = request.build_absolute_uri(f"/verificar/jugador/{ficha.id}/?tipo={tipo}")
-    # Generamos la URL del código QR dinámico
+    # Generamos la URL del cÃ³digo QR dinÃ¡mico
     qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={verif_url}"
     
     context = {
@@ -564,11 +582,11 @@ def guardar_alineacion(request, equipo_id):
             data = json.loads(request.body)
             equipo.alineacion = data
             equipo.save()
-            return JsonResponse({'status': 'success', 'message': 'Alineación guardada con éxito.'})
+            return JsonResponse({'status': 'success', 'message': 'AlineaciÃ³n guardada con Ã©xito.'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
             
-    return JsonResponse({'status': 'error', 'message': 'Método no permitido.'}, status=405)
+    return JsonResponse({'status': 'error', 'message': 'MÃ©todo no permitido.'}, status=405)
 
 def buscar_cedula(request):
     from django.http import JsonResponse
@@ -609,4 +627,39 @@ def buscar_cedula(request):
             }
             
     return JsonResponse({'results': list(resultados.values())})
+
+
+@login_required
+def toggle_lesion(request, ficha_id):
+    ficha = get_object_or_404(FichaJugador, id=ficha_id)
+    
+    # Solo el dirigente del equipo o un admin pueden hacer esto
+    es_admin = request.user.role in ['superadmin', 'secretaria']
+    if not es_admin and getattr(ficha.equipo, 'dirigente', None) != request.user:
+        messages.error(request, "No tienes permiso para modificar el estado de este jugador.")
+        return redirect('club_portal')
+        
+    if request.method == 'POST':
+        if ficha.es_lesionado:
+            # Dar de alta: Verificar si hay cupo disponible
+            from django.db.models import Q
+            num_jugadores_actuales = FichaJugador.objects.filter(
+                equipo=ficha.equipo, 
+                torneo=ficha.torneo,
+                es_lesionado=False
+            ).exclude(estado_validacion='rechazado').count()
+            
+            if ficha.torneo and num_jugadores_actuales >= ficha.torneo.max_jugadores_por_equipo:
+                messages.error(request, f"No puedes dar de alta a {ficha.user.get_full_name()} porque el equipo ya alcanzó el límite de {ficha.torneo.max_jugadores_por_equipo} jugadores activos.")
+            else:
+                ficha.es_lesionado = False
+                ficha.save()
+                messages.success(request, f"{ficha.user.get_full_name()} ha sido dado de alta exitosamente.")
+        else:
+            # Reportar lesión
+            ficha.es_lesionado = True
+            ficha.save()
+            messages.warning(request, f"{ficha.user.get_full_name()} ha sido reportado como lesionado. Se ha liberado un cupo temporal.")
+            
+    return redirect('club_portal')
 

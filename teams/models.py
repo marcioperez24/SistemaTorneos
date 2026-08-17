@@ -140,6 +140,7 @@ class FichaJugador(models.Model):
     )
     
     # Datos Médicos / Emergencia
+    es_lesionado = models.BooleanField(default=False, verbose_name="¿Está Lesionado?")
     tipo_sangre = models.CharField(max_length=10, blank=True, null=True, verbose_name="Tipo de Sangre")
     contacto_emergencia = models.CharField(max_length=100, blank=True, null=True, verbose_name="Contacto de Emergencia")
     telefono_emergencia = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono de Emergencia")
