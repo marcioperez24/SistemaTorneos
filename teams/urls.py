@@ -1,8 +1,13 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
+from django.views.generic import TemplateView
 from . import views
 
 urlpatterns = [
+    # PWA
+    path('manifest.json', TemplateView.as_view(template_name='teams/manifest.json', content_type='application/json'), name='manifest'),
+    path('sw.js', TemplateView.as_view(template_name='teams/sw.js', content_type='application/javascript'), name='sw'),
+
     # Auth
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
