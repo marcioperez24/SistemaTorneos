@@ -11,6 +11,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.AlterUniqueTogether(
+            name='equipo',
+            unique_together=set(),
+        ),
         migrations.RemoveField(
             model_name='equipo',
             name='categoria',
@@ -24,5 +28,9 @@ class Migration(migrations.Migration):
             model_name='equipo',
             name='categoria',
             field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='teams.categoria', verbose_name='Categoría'),
+        ),
+        migrations.AlterUniqueTogether(
+            name='equipo',
+            unique_together={('nombre', 'categoria')},
         ),
     ]
