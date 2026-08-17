@@ -169,7 +169,7 @@
                                     <div class="row g-2 m-0">
                                         {% for team in field.field.queryset %}
                                             <div class="col-12 px-0">
-                                                <div class="card team-select-card p-2.5 d-flex flex-row align-items-center justify-content-between" data-value="{{ team.id }}" data-category="{{ team.categoria }}" onclick="toggleTeamSelection(this)">
+                                                <div class="card team-select-card p-2.5 d-flex flex-row align-items-center justify-content-between" data-value="{{ team.id }}" data-category="{{ team.categoria.id }}" onclick="toggleTeamSelection(this)">
                                                     <div class="d-flex align-items-center">
                                                         {% if team.logo %}
                                                             <img src="{{ team.logo.url }}" alt="{{ team.nombre }}" class="rounded-circle border me-2.5 shadow-sm" style="width: 34px; height: 34px; object-fit: cover;">
