@@ -503,6 +503,11 @@
                                                 <i class="fa-solid fa-trophy me-2 text-primary"></i>Gestionar Torneos/Ligas
                                             </a>
                                         </li>
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'lista_categorias' %}">
+                                                <i class="fa-solid fa-tags me-2 text-primary"></i>Gestionar Categorías
+                                            </a>
+                                        </li>
                                     {% endif %}
                                     {% if user_perms.tesoreria %}
                                         {% if user_perms.secretaria %}

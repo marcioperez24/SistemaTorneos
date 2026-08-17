@@ -1,6 +1,6 @@
 from django.db import models
 from django.conf import settings
-from teams.models import Equipo
+from teams.models import Equipo, Categoria
 
 class Torneo(models.Model):
     TIPO_CHOICES = (
@@ -9,7 +9,7 @@ class Torneo(models.Model):
     )
     nombre = models.CharField(max_length=100, unique=True, verbose_name="Nombre del Torneo / Liga")
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='liga', verbose_name="Tipo de Campeonato")
-    categoria = models.CharField(max_length=20, choices=Equipo.CATEGORIAS, default='senior', verbose_name="Categoría")
+    categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, verbose_name="Categoría")
     temporada = models.CharField(max_length=50, default="Temporada 2026", verbose_name="Temporada")
     modalidad = models.CharField(max_length=50, default="Fútbol 11", verbose_name="Modalidad (ej. Fútbol 11, Fútbol 7)")
     max_jugadores_por_equipo = models.IntegerField(default=25, verbose_name="Máximo de Jugadores por Equipo")
@@ -25,6 +25,9 @@ class Torneo(models.Model):
 
     def __str__(self):
         return f"{self.nombre} - {self.get_tipo_display()} ({self.temporada})"
+
+    def get_categoria_display(self):
+        return self.categoria.nombre if self.categoria else ""
 
 
 class Partido(models.Model):

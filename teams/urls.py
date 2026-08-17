@@ -34,5 +34,11 @@ urlpatterns = [
     path('equipo/<int:equipo_id>/alineacion/guardar/', views.guardar_alineacion, name='guardar_alineacion'),
     path('jugador/<int:ficha_id>/lesion/', views.toggle_lesion, name='toggle_lesion'),
     path('buscar-cedula/', views.buscar_cedula, name='buscar_cedula'),
+    
+    # Categorías CRUD
+    path('categorias/', views.lista_categorias, name='lista_categorias'),
+    path('categorias/nueva/', views.crear_categoria, name='crear_categoria'),
+    path('categorias/<int:categoria_id>/editar/', views.editar_categoria, name='editar_categoria'),
+    path('categorias/<int:categoria_id>/eliminar/', views.eliminar_categoria, name='eliminar_categoria'),
 ]
 

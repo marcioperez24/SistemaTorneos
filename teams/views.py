@@ -5,8 +5,9 @@ from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta
 import urllib.parse
-from .models import Equipo, InvitacionEquipo, FichaJugador, FichaDT
-from .forms import EquipoForm, PlayerRegistrationForm, DTRegistrationForm
+from django.db import models
+from .models import Equipo, InvitacionEquipo, FichaJugador, FichaDT, Categoria
+from .forms import EquipoForm, PlayerRegistrationForm, DTRegistrationForm, CategoriaForm
 from django.contrib.auth.forms import AuthenticationForm
 from matches.models import Torneo
 from finances.models import PagoInscripcion, MultaTarjeta, CobroEquipo
@@ -662,4 +663,66 @@ def toggle_lesion(request, ficha_id):
             messages.warning(request, f"{ficha.user.get_full_name()} ha sido reportado como lesionado. Se ha liberado un cupo temporal.")
             
     return redirect('club_portal')
+
+
+@login_required
+def lista_categorias(request):
+    if not (request.user.role in ['superadmin', 'secretaria'] or request.user.is_superuser):
+        messages.error(request, "No tienes permisos para acceder a este módulo.")
+        return redirect('club_portal')
+    
+    categorias = Categoria.objects.all().order_by('nombre')
+    return render(request, 'teams/lista_categorias.html', {'categorias': categorias})
+
+
+@login_required
+def crear_categoria(request):
+    if not (request.user.role in ['superadmin', 'secretaria'] or request.user.is_superuser):
+        messages.error(request, "No tienes permisos para acceder a este módulo.")
+        return redirect('club_portal')
+        
+    if request.method == 'POST':
+        form = CategoriaForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Categoría creada con éxito.")
+            return redirect('lista_categorias')
+    else:
+        form = CategoriaForm()
+    return render(request, 'teams/form_categoria.html', {'form': form, 'title': 'Crear Categoría'})
+
+
+@login_required
+def editar_categoria(request, categoria_id):
+    if not (request.user.role in ['superadmin', 'secretaria'] or request.user.is_superuser):
+        messages.error(request, "No tienes permisos para acceder a este módulo.")
+        return redirect('club_portal')
+        
+    categoria = get_object_or_404(Categoria, id=categoria_id)
+    if request.method == 'POST':
+        form = CategoriaForm(request.POST, instance=categoria)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Categoría actualizada con éxito.")
+            return redirect('lista_categorias')
+    else:
+        form = CategoriaForm(instance=categoria)
+    return render(request, 'teams/form_categoria.html', {'form': form, 'title': 'Editar Categoría', 'categoria': categoria})
+
+
+@login_required
+def eliminar_categoria(request, categoria_id):
+    if not (request.user.role in ['superadmin', 'secretaria'] or request.user.is_superuser):
+        messages.error(request, "No tienes permisos para acceder a este módulo.")
+        return redirect('club_portal')
+        
+    categoria = get_object_or_404(Categoria, id=categoria_id)
+    if request.method == 'POST':
+        try:
+            categoria.delete()
+            messages.success(request, "Categoría eliminada con éxito.")
+        except models.ProtectedError:
+            messages.error(request, "No se puede eliminar la categoría porque hay equipos o torneos asociados a ella.")
+        
+    return redirect('lista_categorias')
 

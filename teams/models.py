@@ -3,20 +3,21 @@ from django.db import models
 from django.conf import settings
 from django.utils import timezone
 
+class Categoria(models.Model):
+    nombre = models.CharField(max_length=50, unique=True, verbose_name="Nombre de la Categoría")
+
+    class Meta:
+        verbose_name = "Categoría"
+        verbose_name_plural = "Categorías"
+
+    def __str__(self):
+        return self.nombre
+
+
 class Equipo(models.Model):
-    CATEGORIAS = (
-        ('senior', 'Senior / Libre'),
-        ('master', 'Máster (Mayores de 40)'),
-        ('supermaster', 'Supermáster (Mayores de 50)'),
-        ('juvenil', 'Juvenil (Sub-18)'),
-        ('u15', 'Sub-15 (U-15)'),
-        ('u12', 'Sub-12 (U-12)'),
-        ('femenino', 'Femenino Libre'),
-    )
-    
     nombre = models.CharField(max_length=100, verbose_name="Nombre del Equipo")
     logo = models.ImageField(upload_to='logos_equipos/', null=True, blank=True, verbose_name="Escudo/Logo")
-    categoria = models.CharField(max_length=20, choices=CATEGORIAS, default='senior', verbose_name="Categoría")
+    categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, verbose_name="Categoría")
     entrenador = models.CharField(max_length=100, blank=True, null=True, verbose_name="Entrenador / DT")
     telefono_entrenador = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono del Entrenador")
     alineacion = models.JSONField(default=dict, blank=True, null=True, verbose_name="Alineación Táctica")
@@ -36,6 +37,9 @@ class Equipo(models.Model):
 
     def __str__(self):
         return f"{self.nombre} ({self.get_categoria_display()})"
+
+    def get_categoria_display(self):
+        return self.categoria.nombre if self.categoria else ""
 
     def get_dt(self):
         if not hasattr(self, '_cached_dt'):

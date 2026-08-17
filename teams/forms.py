@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from .models import Equipo, FichaJugador, FichaDT
+from .models import Equipo, FichaJugador, FichaDT, Categoria
 
 User = get_user_model()
 
@@ -19,9 +19,9 @@ class EquipoForm(forms.ModelForm):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         if user and user.role == 'dirigente':
-            self.fields['nombre'].disabled = True
-            self.fields['logo'].disabled = True
-            self.fields['categoria'].disabled = True
+            if self.instance and self.instance.pk:
+                self.fields['nombre'].disabled = True
+                self.fields['logo'].disabled = True
 
 
 class PlayerRegistrationForm(forms.ModelForm):
@@ -209,3 +209,15 @@ class DTRegistrationForm(forms.ModelForm):
         if commit:
             ficha.save()
         return ficha
+
+
+class CategoriaForm(forms.ModelForm):
+    class Meta:
+        model = Categoria
+        fields = ['nombre']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Sub-12 (U-12)'}),
+        }
+        labels = {
+            'nombre': 'Nombre de la Categoría',
+        }
