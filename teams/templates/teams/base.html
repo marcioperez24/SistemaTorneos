@@ -463,25 +463,25 @@
                         {% if user_perms.vocalia %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'vocalia_dashboard' %}">
-                                    <i class="fa-solid fa-clipboard-list me-1.5 text-warning"></i>VocalÃ­a de Campo
+                                    <i class="fa-solid fa-clipboard-list me-1.5 text-warning"></i>Vocalía de Campo
                                 </a>
                             </li>
                         {% endif %}
                         {% if user_perms.secretaria or user_perms.tesoreria %}
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownAdmin" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fa-solid fa-gears me-1.5 text-warning"></i>AdministraciÃ³n
+                                    <i class="fa-solid fa-gears me-1.5 text-warning"></i>Administración
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end dropdown-menu-lg-start" aria-labelledby="navbarDropdownAdmin">
                                     {% if user_perms.secretaria %}
                                         <li>
                                             <a class="dropdown-item" href="{% url 'secretaria_dashboard' %}">
-                                                <i class="fa-solid fa-user-check me-2 text-primary"></i>SecretarÃ­a (ValidaciÃ³n)
+                                                <i class="fa-solid fa-user-check me-2 text-primary"></i>Secretaría (Validación)
                                             </a>
                                         </li>
                                         <li>
-                                            <a class="dropdown-item" href="{% url 'gestion_arbitros' %}">
-                                                <i class="fa-solid fa-bullhorn me-2 text-primary"></i>Gestionar Ãrbitros
+                                            <a class="dropdown-item" href="{% url 'gestion_aÁrbitros' %}">
+                                                <i class="fa-solid fa-bullhorn me-2 text-primary"></i>Gestionar ÁÁrbitros
                                             </a>
                                         </li>
                                         <li>
@@ -501,7 +501,7 @@
                                         {% endif %}
                                         <li>
                                             <a class="dropdown-item" href="{% url 'resumen_financiero' %}">
-                                                <i class="fa-solid fa-file-invoice-dollar me-2 text-success"></i>TesorerÃ­a y Caja
+                                                <i class="fa-solid fa-file-invoice-dollar me-2 text-success"></i>Tesorería y Caja
                                             </a>
                                         </li>
                                     {% endif %}
@@ -533,7 +533,7 @@
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <a class="dropdown-item text-danger" href="{% url 'logout' %}">
-                                        <i class="fa-solid fa-sign-out-alt me-2"></i>Cerrar SesiÃ³n
+                                        <i class="fa-solid fa-sign-out-alt me-2"></i>Cerrar Sesión
                                     </a>
                                 </li>
                             </ul>
@@ -541,7 +541,7 @@
                     {% else %}
                         <li class="nav-item">
                             <a class="btn btn-outline-light btn-sm rounded-pill px-3 d-inline-flex align-items-center" href="{% url 'login' %}">
-                                <i class="fa-solid fa-sign-in-alt me-1"></i>Iniciar SesiÃ³n
+                                <i class="fa-solid fa-sign-in-alt me-1"></i>Iniciar Sesión
                             </a>
                         </li>
                     {% endif %}
@@ -570,7 +570,7 @@
     <!-- Footer -->
     <footer class="text-center">
         <div class="container">
-            <p class="mb-0">&copy; 2026 Torneos Deportivos. DiseÃ±ado para un rendimiento premium.</p>
+            <p class="mb-0">&copy; 2026 Torneos Deportivos. Diseñado para un rendimiento premium.</p>
         </div>
     </footer>
 

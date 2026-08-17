@@ -1,6 +1,6 @@
 {% extends 'teams/base.html' %}
 {% load static %}
-{% block title %}Iniciar SesiÃ³n - Sistema Deportivo{% endblock %}
+{% block title %}Iniciar Sesión - Sistema Deportivo{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -392,21 +392,24 @@
     <!-- Left panel: branding & features (hidden on mobile) -->
     <div class="login-left">
         <div class="brand-container">
-            <img src="{% static 'teams/images/logo.png' %}" alt="Logo" style="height: 50px; object-fit: contain;">
+            <div class="brand-logo">
+                <i class="fa-solid fa-trophy text-white fs-5"></i>
+            </div>
+            <div class="brand-name">SISTEMA DEPORTIVO</div>
         </div>
         
         <div class="left-content">
             <h1 class="left-title">Gestiona tus torneos a nivel profesional.</h1>
-            <p class="left-subtitle">Optimiza la administraciÃ³n de partidos, fixture, carnetizaciÃ³n, cobro de multas y actas digitales desde cualquier dispositivo.</p>
+            <p class="left-subtitle">Optimiza la administración de partidos, fixture, carnetización, cobro de multas y actas digitales desde cualquier dispositivo.</p>
             
             <div class="feature-list">
                 <div class="feature-item">
                     <span class="feature-icon"><i class="fa-solid fa-calendar-check"></i></span>
-                    <span>GeneraciÃ³n de Fixture y Fases Automatizado</span>
+                    <span>Generación de Fixture y Fases Automatizado</span>
                 </div>
                 <div class="feature-item">
                     <span class="feature-icon"><i class="fa-solid fa-pen-nib"></i></span>
-                    <span>Actas Digitales con Firma TÃ¡ctil</span>
+                    <span>Actas Digitales con Firma Táctil</span>
                 </div>
                 <div class="feature-item">
                     <span class="feature-icon"><i class="fa-solid fa-wallet"></i></span>
@@ -414,14 +417,14 @@
                 </div>
                 <div class="feature-item">
                     <span class="feature-icon"><i class="fa-solid fa-qrcode"></i></span>
-                    <span>ValidaciÃ³n Digital de Credenciales por QR</span>
+                    <span>Validación Digital de Credenciales por QR</span>
                 </div>
             </div>
         </div>
         
         <div class="left-footer">
             <div class="left-footer-text">
-                <h6>Acceso al PÃºblico General</h6>
+                <h6>Acceso al Público General</h6>
                 <p>Consulta partidos, calendarios y posiciones actuales.</p>
             </div>
             <a href="{% url 'partidos_lista' %}" class="btn btn-custom-accent rounded-pill px-4 py-2.5">
@@ -432,12 +435,10 @@
     
     <!-- Right panel: login form -->
     <div class="login-right">
-        <!-- Logo for mobile only -->
-        <div class="d-lg-none text-center mb-4">
-            <img src="{% static 'teams/images/logo.png' %}" alt="Logo" style="max-width: 180px; height: auto;">
-        </div>
-
         <div class="login-card">
+            <div class="text-center mb-4">
+                <img src="{% static 'teams/images/logo.png' %}" alt="Logo" style="max-width: 320px; height: auto;">
+            </div>
             <div class="login-header text-center text-lg-start">
                 <h2>Ingreso al Sistema</h2>
                 <p>Acceso restringido para directivos, organizadores y personal de campo.</p>
@@ -461,7 +462,7 @@
                 </div>
                 
                 <div class="form-group-custom">
-                    <label for="{{ form.password.id_for_label }}" class="form-label-custom">ContraseÃ±a</label>
+                    <label for="{{ form.password.id_for_label }}" class="form-label-custom">Contraseña</label>
                     <div class="input-group-custom">
                         <span class="input-icon"><i class="fa-solid fa-lock"></i></span>
                         {{ form.password }}
@@ -475,13 +476,12 @@
                 </div>
                 
                 <button type="submit" class="btn-login">
-                    <i class="fa-solid fa-right-to-bracket"></i> Iniciar SesiÃ³n
+                        <i class="fa-solid fa-right-to-bracket me-2"></i>Iniciar Sesión
                 </button>
             </form>
-            
-            <div class="notice-card">
-                <p><strong>Â¿Eres un jugador?</strong> PÃ­dele al dirigente de tu club el enlace de invitaciÃ³n para registrarte y carnetizarte en lÃ­nea.</p>
-            </div>
+                        <div class="notice-card">
+                    <p><strong>¿Eres un Jugador?</strong> Pídele al dirigente de tu club el enlace de invitación para registrarte y carnetizarte en línea.</p>
+                </div>
             
             <div class="d-lg-none text-center mt-4">
                 <a href="{% url 'partidos_lista' %}" class="btn btn-custom-accent w-100 py-2.5 rounded-3">
