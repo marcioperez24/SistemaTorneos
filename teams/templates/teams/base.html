@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Sistema de Torneos Deportivos{% endblock %}</title>
     <!-- Favicon -->
-    <link rel="icon" href="{% static 'img/logo.png' %}" type="image/png">
+    <link rel="icon" href="{% static 'teams/images/logo.png' %}" type="image/png">
     <!-- Google Fonts: Roboto -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -431,7 +431,7 @@
     <div id="global-loader">
         <div class="loader-content">
             <div class="loader-spinner"></div>
-            <img src="{% static 'img/logo.png' %}" alt="Logo" class="loader-logo">
+            <img src="{% static 'teams/images/logo.png' %}" alt="Logo" class="loader-logo">
         </div>
     </div>
 
@@ -440,7 +440,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark navbar-custom py-3">
         <div class="container">
             <a class="navbar-brand d-flex align-items-center" href="{% url 'club_portal' %}">
-                <img src="{% static 'img/logo.png' %}" alt="Logo" style="height: 40px; object-fit: contain;">
+                <img src="{% static 'teams/images/logo.png' %}" alt="Logo" style="height: 40px; object-fit: contain;">
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -463,25 +463,25 @@
                         {% if user_perms.vocalia %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'vocalia_dashboard' %}">
-                                    <i class="fa-solid fa-clipboard-list me-1.5 text-warning"></i>Vocalía de Campo
+                                    <i class="fa-solid fa-clipboard-list me-1.5 text-warning"></i>VocalÃ­a de Campo
                                 </a>
                             </li>
                         {% endif %}
                         {% if user_perms.secretaria or user_perms.tesoreria %}
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownAdmin" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fa-solid fa-gears me-1.5 text-warning"></i>Administración
+                                    <i class="fa-solid fa-gears me-1.5 text-warning"></i>AdministraciÃ³n
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end dropdown-menu-lg-start" aria-labelledby="navbarDropdownAdmin">
                                     {% if user_perms.secretaria %}
                                         <li>
                                             <a class="dropdown-item" href="{% url 'secretaria_dashboard' %}">
-                                                <i class="fa-solid fa-user-check me-2 text-primary"></i>Secretaría (Validación)
+                                                <i class="fa-solid fa-user-check me-2 text-primary"></i>SecretarÃ­a (ValidaciÃ³n)
                                             </a>
                                         </li>
                                         <li>
                                             <a class="dropdown-item" href="{% url 'gestion_arbitros' %}">
-                                                <i class="fa-solid fa-bullhorn me-2 text-primary"></i>Gestionar Árbitros
+                                                <i class="fa-solid fa-bullhorn me-2 text-primary"></i>Gestionar Ãrbitros
                                             </a>
                                         </li>
                                         <li>
@@ -501,7 +501,7 @@
                                         {% endif %}
                                         <li>
                                             <a class="dropdown-item" href="{% url 'resumen_financiero' %}">
-                                                <i class="fa-solid fa-file-invoice-dollar me-2 text-success"></i>Tesorería y Caja
+                                                <i class="fa-solid fa-file-invoice-dollar me-2 text-success"></i>TesorerÃ­a y Caja
                                             </a>
                                         </li>
                                     {% endif %}
@@ -533,7 +533,7 @@
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <a class="dropdown-item text-danger" href="{% url 'logout' %}">
-                                        <i class="fa-solid fa-sign-out-alt me-2"></i>Cerrar Sesión
+                                        <i class="fa-solid fa-sign-out-alt me-2"></i>Cerrar SesiÃ³n
                                     </a>
                                 </li>
                             </ul>
@@ -541,7 +541,7 @@
                     {% else %}
                         <li class="nav-item">
                             <a class="btn btn-outline-light btn-sm rounded-pill px-3 d-inline-flex align-items-center" href="{% url 'login' %}">
-                                <i class="fa-solid fa-sign-in-alt me-1"></i>Iniciar Sesión
+                                <i class="fa-solid fa-sign-in-alt me-1"></i>Iniciar SesiÃ³n
                             </a>
                         </li>
                     {% endif %}
@@ -570,7 +570,7 @@
     <!-- Footer -->
     <footer class="text-center">
         <div class="container">
-            <p class="mb-0">&copy; 2026 Torneos Deportivos. Diseñado para un rendimiento premium.</p>
+            <p class="mb-0">&copy; 2026 Torneos Deportivos. DiseÃ±ado para un rendimiento premium.</p>
         </div>
     </footer>
 

@@ -1,6 +1,6 @@
 {% extends 'teams/base.html' %}
 {% load static %}
-{% block title %}Iniciar Sesión - Sistema Deportivo{% endblock %}
+{% block title %}Iniciar SesiÃ³n - Sistema Deportivo{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -392,21 +392,21 @@
     <!-- Left panel: branding & features (hidden on mobile) -->
     <div class="login-left">
         <div class="brand-container">
-            <img src="{% static 'img/logo.png' %}" alt="Logo" style="height: 50px; object-fit: contain;">
+            <img src="{% static 'teams/images/logo.png' %}" alt="Logo" style="height: 50px; object-fit: contain;">
         </div>
         
         <div class="left-content">
             <h1 class="left-title">Gestiona tus torneos a nivel profesional.</h1>
-            <p class="left-subtitle">Optimiza la administración de partidos, fixture, carnetización, cobro de multas y actas digitales desde cualquier dispositivo.</p>
+            <p class="left-subtitle">Optimiza la administraciÃ³n de partidos, fixture, carnetizaciÃ³n, cobro de multas y actas digitales desde cualquier dispositivo.</p>
             
             <div class="feature-list">
                 <div class="feature-item">
                     <span class="feature-icon"><i class="fa-solid fa-calendar-check"></i></span>
-                    <span>Generación de Fixture y Fases Automatizado</span>
+                    <span>GeneraciÃ³n de Fixture y Fases Automatizado</span>
                 </div>
                 <div class="feature-item">
                     <span class="feature-icon"><i class="fa-solid fa-pen-nib"></i></span>
-                    <span>Actas Digitales con Firma Táctil</span>
+                    <span>Actas Digitales con Firma TÃ¡ctil</span>
                 </div>
                 <div class="feature-item">
                     <span class="feature-icon"><i class="fa-solid fa-wallet"></i></span>
@@ -414,14 +414,14 @@
                 </div>
                 <div class="feature-item">
                     <span class="feature-icon"><i class="fa-solid fa-qrcode"></i></span>
-                    <span>Validación Digital de Credenciales por QR</span>
+                    <span>ValidaciÃ³n Digital de Credenciales por QR</span>
                 </div>
             </div>
         </div>
         
         <div class="left-footer">
             <div class="left-footer-text">
-                <h6>Acceso al Público General</h6>
+                <h6>Acceso al PÃºblico General</h6>
                 <p>Consulta partidos, calendarios y posiciones actuales.</p>
             </div>
             <a href="{% url 'partidos_lista' %}" class="btn btn-custom-accent rounded-pill px-4 py-2.5">
@@ -434,7 +434,7 @@
     <div class="login-right">
         <!-- Logo for mobile only -->
         <div class="d-lg-none text-center mb-4">
-            <img src="{% static 'img/logo.png' %}" alt="Logo" style="max-width: 180px; height: auto;">
+            <img src="{% static 'teams/images/logo.png' %}" alt="Logo" style="max-width: 180px; height: auto;">
         </div>
 
         <div class="login-card">
@@ -461,7 +461,7 @@
                 </div>
                 
                 <div class="form-group-custom">
-                    <label for="{{ form.password.id_for_label }}" class="form-label-custom">Contraseña</label>
+                    <label for="{{ form.password.id_for_label }}" class="form-label-custom">ContraseÃ±a</label>
                     <div class="input-group-custom">
                         <span class="input-icon"><i class="fa-solid fa-lock"></i></span>
                         {{ form.password }}
@@ -475,12 +475,12 @@
                 </div>
                 
                 <button type="submit" class="btn-login">
-                    <i class="fa-solid fa-right-to-bracket"></i> Iniciar Sesión
+                    <i class="fa-solid fa-right-to-bracket"></i> Iniciar SesiÃ³n
                 </button>
             </form>
             
             <div class="notice-card">
-                <p><strong>¿Eres un jugador?</strong> Pídele al dirigente de tu club el enlace de invitación para registrarte y carnetizarte en línea.</p>
+                <p><strong>Â¿Eres un jugador?</strong> PÃ­dele al dirigente de tu club el enlace de invitaciÃ³n para registrarte y carnetizarte en lÃ­nea.</p>
             </div>
             
             <div class="d-lg-none text-center mt-4">
