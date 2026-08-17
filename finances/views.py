@@ -27,10 +27,7 @@ def resumen_financiero(request):
     total_multas = MultaTarjeta.objects.filter(estado='pagado').aggregate(Sum('monto'))['monto__sum'] or Decimal('0.00')
     
     # Egresos registrados en caja
-    total_egresos = MovimientoCaja.objects.filter(tipo='egresó').aggregate(Sum('monto'))['monto__sum'] or Decimal('0.00')
-    # O por si registramos el egreso genérico
-    total_egresos_caja = MovimientoCaja.objects.filter(tipo='egreso').aggregate(Sum('monto'))['monto__sum'] or Decimal('0.00')
-    total_egresos = total_egresos + total_egresos_caja
+    total_egresos = MovimientoCaja.objects.filter(tipo='egreso').aggregate(Sum('monto'))['monto__sum'] or Decimal('0.00')
 
     total_ingresos = total_inscripciones + total_multas
     # Sumar otros ingresos cargados manualmente a la caja
