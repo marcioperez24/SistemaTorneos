@@ -714,7 +714,7 @@
                                 <option value="{{ torneo.id }}">{{ torneo.nombre }} ({{ torneo.get_categoria_display }}) - Max. {{ torneo.max_jugadores_por_equipo }} jug.</option>
                             {% endfor %}
                         </select>
-                        <div class="form-text">El jugador solo podrá registrarse en tu equipo para el torneo seleccionado.</div>
+                        <div class="form-text">El jugador solo podráá registrarse en tu equipo para el torneo seleccionado.</div>
                     </div>
                     <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm rounded-pill">
                         <i class="fa-solid fa-share-nodes me-2"></i>Generar Enlace de Registro
@@ -732,7 +732,7 @@
         document.getElementById('inviteEquipoName').textContent = equipoNombre;
         document.getElementById('inviteTipoName').textContent = tipo === 'jugador' ? 'Jugador' : 'Cuerpo Técnico';
         document.getElementById('inviteTipoInput').value = tipo;
-        document.getElementById('inviteForm').action = `/equipos/${equipoId}/invitacion/`;
+        document.getElementById('inviteForm').action = `/equipo/${equipoId}/invitar/`;
         
         var modal = new bootstrap.Modal(document.getElementById('inviteModal'));
         modal.show();
