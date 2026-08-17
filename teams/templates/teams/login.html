@@ -10,7 +10,7 @@
         padding: 0;
         min-height: 100vh;
         overflow-x: hidden;
-        background-color: #0f172a;
+        background-color: #ffffff;
     }
     
     footer {
@@ -160,8 +160,8 @@
         .login-right {
             flex: 1;
             padding: 3rem 1.5rem;
-            background-color: #0f172a;
-            color: white;
+            background-color: #ffffff;
+            color: #0f172a;
             min-height: 100vh;
         }
     }
@@ -186,7 +186,7 @@
 
     @media (max-width: 991px) {
         .login-header h2 {
-            color: #ffffff;
+            color: #0f172a;
         }
     }
 
@@ -381,7 +381,7 @@
 
     @media (max-width: 991px) {
         .notice-card strong {
-            color: #ffffff;
+            color: #0f172a;
         }
     }
 </style>
@@ -392,10 +392,7 @@
     <!-- Left panel: branding & features (hidden on mobile) -->
     <div class="login-left">
         <div class="brand-container">
-            <div class="brand-logo">
-                <i class="fa-solid fa-trophy text-white fs-5"></i>
-            </div>
-            <div class="brand-name">SISTEMA DEPORTIVO</div>
+            <img src="{% static 'img/logo.png' %}" alt="Logo" style="height: 50px; object-fit: contain;">
         </div>
         
         <div class="left-content">
@@ -437,10 +434,7 @@
     <div class="login-right">
         <!-- Logo for mobile only -->
         <div class="d-lg-none text-center mb-4">
-            <div class="d-inline-flex align-items-center justify-content-center bg-primary bg-gradient text-white rounded-circle mb-2" style="width: 50px; height: 50px; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important;">
-                <i class="fa-solid fa-trophy text-warning fs-5"></i>
-            </div>
-            <h4 class="fw-bold tracking-wide text-white">SISTEMA DEPORTIVO</h4>
+            <img src="{% static 'img/logo.png' %}" alt="Logo" style="max-width: 180px; height: auto;">
         </div>
 
         <div class="login-card">

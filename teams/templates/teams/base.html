@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Sistema de Torneos Deportivos{% endblock %}</title>
+    <!-- Favicon -->
+    <link rel="icon" href="{% static 'img/logo.png' %}" type="image/png">
     <!-- Google Fonts: Roboto -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -363,17 +365,81 @@
             color: #1e40af;
             border-left: 4px solid #3b82f6;
         }
+
+        /* Loading Overlay */
+        #global-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #ffffff;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.6s ease, visibility 0.6s ease;
+        }
+        
+        .loader-content {
+            position: relative;
+            width: 160px;
+            height: 160px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .loader-logo {
+            width: 90px;
+            height: auto;
+            z-index: 2;
+            animation: pulse-logo 2s ease-in-out infinite;
+        }
+        
+        .loader-spinner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 3px solid rgba(226, 232, 240, 0.5);
+            border-top: 3px solid #f59e0b;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            z-index: 1;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.2);
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse-logo {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
 
+    <!-- Loading Overlay -->
+    <div id="global-loader">
+        <div class="loader-content">
+            <div class="loader-spinner"></div>
+            <img src="{% static 'img/logo.png' %}" alt="Logo" class="loader-logo">
+        </div>
+    </div>
+
     <!-- Navbar -->
     {% if not hide_navbar %}
     <nav class="navbar navbar-expand-lg navbar-dark navbar-custom py-3">
         <div class="container">
-            <a class="navbar-brand" href="{% url 'club_portal' %}">
-                <i class="fa-solid fa-trophy me-2 text-warning"></i>SISTEMA DEPORTIVO
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'club_portal' %}">
+                <img src="{% static 'img/logo.png' %}" alt="Logo" style="height: 40px; object-fit: contain;">
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -551,6 +617,17 @@
                         e.target.value = e.target.value.toUpperCase();
                     }
                 }
+            }
+        });
+        // Hide global loader on page load
+        window.addEventListener('load', function() {
+            const loader = document.getElementById('global-loader');
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => {
+                    loader.style.visibility = 'hidden';
+                    loader.style.display = 'none';
+                }, 600);
             }
         });
     </script>
