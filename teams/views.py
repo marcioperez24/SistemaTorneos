@@ -660,7 +660,7 @@ def toggle_lesion(request, ficha_id):
             # Reportar lesión
             ficha.es_lesionado = True
             ficha.save()
-            messages.warning(request, f"{ficha.user.get_full_name()} ha sido reportado como lesionado. Se ha liberado un cupo temporal.")
+            messages.warning(request, f"{ficha.user.get_full_name()} ha sido reportado como lesionado. Se ha liberado un cupo temporal, por lo que ahora puedes inscribir a otro jugador más.")
             
     return redirect('club_portal')
 
