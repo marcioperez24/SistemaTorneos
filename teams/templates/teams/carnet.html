@@ -25,13 +25,13 @@
     }
 
     .carnet-card {
-        background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 50%, #415a77 100%);
-        color: white;
+        background: #ffffff;
+        color: #212529;
         border-radius: 3.18mm; /* Esquinas redondeadas oficiales de PVC */
-        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
         overflow: hidden;
         position: relative;
-        border: 0.3mm solid rgba(255, 255, 255, 0.15);
+        border: 0.3mm solid #ced4da;
         width: 85.6mm;
         height: 53.98mm;
         display: flex;
@@ -45,25 +45,23 @@
         box-sizing: border-box;
     }
 
+    @media (max-width: 480px) {
+        .carnet-card {
+            transform: scale(0.95);
+        }
+        .carnet-container {
+            gap: 20px;
+        }
+    }
+
     .carnet-card:hover {
         transform: scale(1.38) translateY(-2px);
     }
 
-    /* Brillo de fondo */
-    .carnet-card::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 65%);
-        transform: rotate(30deg);
-        pointer-events: none;
-    }
+    /* Removed radial glow for white design */
 
     .carnet-header {
-        background: rgba(0, 0, 0, 0.45);
+        background: #f1f3f5;
         padding: 1.5mm 3mm;
         border-bottom: 0.5mm solid var(--accent-color);
         display: flex;
@@ -87,8 +85,8 @@
         height: 25.5mm;
         object-fit: cover;
         border-radius: 1.2mm;
-        border: 0.5mm solid rgba(255, 255, 255, 0.25);
-        box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+        border: 0.5mm solid #dee2e6;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.1);
     }
 
     .carnet-qr {
@@ -103,7 +101,7 @@
     .carnet-label {
         font-size: 5.2pt;
         text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.55);
+        color: #6c757d;
         letter-spacing: 0.4px;
         margin-bottom: 0.2mm;
         display: block;
@@ -113,7 +111,7 @@
     .carnet-value {
         font-size: 7.2pt;
         font-weight: 600;
-        color: #fff;
+        color: #212529;
         display: block;
         line-height: 1.2;
     }
@@ -124,7 +122,7 @@
         line-height: 1.15;
         margin-bottom: 0.6mm;
         text-transform: uppercase;
-        color: #ffffff;
+        color: #212529;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -132,36 +130,37 @@
     }
 
     .carnet-footer {
-        background: rgba(0, 0, 0, 0.35);
+        background: #e9ecef;
         padding: 1.2mm 3mm;
         font-size: 5.8pt;
         font-family: monospace;
-        border-top: 0.3mm solid rgba(255,255,255,0.06);
+        border-top: 0.3mm solid #dee2e6;
         display: flex;
         justify-content: space-between;
         align-items: center;
         height: 6mm;
         box-sizing: border-box;
+        color: #495057;
     }
 
     /* Sello digital para el reverso */
     .stamp-box {
-        border: 0.4mm dashed rgba(255, 193, 7, 0.5);
+        border: 0.4mm dashed #ffc107;
         border-radius: 1.5mm;
         padding: 1mm 1.5mm;
-        background: rgba(255, 255, 255, 0.02);
+        background: #fff8e1;
         text-align: center;
         width: 100%;
         max-width: 26mm;
         transform: rotate(-3deg);
-        box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
         box-sizing: border-box;
     }
 
     .stamp-title {
         font-size: 4.8pt;
         text-transform: uppercase;
-        color: #ffc107;
+        color: #d39e00;
         letter-spacing: 0.4px;
         margin-bottom: 0.5mm;
         font-weight: 700;
@@ -171,17 +170,16 @@
         font-family: 'Courier New', Courier, monospace;
         font-style: italic;
         font-size: 7.8pt;
-        color: #ffc107;
+        color: #d39e00;
         margin: 0.8mm 0;
         font-weight: bold;
-        text-shadow: 1px 1px 1px rgba(0,0,0,0.4);
         line-height: 1;
     }
 
     .stamp-footer {
         font-size: 4.2pt;
-        color: rgba(255, 255, 255, 0.45);
-        border-top: 0.2mm solid rgba(255, 255, 255, 0.15);
+        color: #856404;
+        border-top: 0.2mm solid #ffeeba;
         padding-top: 0.5mm;
         margin-top: 0.5mm;
         line-height: 1.1;
@@ -213,8 +211,8 @@
         .carnet-card {
             transform: none !important; /* Desactiva la escala en impresión */
             box-shadow: none !important;
-            border: 0.2mm solid #000000 !important;
-            background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 50%, #415a77 100%) !important;
+            border: 0.2mm solid #ced4da !important;
+            background: #ffffff !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             page-break-inside: avoid;
@@ -246,8 +244,8 @@
                         <div class="d-flex align-items-center">
                             <i class="fa-solid fa-trophy text-warning me-1 fs-8"></i>
                             <div>
-                                <h6 class="fw-bold mb-0 tracking-wide font-monospace text-white" style="font-size: 6.8pt; line-height: 1;">LIGA DEPORTIVA</h6>
-                                <span class="text-white-50 font-monospace" style="font-size: 5pt;">REGISTRO OFICIAL</span>
+                                <h6 class="fw-bold mb-0 tracking-wide font-monospace text-dark" style="font-size: 6.8pt; line-height: 1;">LIGA DEPORTIVA</h6>
+                                <span class="text-muted font-monospace" style="font-size: 5pt;">REGISTRO OFICIAL</span>
                             </div>
                         </div>
                         {% if ficha.equipo.logo %}
@@ -329,8 +327,8 @@
                         <div class="d-flex align-items-center">
                             <i class="fa-solid fa-shield-halved text-warning me-1 fs-8"></i>
                             <div>
-                                <h6 class="fw-bold mb-0 tracking-wide font-monospace text-white" style="font-size: 6.8pt; line-height: 1;">INFORMACIÓN DE CONTROL</h6>
-                                <span class="text-white-50 font-monospace" style="font-size: 5pt;">VALIDACIÓN Y SEGURIDAD</span>
+                                <h6 class="fw-bold mb-0 tracking-wide font-monospace text-dark" style="font-size: 6.8pt; line-height: 1;">INFORMACIÓN DE CONTROL</h6>
+                                <span class="text-muted font-monospace" style="font-size: 5pt;">VALIDACIÓN Y SEGURIDAD</span>
                             </div>
                         </div>
                     </div>
