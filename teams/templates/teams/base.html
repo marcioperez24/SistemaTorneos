@@ -24,6 +24,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- FontAwesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- SweetAlert2 for modern confirmation dialogs -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
         :root {
@@ -431,6 +434,42 @@
             50% { transform: scale(1.05); }
             100% { transform: scale(1); }
         }
+
+        /* SweetAlert2 custom style to match the system's design language */
+        .swal2-popup {
+            text-transform: uppercase !important;
+            font-family: 'Roboto', sans-serif !important;
+            border-radius: var(--border-radius) !important;
+            padding: 2rem !important;
+        }
+        .swal2-title {
+            font-weight: 700 !important;
+            letter-spacing: 0.5px !important;
+            color: #0f172a !important;
+        }
+        .swal2-html-container {
+            color: #475569 !important;
+            font-size: 0.95rem !important;
+            font-weight: 500 !important;
+            line-height: 1.5 !important;
+        }
+        .swal2-confirm {
+            background-color: var(--accent-color) !important;
+            color: #000000 !important;
+            font-weight: 700 !important;
+            border-radius: 50px !important;
+            padding: 10px 24px !important;
+            letter-spacing: 0.5px !important;
+            box-shadow: 0 4px 6px rgba(245, 158, 11, 0.15) !important;
+        }
+        .swal2-cancel {
+            background-color: #e2e8f0 !important;
+            color: #475569 !important;
+            font-weight: 600 !important;
+            border-radius: 50px !important;
+            padding: 10px 24px !important;
+            letter-spacing: 0.5px !important;
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
@@ -656,6 +695,63 @@
                 });
             });
         }
+        // Interceptor global de confirmaciones modernas (SweetAlert2)
+        document.addEventListener('click', function(e) {
+            const element = e.target.closest('[data-confirm]');
+            if (element) {
+                const message = element.getAttribute('data-confirm');
+                const form = element.closest('form');
+                
+                if (form && !form.dataset.confirmed) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: '¿ESTÁS SEGURO?',
+                        text: message.toUpperCase(),
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#2563eb',
+                        cancelButtonColor: '#64748b',
+                        confirmButtonText: 'ACEPTAR',
+                        cancelButtonText: 'CANCELAR'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.dataset.confirmed = 'true';
+                            if (element.name) {
+                                const hiddenInput = document.createElement('input');
+                                hiddenInput.type = 'hidden';
+                                hiddenInput.name = element.name;
+                                hiddenInput.value = element.value;
+                                form.appendChild(hiddenInput);
+                            }
+                            form.submit();
+                        }
+                    });
+                }
+            }
+        });
+
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            const message = form.getAttribute('data-confirm');
+            if (message && !form.dataset.confirmed) {
+                e.preventDefault();
+                Swal.fire({
+                    title: '¿ESTÁS SEGURO?',
+                    text: message.toUpperCase(),
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#2563eb',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'ACEPTAR',
+                    cancelButtonText: 'CANCELAR'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.dataset.confirmed = 'true';
+                        form.submit();
+                    }
+                });
+            }
+        });
     </script>
     {% block extra_js %}{% endblock %}
 </body>

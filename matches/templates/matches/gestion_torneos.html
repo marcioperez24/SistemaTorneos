@@ -97,7 +97,7 @@
                                             <a href="{% url 'detalle_torneo' t.id %}" class="btn btn-sm btn-custom-primary rounded-pill px-3 py-1 d-flex align-items-center shadow-sm fs-8" style="height: 34px;">
                                                 <i class="fa-solid fa-gears me-1"></i>Gestionar
                                             </a>
-                                            <form method="POST" action="{% url 'eliminar_torneo' t.id %}" onsubmit="return confirm('¿Estás seguro de que deseas eliminar permanentemente el torneo {{ t.nombre }}? Todos los partidos asociados y estadísticas se borrarán para siempre.');" class="d-inline m-0">
+                                            <form method="POST" action="{% url 'eliminar_torneo' t.id %}" data-confirm="¿Estás seguro de que deseas eliminar permanentemente el torneo {{ t.nombre }}? Todos los partidos asociados y estadísticas se borrarán para siempre." class="d-inline m-0">
                                                 {% csrf_token %}
                                                 <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle p-0 d-flex align-items-center justify-content-center shadow-sm" style="width: 34px; height: 34px;" title="Eliminar Torneo">
                                                     <i class="fa-solid fa-trash-can fs-8"></i>

@@ -72,11 +72,22 @@
 
 <script>
     function confirmDelete(url) {
-        if (confirm("¿Estás seguro de que deseas eliminar esta categoría? Si está en uso por algún torneo o equipo, no se permitirá la eliminación.")) {
-            const form = document.getElementById('delete-form');
-            form.action = url;
-            form.submit();
-        }
+        Swal.fire({
+            title: '¿ELIMINAR CATEGORÍA?',
+            text: '¿Estás seguro de que deseas eliminar esta categoría? Si está en uso por algún torneo o equipo, no se permitirá la eliminación.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'ELIMINAR',
+            cancelButtonText: 'CANCELAR'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const form = document.getElementById('delete-form');
+                form.action = url;
+                form.submit();
+            }
+        });
     }
 </script>
 {% endblock %}

@@ -421,7 +421,7 @@
                                                                 <i class="fa-solid fa-notes-medical me-1"></i>Alta
                                                             </button>
                                                         {% else %}
-                                                            <button type="submit" onclick="return confirm('¿Estás seguro de que deseas reportar la lesión de este jugador? Al hacerlo, se liberará un cupo temporal y podrás inscribir a otro jugador más.');" class="btn btn-outline-danger btn-sm w-100" title="Reportar Lesión (Libera un cupo temporal)">
+                                                            <button type="submit" data-confirm="¿Estás seguro de que deseas reportar la lesión de este jugador? Al hacerlo, se liberará un cupo temporal y podrás inscribir a otro jugador más." class="btn btn-outline-danger btn-sm w-100" title="Reportar Lesión (Libera un cupo temporal)">
                                                                 <i class="fa-solid fa-briefcase-medical me-1"></i>Lesión
                                                             </button>
                                                         {% endif %}
@@ -1057,18 +1057,29 @@
     }
 
     function clearLineup(equipoId) {
-        if (confirm('¿Deseas vaciar toda la alineación táctica de este equipo?')) {
-            const currentFormation = (window.teamLineups[equipoId] && window.teamLineups[equipoId].formation) || '4-4-2';
-            window.teamLineups[equipoId] = { formation: currentFormation, players: {} };
-            
-            const config = formationsCoordinates[currentFormation];
-            config.forEach(pos => {
-                if (!pos.inactive) {
-                    updateShirtNode(equipoId, pos.id, '+', pos.label, true);
-                }
-            });
-            updateSubstitutesBench(equipoId);
-        }
+        Swal.fire({
+            title: '¿VACIAR ALINEACIÓN?',
+            text: '¿Deseas vaciar toda la alineación táctica de este equipo?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'VACIAR',
+            cancelButtonText: 'CANCELAR'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const currentFormation = (window.teamLineups[equipoId] && window.teamLineups[equipoId].formation) || '4-4-2';
+                window.teamLineups[equipoId] = { formation: currentFormation, players: {} };
+                
+                const config = formationsCoordinates[currentFormation];
+                config.forEach(pos => {
+                    if (!pos.inactive) {
+                        updateShirtNode(equipoId, pos.id, '+', pos.label, true);
+                    }
+                });
+                updateSubstitutesBench(equipoId);
+            }
+        });
     }
 
     function saveLineup(equipoId) {

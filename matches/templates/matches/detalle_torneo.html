@@ -76,7 +76,7 @@
                                     <div class="text-muted small fs-9">{{ eq.get_categoria_display }} | DT: {{ eq.get_dt_name }}</div>
                                 </div>
                             </div>
-                            <form method="POST" onsubmit="return confirm('¿Retirar al equipo {{ eq.nombre }} del torneo?');">
+                            <form method="POST" data-confirm="¿Estás seguro de que deseas retirar al equipo {{ eq.nombre }} del torneo?">
                                 {% csrf_token %}
                                 <input type="hidden" name="action" value="quitar_equipo">
                                 <input type="hidden" name="equipo_id" value="{{ eq.id }}">

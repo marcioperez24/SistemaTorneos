@@ -64,7 +64,7 @@
                                         <span class="text-muted" style="font-size: 0.95rem;">{{ v.email|default:"Sin correo" }}</span>
                                     </td>
                                     <td class="py-3 text-end px-3">
-                                        <form method="POST" action="{% url 'eliminar_vocal' v.id %}" onsubmit="return confirm('¿Estás seguro de que deseas eliminar al vocal {{ v.get_full_name|default:v.username }}? Esta acción no se puede deshacer y los partidos que tenga asignados quedarán sin vocal de mesa asignado.');" class="d-inline">
+                                        <form method="POST" action="{% url 'eliminar_vocal' v.id %}" data-confirm="¿Estás seguro de que deseas eliminar al vocal {{ v.get_full_name|default:v.username }}? Esta acción no se puede deshacer y los partidos que tenga asignados quedarán sin vocal de mesa asignado." class="d-inline">
                                             {% csrf_token %}
                                             <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1.5 align-middle shadow-sm">
                                                 <i class="fa-solid fa-trash-can me-1.5"></i>Eliminar
