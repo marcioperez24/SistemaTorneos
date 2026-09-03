@@ -128,6 +128,21 @@
             border-left: 4px solid var(--accent-color);
         }
 
+        /* Adjust icon colors for dark background */
+        .sidebar-menu .nav-link i.text-primary {
+            color: #60a5fa !important; /* Bright blue */
+        }
+        .sidebar-menu .nav-link i.text-success {
+            color: #34d399 !important; /* Bright green */
+        }
+        .sidebar-menu .nav-link i.text-danger {
+            color: #f87171 !important; /* Bright red */
+        }
+        
+        .sidebar-menu .nav-title {
+            color: #64748b !important;
+        }
+
         /* Main Wrapper */
         .main-wrapper {
             flex: 1;
@@ -163,6 +178,25 @@
             .main-wrapper {
                 margin-left: 0;
             }
+        }
+        
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(2px);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+        }
+        
+        .sidebar-overlay.show {
+            opacity: 1;
+            visibility: visible;
         }
 
 
@@ -614,6 +648,9 @@
     <!-- App Layout -->
     <div class="app-layout">
         
+        <!-- Sidebar Overlay (Mobile) -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        
         <!-- Sidebar -->
         {% if not hide_navbar %}
         <aside class="sidebar">
@@ -897,12 +934,18 @@
 
         // Sidebar toggle for mobile
         const sidebarToggle = document.getElementById('sidebarToggle');
-        if (sidebarToggle) {
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const sidebar = document.querySelector('.sidebar');
+        
+        if (sidebarToggle && sidebar && sidebarOverlay) {
             sidebarToggle.addEventListener('click', function() {
-                const sidebar = document.querySelector('.sidebar');
-                if (sidebar) {
-                    sidebar.classList.toggle('show');
-                }
+                sidebar.classList.toggle('show');
+                sidebarOverlay.classList.toggle('show');
+            });
+            
+            sidebarOverlay.addEventListener('click', function() {
+                sidebar.classList.remove('show');
+                sidebarOverlay.classList.remove('show');
             });
         }
     </script>
