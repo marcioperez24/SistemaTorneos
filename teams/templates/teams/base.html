@@ -56,6 +56,8 @@
         .app-layout {
             display: flex;
             min-height: 100vh;
+            width: 100%;
+            overflow-x: hidden;
         }
 
         /* Sidebar Styling */
@@ -147,6 +149,8 @@
         /* Main Wrapper */
         .main-wrapper {
             flex: 1;
+            min-width: 0; /* Fixes flexbox blowout */
+            max-width: 100%;
             margin-left: var(--sidebar-width);
             display: flex;
             flex-direction: column;
