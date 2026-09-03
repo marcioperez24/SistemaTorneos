@@ -4,6 +4,7 @@ from django.conf import settings
 from django.utils import timezone
 
 class Categoria(models.Model):
+    organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")
     nombre = models.CharField(max_length=50, unique=True, verbose_name="Nombre de la Categoría")
 
     class Meta:
@@ -15,6 +16,7 @@ class Categoria(models.Model):
 
 
 class Equipo(models.Model):
+    organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")
     nombre = models.CharField(max_length=100, verbose_name="Nombre del Equipo")
     logo = models.ImageField(upload_to='logos_equipos/', null=True, blank=True, verbose_name="Escudo/Logo")
     categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, verbose_name="Categoría")
@@ -33,7 +35,7 @@ class Equipo(models.Model):
     class Meta:
         verbose_name = "Equipo"
         verbose_name_plural = "Equipos"
-        unique_together = ('nombre', 'categoria')
+        unique_together = ('organizacion', 'nombre', 'categoria')
 
     def __str__(self):
         return f"{self.nombre} ({self.get_categoria_display()})"
@@ -68,6 +70,7 @@ class InvitacionEquipo(models.Model):
         ('dt', 'Director Técnico / Staff'),
     )
     equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='invitaciones')
+    organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")
     torneo = models.ForeignKey('matches.Torneo', on_delete=models.CASCADE, related_name='invitaciones', null=True, blank=True)
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='jugador', verbose_name="Tipo de Invitado")
@@ -100,6 +103,7 @@ class FichaJugador(models.Model):
         related_name='fichas_jugador',
         verbose_name="Usuario Jugador"
     )
+    organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")
     equipo = models.ForeignKey(
         Equipo, 
         on_delete=models.SET_NULL, 
@@ -157,7 +161,7 @@ class FichaJugador(models.Model):
     class Meta:
         verbose_name = "Ficha de Jugador"
         verbose_name_plural = "Fichas de Jugadores"
-        unique_together = ('user', 'torneo')
+        unique_together = ('organizacion', 'user', 'torneo')
 
     def __str__(self):
         equipo_str = self.equipo.nombre if self.equipo else "Sin Equipo"
@@ -177,6 +181,7 @@ class FichaDT(models.Model):
         related_name='fichas_dt',
         verbose_name="Usuario DT"
     )
+    organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")
     equipo = models.ForeignKey(
         Equipo, 
         on_delete=models.SET_NULL, 
@@ -231,7 +236,7 @@ class FichaDT(models.Model):
     class Meta:
         verbose_name = "Ficha de Director Técnico"
         verbose_name_plural = "Fichas de Directores Técnicos"
-        unique_together = ('user', 'torneo')
+        unique_together = ('organizacion', 'user', 'torneo')
 
     def __str__(self):
         equipo_str = self.equipo.nombre if self.equipo else "Sin Equipo"

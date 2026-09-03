@@ -13,7 +13,7 @@ class PagoInscripcion(models.Model):
         ('transferencia', 'Transferencia Bancaria'),
         ('billetera_movil', 'Billetera Móvil'),
     )
-
+    organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")
     equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='pagos_inscripcion', verbose_name="Equipo")
     monto = models.DecimalField(max_digits=10, decimal_places=2, default=1500.00, verbose_name="Monto ($)")
     fecha_pago = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de Pago")
@@ -39,7 +39,7 @@ class MultaTarjeta(models.Model):
         ('amarilla', 'Tarjeta Amarilla ($ 50.00)'),
         ('roja', 'Tarjeta Roja ($ 150.00)'),
     )
-
+    organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")
     partido = models.ForeignKey(Partido, on_delete=models.CASCADE, related_name='multas', verbose_name="Partido")
     evento = models.OneToOneField(EventoPartido, on_delete=models.CASCADE, related_name='multa_tarjeta', verbose_name="Incidencia de Tarjeta")
     equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='multas', verbose_name="Equipo Sancionado")
@@ -62,7 +62,7 @@ class MovimientoCaja(models.Model):
         ('ingreso', 'Ingreso (+)'),
         ('egreso', 'Egreso (-)'),
     )
-
+    organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")
     tipo = models.CharField(max_length=20, choices=TIPOS, verbose_name="Tipo de Movimiento")
     monto = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Monto ($)")
     concepto = models.CharField(max_length=255, verbose_name="Concepto/Descripción")
@@ -94,7 +94,7 @@ class CobroEquipo(models.Model):
         ('pendiente', 'Pendiente de Pago'),
         ('pagado', 'Pagado'),
     )
-
+    organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")
     equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='cobros_adicionales', verbose_name="Equipo")
     concepto = models.CharField(max_length=50, choices=CONCEPTO_CHOICES, verbose_name="Concepto")
     descripcion = models.CharField(max_length=255, blank=True, null=True, verbose_name="Descripción Detallada")
@@ -110,3 +110,18 @@ class CobroEquipo(models.Model):
 
     def __str__(self):
         return f"{self.get_concepto_display()} - {self.equipo.nombre} ({self.monto} $)"
+
+class SecuenciaOrganizacion(models.Model):
+    organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")
+    tipo_documento = models.CharField(max_length=50, verbose_name="Tipo de Documento")
+    prefijo = models.CharField(max_length=10, blank=True, null=True, verbose_name="Prefijo")
+    ultimo_numero = models.IntegerField(default=0, verbose_name="Último Número Usado")
+    longitud = models.IntegerField(default=6, verbose_name="Longitud del Número")
+
+    class Meta:
+        verbose_name = "Secuencia de Organización"
+        verbose_name_plural = "Secuencias de Organizaciones"
+        unique_together = ('organizacion', 'tipo_documento')
+
+    def __str__(self):
+        return f"Secuencia {self.tipo_documento} - {self.organizacion.nombre}"

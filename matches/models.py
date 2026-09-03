@@ -3,6 +3,7 @@ from django.conf import settings
 from teams.models import Equipo, Categoria
 
 class Torneo(models.Model):
+    organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")
     TIPO_CHOICES = (
         ('liga', 'Liga (Todos contra todos por fechas)'),
         ('torneo', 'Torneo (Fase de Grupos + Eliminatorias)'),
@@ -46,6 +47,7 @@ class Partido(models.Model):
         ('final', 'Final'),
     )
 
+    organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")
     torneo = models.ForeignKey(Torneo, on_delete=models.CASCADE, related_name='partidos', null=True, blank=True, verbose_name="Torneo / Competencia")
     fase = models.CharField(max_length=20, choices=FASE_CHOICES, default='regular', verbose_name="Fase del Torneo")
     grupo = models.CharField(max_length=50, blank=True, null=True, verbose_name="Grupo (Fase de Grupos)")

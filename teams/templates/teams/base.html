@@ -29,14 +29,142 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
+        
+        /* SaaS Layout Variables */
         :root {
+            --sidebar-width: 260px;
+            --sidebar-bg: #0f172a;
+            --topbar-height: 60px;
             --primary-gradient: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
             --accent-color: #f59e0b;
             --bg-color: #f8fafc;
             --card-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.04), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
-            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             --border-radius: 16px;
         }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-color);
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            text-transform: uppercase;
+        }
+
+        .app-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 1000;
+            transition: var(--transition);
+            box-shadow: 4px 0 24px rgba(0,0,0,0.1);
+        }
+
+        .sidebar-header {
+            height: var(--topbar-height);
+            display: flex;
+            align-items: center;
+            padding: 0 1.5rem;
+            background: rgba(0,0,0,0.15);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .sidebar-brand {
+            color: white;
+            text-decoration: none;
+            font-weight: 900;
+            font-size: 1.2rem;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-brand img {
+            height: 32px;
+        }
+        
+        .sidebar-brand:hover {
+            color: white;
+        }
+
+        .sidebar-menu {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0;
+        }
+
+        .sidebar-menu .nav-link {
+            color: #94a3b8;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            transition: var(--transition);
+        }
+
+        .sidebar-menu .nav-link i {
+            width: 24px;
+            text-align: center;
+            margin-right: 12px;
+            font-size: 1.1rem;
+        }
+
+        .sidebar-menu .nav-link:hover, .sidebar-menu .nav-link.active {
+            color: white;
+            background: rgba(255,255,255,0.05);
+            border-left: 4px solid var(--accent-color);
+        }
+
+        /* Main Wrapper */
+        .main-wrapper {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            transition: var(--transition);
+        }
+
+        /* Topbar */
+        .topbar {
+            height: var(--topbar-height);
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            z-index: 900;
+            position: sticky;
+            top: 0;
+        }
+
+        .content {
+            flex: 1;
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 991.98px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-wrapper {
+                margin-left: 0;
+            }
+        }
+
 
         body {
             font-family: 'Roboto', sans-serif;
@@ -483,153 +611,172 @@
         </div>
     </div>
 
-    <!-- Navbar -->
-    {% if not hide_navbar %}
-    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom py-3">
-        <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="{% url 'club_portal' %}">
-                <img src="{% static 'teams/images/logo.png' %}" alt="Logo" style="height: 40px; object-fit: contain;">
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
+    <!-- App Layout -->
+    <div class="app-layout">
+        
+        <!-- Sidebar -->
+        {% if not hide_navbar %}
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a class="sidebar-brand d-flex align-items-center" href="{% url 'club_portal' %}">
+                    <img src="{% static 'teams/images/logo.png' %}" alt="Logo">
+                    <span class="ms-2">Fútbol Pro</span>
+                </a>
+            </div>
+            
+            <div class="sidebar-menu">
+                <ul class="nav flex-column">
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'partidos_lista' %}">
-                            <i class="fa-solid fa-calendar-days me-1.5 text-warning"></i>Partidos y Resultados
+                            <i class="fa-solid fa-calendar-days text-warning"></i> Partidos y Resultados
                         </a>
                     </li>
+                    
                     {% if user.is_authenticated %}
                         {% if user_perms.equipos %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'club_portal' %}">
-                                    <i class="fa-solid fa-shield-halved me-1.5"></i>Portal del Club
+                                    <i class="fa-solid fa-shield-halved text-info"></i> Portal del Club
                                 </a>
                             </li>
                         {% endif %}
+                        
                         {% if user_perms.vocalia %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'vocalia_dashboard' %}">
-                                    <i class="fa-solid fa-clipboard-list me-1.5 text-warning"></i>Vocalía de Campo
+                                    <i class="fa-solid fa-clipboard-list text-warning"></i> Vocalía de Campo
                                 </a>
                             </li>
                         {% endif %}
+                        
                         {% if user_perms.secretaria or user_perms.tesoreria %}
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdownAdmin" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fa-solid fa-gears me-1.5 text-warning"></i>Administración
-                                </a>
-                                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-lg-start" aria-labelledby="navbarDropdownAdmin">
-                                    {% if user_perms.secretaria %}
-                                        <li>
-                                            <a class="dropdown-item" href="{% url 'secretaria_dashboard' %}">
-                                                <i class="fa-solid fa-user-check me-2 text-primary"></i>Secretaría (Validación)
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item" href="{% url 'gestion_arbitros' %}">
-                                                <i class="fa-solid fa-bullhorn me-2 text-primary"></i>Gestionar Árbitros
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item" href="{% url 'gestion_vocales' %}">
-                                                <i class="fa-solid fa-clipboard-list me-2 text-primary"></i>Gestionar Vocales
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item" href="{% url 'gestion_torneos' %}">
-                                                <i class="fa-solid fa-trophy me-2 text-primary"></i>Gestionar Torneos/Ligas
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item" href="{% url 'lista_categorias' %}">
-                                                <i class="fa-solid fa-tags me-2 text-primary"></i>Gestionar Categorías
-                                            </a>
-                                        </li>
-                                    {% endif %}
-                                    {% if user_perms.tesoreria %}
-                                        {% if user_perms.secretaria %}
-                                            <li><hr class="dropdown-divider"></li>
-                                        {% endif %}
-                                        <li>
-                                            <a class="dropdown-item" href="{% url 'resumen_financiero' %}">
-                                                <i class="fa-solid fa-file-invoice-dollar me-2 text-success"></i>Tesorería y Caja
-                                            </a>
-                                        </li>
-                                    {% endif %}
-                                    {% if user.role == 'superadmin' %}
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li>
-                                            <a class="dropdown-item" href="{% url 'gestion_usuarios' %}">
-                                                <i class="fa-solid fa-users-gear me-2 text-danger"></i>Control de Usuarios
-                                            </a>
-                                        </li>
-                                    {% endif %}
-                                </ul>
-                            </li>
-                        {% endif %}
-                    {% endif %}
-                </ul>
-                <ul class="navbar-nav ms-auto align-items-lg-center mt-3 mt-lg-0">
-                    {% if user.is_authenticated %}
-                        <li class="nav-item dropdown">
-                            <a class="btn btn-outline-light btn-sm dropdown-toggle rounded-pill px-3 py-1.5 d-inline-flex align-items-center" href="#" id="navbarDropdownUser" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fa-regular fa-circle-user me-2 text-warning fs-5"></i>
-                                <span class="fw-semibold">{{ user.username }}</span>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end mt-2" aria-labelledby="navbarDropdownUser">
-                                <li class="dropdown-header text-dark">
-                                    <div class="fw-bold">{{ user.get_full_name|default:user.username }}</div>
-                                    <span class="badge bg-secondary mt-1">{{ user.get_role_display }}</span>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item text-danger" href="{% url 'logout' %}">
-                                        <i class="fa-solid fa-sign-out-alt me-2"></i>Cerrar Sesión
+                            <li class="nav-title mt-3 mb-1 px-3 text-muted" style="font-size: 0.75rem; font-weight: 700; letter-spacing: 1px;">ADMINISTRACIÓN</li>
+                            
+                            {% if user_perms.secretaria %}
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'secretaria_dashboard' %}">
+                                        <i class="fa-solid fa-user-check text-primary"></i> Secretaría
                                     </a>
                                 </li>
-                            </ul>
-                        </li>
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="btn btn-outline-light btn-sm rounded-pill px-3 d-inline-flex align-items-center" href="{% url 'login' %}">
-                                <i class="fa-solid fa-sign-in-alt me-1"></i>Iniciar Sesión
-                            </a>
-                        </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'gestion_arbitros' %}">
+                                        <i class="fa-solid fa-bullhorn text-primary"></i> Árbitros
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'gestion_vocales' %}">
+                                        <i class="fa-solid fa-clipboard-list text-primary"></i> Vocales
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'gestion_torneos' %}">
+                                        <i class="fa-solid fa-trophy text-primary"></i> Torneos/Ligas
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'lista_categorias' %}">
+                                        <i class="fa-solid fa-tags text-primary"></i> Categorías
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% if user_perms.tesoreria %}
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'resumen_financiero' %}">
+                                        <i class="fa-solid fa-file-invoice-dollar text-success"></i> Tesorería
+                                    </a>
+                                </li>
+                            {% endif %}
+                        {% endif %}
+                        
+                        {% if user.role == 'superadmin' %}
+                            <li class="nav-title mt-3 mb-1 px-3 text-muted" style="font-size: 0.75rem; font-weight: 700; letter-spacing: 1px;">SISTEMA</li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'torre_control' %}">
+                                    <i class="fa-solid fa-building text-danger"></i> Torre de Control
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'gestion_usuarios' %}">
+                                    <i class="fa-solid fa-users-gear text-danger"></i> Usuarios
+                                </a>
+                            </li>
+                        {% endif %}
                     {% endif %}
                 </ul>
             </div>
-        </div>
-    </nav>
-    {% endif %}
-
-    <!-- Main Content -->
-    <main>
-        {% if messages %}
-            <div class="container mt-3">
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            
+            <div class="sidebar-footer mt-auto p-3">
+                {% if user.is_authenticated %}
+                    <div class="d-flex align-items-center">
+                        <div class="avatar bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px; font-size: 1.2rem;">
+                            {{ user.username|make_list|first|upper }}
+                        </div>
+                        <div class="ms-3 overflow-hidden">
+                            <h6 class="mb-0 text-truncate text-white" style="font-size: 0.85rem;">{{ user.get_full_name|default:user.username }}</h6>
+                            <small class="text-muted text-truncate d-block" style="font-size: 0.7rem;">{{ user.get_role_display }}</small>
+                        </div>
+                        <a href="{% url 'logout' %}" class="ms-auto text-danger" title="Cerrar Sesión">
+                            <i class="fa-solid fa-sign-out-alt"></i>
+                        </a>
                     </div>
-                {% endfor %}
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-custom-primary w-100">Iniciar Sesión</a>
+                {% endif %}
             </div>
+        </aside>
         {% endif %}
+        
+        <!-- Main Wrapper -->
+        <div class="main-wrapper">
+            
+            <!-- Topbar (Compact) -->
+            <header class="topbar d-flex align-items-center px-4">
+                <div class="me-auto">
+                    <!-- Hamburger (mobile) -->
+                    <button class="btn btn-link text-dark d-lg-none" id="sidebarToggle">
+                        <i class="fa-solid fa-bars fs-4"></i>
+                    </button>
+                    <!-- Orgnization context if any -->
+                    {% if request.organizacion %}
+                    <span class="badge bg-primary fs-6"><i class="fa-solid fa-building me-2"></i>{{ request.organizacion.nombre }}</span>
+                    {% endif %}
+                </div>
+                
+                <div class="ms-auto d-flex align-items-center">
+                    {% if request.session.current_organizacion_id and user.role == 'superadmin' %}
+                        <a href="{% url 'torre_control' %}" class="btn btn-sm btn-outline-danger me-3">
+                            <i class="fa-solid fa-times me-1"></i> Salir de Organización
+                        </a>
+                    {% endif %}
+                </div>
+            </header>
 
-        {% block content %}{% endblock %}
-    </main>
+            <!-- Main Content -->
+            <main class="content p-4">
+                {% if messages %}
+                    <div class="container-fluid mb-3">
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
 
-    <!-- Footer -->
-    <footer class="text-center">
-        <div class="container">
-            <p class="mb-0">&copy; 2026 Torneos Deportivos. Diseñado para un rendimiento premium.</p>
-        </div>
-    </footer>
+                {% block content %}{% endblock %}
+            </main>
 
-    <!-- Bootstrap JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
+            <!-- Footer -->
+            <footer class="footer text-center p-3 mt-auto">
+                <p class="mb-0 text-muted" style="font-size: 0.85rem;">&copy; 2026 Fútbol Pro SaaS. Diseño Premium.</p>
+            </footer>
+
+        </div> <!-- /.main-wrapper -->
+    </div> <!-- /.app-layout -->
+
+<script>
         function togglePasswordVisibility(btn) {
             const container = btn.closest('.input-group-custom') || btn.closest('.input-group') || btn.parentElement;
             if (container) {
@@ -752,6 +899,17 @@
                 });
             }
         });
+
+        // Sidebar toggle for mobile
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', function() {
+                const sidebar = document.querySelector('.sidebar');
+                if (sidebar) {
+                    sidebar.classList.toggle('show');
+                }
+            });
+        }
     </script>
     {% block extra_js %}{% endblock %}
 </body>
