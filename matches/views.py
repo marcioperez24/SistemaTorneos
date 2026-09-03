@@ -641,6 +641,12 @@ def gestion_arbitros(request):
         form = ArbitroForm(request.POST)
         if form.is_valid():
             arbitro = form.save()
+            from users.models import UsuarioOrganizacion
+            UsuarioOrganizacion.objects.create(
+                usuario=arbitro,
+                organizacion=request.organizacion,
+                rol='arbitro'
+            )
             messages.success(request, f"Árbitro '{arbitro.get_full_name() or arbitro.username}' registrado exitosamente.")
             return redirect('gestion_arbitros')
         else:
@@ -648,7 +654,7 @@ def gestion_arbitros(request):
     else:
         form = ArbitroForm()
         
-    arbitros = User.objects.filter(role='arbitro').order_by('first_name', 'last_name')
+    arbitros = User.objects.filter(role='arbitro', organizaciones__organizacion=request.organizacion).distinct().order_by('first_name', 'last_name')
     
     context = {
         'form': form,
@@ -663,7 +669,7 @@ def eliminar_arbitro(request, arbitro_id):
         messages.error(request, "No tienes autorización para eliminar árbitros.")
         return redirect('partidos_lista')
         
-    arbitro = get_object_or_404(User, id=arbitro_id, role='arbitro')
+    arbitro = get_object_or_404(User, id=arbitro_id, role='arbitro', organizaciones__organizacion=request.organizacion)
     
     if request.method == 'POST':
         nombre_arbitro = arbitro.get_full_name() or arbitro.username
@@ -684,6 +690,12 @@ def gestion_vocales(request):
         form = VocalForm(request.POST)
         if form.is_valid():
             vocal = form.save()
+            from users.models import UsuarioOrganizacion
+            UsuarioOrganizacion.objects.create(
+                usuario=vocal,
+                organizacion=request.organizacion,
+                rol='vocal'
+            )
             messages.success(request, f"Vocal de Mesa '{vocal.get_full_name() or vocal.username}' registrado exitosamente.")
             return redirect('gestion_vocales')
         else:
@@ -691,7 +703,7 @@ def gestion_vocales(request):
     else:
         form = VocalForm()
         
-    vocales = User.objects.filter(role='vocal').order_by('first_name', 'last_name')
+    vocales = User.objects.filter(role='vocal', organizaciones__organizacion=request.organizacion).distinct().order_by('first_name', 'last_name')
     
     context = {
         'form': form,
@@ -706,7 +718,7 @@ def eliminar_vocal(request, vocal_id):
         messages.error(request, "No tienes autorización para eliminar vocales de mesa.")
         return redirect('partidos_lista')
         
-    vocal = get_object_or_404(User, id=vocal_id, role='vocal')
+    vocal = get_object_or_404(User, id=vocal_id, role='vocal', organizaciones__organizacion=request.organizacion)
     
     if request.method == 'POST':
         nombre_vocal = vocal.get_full_name() or vocal.username
