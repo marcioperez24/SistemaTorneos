@@ -1,0 +1,54 @@
+{% extends 'teams/base.html' %}
+{% block title %}Editar Organización - {{ org.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row mb-4">
+        <div class="col-12 d-flex align-items-center">
+            <a href="{% url 'torre_control' %}" class="btn btn-outline-secondary rounded-circle me-3 d-flex justify-content-center align-items-center" style="width: 45px; height: 45px;">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div>
+                <h1 class="fw-bold mb-0"><i class="fa-solid fa-pen-to-square me-2 text-primary"></i>Editar Organización</h1>
+                <p class="text-muted mb-0">Modificando: {{ org.nombre }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card card-custom p-4 shadow-sm">
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nombre de Organización</label>
+                        <input type="text" name="nombre" class="form-control" value="{{ org.nombre }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Código Único (Slug)</label>
+                        <input type="text" name="codigo" class="form-control font-monospace" value="{{ org.codigo }}" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Estado</label>
+                        <select name="estado" class="form-select">
+                            <option value="activa" {% if org.estado == 'activa' %}selected{% endif %}>Activa</option>
+                            <option value="suspendida" {% if org.estado == 'suspendida' %}selected{% endif %}>Suspendida</option>
+                            <option value="inactiva" {% if org.estado == 'inactiva' %}selected{% endif %}>Inactiva</option>
+                        </select>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'torre_control' %}" class="btn btn-outline-secondary px-4 rounded-pill">Cancelar</a>
+                        <button type="submit" class="btn btn-custom-primary px-4 rounded-pill">
+                            <i class="fa-solid fa-save me-2"></i>Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -11,5 +11,7 @@ urlpatterns = [
     
     # Torre de Control
     path('torre-control/', views_torre.torre_control, name='torre_control'),
+    path('torre-control/editar/<int:org_id>/', views_torre.editar_org, name='editar_org'),
+    path('torre-control/ver/<int:org_id>/', views_torre.ver_org, name='ver_org'),
     path('torre-control/entrar/<int:org_id>/', views_torre.entrar_org, name='entrar_org'),
 ]
