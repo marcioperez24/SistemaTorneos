@@ -692,11 +692,6 @@
                         {% if user.role == 'superadmin' %}
                             <li class="nav-title mt-3 mb-1 px-3 text-muted" style="font-size: 0.75rem; font-weight: 700; letter-spacing: 1px;">SISTEMA</li>
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'torre_control' %}">
-                                    <i class="fa-solid fa-building text-danger"></i> Torre de Control
-                                </a>
-                            </li>
-                            <li class="nav-item">
                                 <a class="nav-link" href="{% url 'gestion_usuarios' %}">
                                     <i class="fa-solid fa-users-gear text-danger"></i> Usuarios
                                 </a>

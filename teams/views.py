@@ -32,6 +32,8 @@ def login_view(request):
         next_url = request.GET.get('next') or request.POST.get('next')
         if next_url:
             return redirect(next_url)
+        if request.user.is_superuser:
+            return redirect('torre_control')
         return redirect('club_portal')
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
@@ -45,6 +47,8 @@ def login_view(request):
                 next_url = request.GET.get('next') or request.POST.get('next')
                 if next_url:
                     return redirect(next_url)
+                if user.is_superuser:
+                    return redirect('torre_control')
                 return redirect('club_portal')
         else:
             messages.error(request, "Usuario o contraseña incorrectos.")
