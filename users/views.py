@@ -8,7 +8,7 @@ User = get_user_model()
 
 @login_required
 def gestion_usuarios(request):
-    if request.user.role != 'superadmin' and not request.user.is_superuser:
+    if not request.user.has_module_access('usuarios'):
         messages.error(request, "No tienes permisos para acceder a la gestión de usuarios.")
         return redirect('club_portal')
 
@@ -16,11 +16,16 @@ def gestion_usuarios(request):
     role_choices = User.ROLE_CHOICES
     
     modules = [
-        ('partidos', '⚽ Partidos y Fixture'),
-        ('equipos', '🛡️ Portal del Club / Registro'),
+        ('partidos', '⚽ Partidos y Resultados'),
+        ('equipos', '🛡️ Portal del Club'),
         ('vocalia', '📝 Vocalía de Campo'),
-        ('secretaria', '📋 Secretaría (Validación de Carnets)'),
+        ('secretaria', '📋 Secretaría (Validación)'),
+        ('arbitros', '🟨 Árbitros'),
+        ('vocales', '📋 Vocales'),
+        ('torneos', '🏆 Torneos/Ligas'),
+        ('categorias', '🏷️ Categorías'),
         ('tesoreria', '💳 Tesorería y Caja chica'),
+        ('usuarios', '👥 Usuarios'),
     ]
     
     permisos_roles = {}
@@ -36,7 +41,12 @@ def gestion_usuarios(request):
                     'equipos': ['dirigente'],
                     'vocalia': ['vocal'],
                     'secretaria': ['comision'],
+                    'arbitros': ['comision'],
+                    'vocales': ['comision'],
+                    'torneos': ['comision'],
+                    'categorias': ['comision'],
                     'tesoreria': ['tesorero', 'tesoreria'],
+                    'usuarios': [],
                 }
                 permisos_roles[r_code][m_code] = r_code in defaults.get(m_code, [])
 
@@ -50,7 +60,7 @@ def gestion_usuarios(request):
 
 @login_required
 def crear_usuario(request):
-    if request.user.role != 'superadmin' and not request.user.is_superuser:
+    if not request.user.has_module_access('usuarios'):
         return redirect('club_portal')
         
     if request.method == 'POST':
@@ -88,7 +98,7 @@ def crear_usuario(request):
 
 @login_required
 def editar_usuario(request, user_id):
-    if request.user.role != 'superadmin' and not request.user.is_superuser:
+    if not request.user.has_module_access('usuarios'):
         return redirect('club_portal')
         
     user = get_object_or_404(User, id=user_id)
@@ -109,7 +119,7 @@ def editar_usuario(request, user_id):
 
 @login_required
 def eliminar_usuario(request, user_id):
-    if request.user.role != 'superadmin' and not request.user.is_superuser:
+    if not request.user.has_module_access('usuarios'):
         return redirect('club_portal')
         
     user = get_object_or_404(User, id=user_id)
@@ -123,12 +133,12 @@ def eliminar_usuario(request, user_id):
 
 @login_required
 def guardar_permisos(request):
-    if request.user.role != 'superadmin' and not request.user.is_superuser:
+    if not request.user.has_module_access('usuarios'):
         return redirect('club_portal')
         
     if request.method == 'POST':
         role_choices = User.ROLE_CHOICES
-        modules = ['partidos', 'equipos', 'vocalia', 'secretaria', 'tesoreria']
+        modules = ['partidos', 'equipos', 'vocalia', 'secretaria', 'arbitros', 'vocales', 'torneos', 'categorias', 'tesoreria', 'usuarios']
         
         for r_code, _ in role_choices:
             for m_code in modules:

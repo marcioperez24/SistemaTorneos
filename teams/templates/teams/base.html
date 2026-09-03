@@ -691,7 +691,7 @@
                             </li>
                         {% endif %}
                         
-                        {% if user_perms.secretaria or user_perms.tesoreria %}
+                        {% if user_perms.secretaria or user_perms.tesoreria or user_perms.arbitros or user_perms.vocales or user_perms.torneos or user_perms.categorias %}
                             <li class="nav-title mt-3 mb-1 px-3 text-muted" style="font-size: 0.75rem; font-weight: 700; letter-spacing: 1px;">ADMINISTRACIÓN</li>
                             
                             {% if user_perms.secretaria %}
@@ -700,21 +700,29 @@
                                         <i class="fa-solid fa-user-check text-primary"></i> Secretaría
                                     </a>
                                 </li>
+                            {% endif %}
+                            {% if user_perms.arbitros %}
                                 <li class="nav-item">
                                     <a class="nav-link" href="{% url 'gestion_arbitros' %}">
                                         <i class="fa-solid fa-bullhorn text-primary"></i> Árbitros
                                     </a>
                                 </li>
+                            {% endif %}
+                            {% if user_perms.vocales %}
                                 <li class="nav-item">
                                     <a class="nav-link" href="{% url 'gestion_vocales' %}">
                                         <i class="fa-solid fa-clipboard-list text-primary"></i> Vocales
                                     </a>
                                 </li>
+                            {% endif %}
+                            {% if user_perms.torneos %}
                                 <li class="nav-item">
                                     <a class="nav-link" href="{% url 'gestion_torneos' %}">
                                         <i class="fa-solid fa-trophy text-primary"></i> Torneos/Ligas
                                     </a>
                                 </li>
+                            {% endif %}
+                            {% if user_perms.categorias %}
                                 <li class="nav-item">
                                     <a class="nav-link" href="{% url 'lista_categorias' %}">
                                         <i class="fa-solid fa-tags text-primary"></i> Categorías
@@ -731,7 +739,7 @@
                             {% endif %}
                         {% endif %}
                         
-                        {% if user.role == 'superadmin' %}
+                        {% if user_perms.usuarios %}
                             <li class="nav-title mt-3 mb-1 px-3 text-muted" style="font-size: 0.75rem; font-weight: 700; letter-spacing: 1px;">SISTEMA</li>
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'gestion_usuarios' %}">
@@ -781,7 +789,7 @@
                 </div>
                 
                 <div class="ms-auto d-flex align-items-center">
-                    {% if request.session.current_organizacion_id and user.role == 'superadmin' %}
+                    {% if request.session.current_organizacion_id and user.is_superuser %}
                         <a href="{% url 'torre_control' %}" class="btn btn-sm btn-outline-danger">
                             <i class="fa-solid fa-times"></i> <span class="d-none d-md-inline ms-1">Salir de Organización</span>
                         </a>

@@ -4,7 +4,7 @@ import uuid
 
 class CustomUser(AbstractUser):
     ROLE_CHOICES = (
-        ('superadmin', 'Super Admin / Organizador'),
+        ('superadmin', 'Administrador de Organización'),
         ('dirigente', 'Dirigente / Representante'),
         ('jugador', 'Jugador'),
         ('dt', 'Director Técnico / Staff'),
@@ -35,7 +35,12 @@ class CustomUser(AbstractUser):
                 'equipos': ['dirigente'],
                 'vocalia': ['vocal'],
                 'secretaria': ['comision'],
+                'arbitros': ['comision'],
+                'vocales': ['comision'],
+                'torneos': ['comision'],
+                'categorias': ['comision'],
                 'tesoreria': ['tesorero', 'tesoreria'],
+                'usuarios': [],
             }
             return self.role in defaults.get(module_name, [])
 
