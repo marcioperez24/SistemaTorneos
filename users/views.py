@@ -12,7 +12,7 @@ def gestion_usuarios(request):
         messages.error(request, "No tienes permisos para acceder a la gestión de usuarios.")
         return redirect('club_portal')
 
-    usuarios = User.objects.all().order_by('-id')
+    usuarios = User.objects.filter(organizaciones__organizacion=request.organizacion).distinct().order_by('-id')
     role_choices = User.ROLE_CHOICES
     
     modules = [
@@ -75,6 +75,14 @@ def crear_usuario(request):
             role=role,
             telefono=telefono
         )
+        
+        from .models import UsuarioOrganizacion
+        UsuarioOrganizacion.objects.create(
+            usuario=user,
+            organizacion=request.organizacion,
+            rol=role
+        )
+        
         messages.success(request, f"Usuario '{user.username}' creado con éxito.")
     return redirect('gestion_usuarios')
 

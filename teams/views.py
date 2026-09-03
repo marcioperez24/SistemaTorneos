@@ -81,7 +81,7 @@ def club_portal(request):
 
     # Equipos que administra o a los que pertenece
     if request.user.role in ['superadmin', 'comision'] or request.user.is_superuser:
-        equipos = Equipo.objects.all()
+        equipos = Equipo.objects.filter(organizacion=request.organizacion)
     elif request.user.role == 'jugador':
         # Mostrar únicamente el equipo al que pertenece el jugador
         if request.user.ficha_jugador.equipo:
@@ -89,13 +89,13 @@ def club_portal(request):
         else:
             equipos = Equipo.objects.none()
     else:
-        equipos = Equipo.objects.filter(dirigente=request.user)
+        equipos = Equipo.objects.filter(organizacion=request.organizacion, dirigente=request.user)
     
     # Obtener el nuevo enlace de la sesión y eliminarlo para que solo aparezca una vez
     nuevo_enlace = request.session.pop('nuevo_enlace', None)
     nuevo_enlace_equipo_id = request.session.pop('nuevo_enlace_equipo_id', None)
     
-    torneos = Torneo.objects.all().order_by('-fecha_creacion')
+    torneos = Torneo.objects.filter(organizacion=request.organizacion).order_by('-fecha_creacion')
     
     # Procesar historial de pagos para cada equipo
     for equipo in equipos:
@@ -141,7 +141,7 @@ def club_portal(request):
         historial.sort(key=sort_date, reverse=True)
         equipo.historial_pagos = historial
     
-    torneos = Torneo.objects.all().order_by('-fecha_creacion')
+    torneos = Torneo.objects.filter(organizacion=request.organizacion).order_by('-fecha_creacion')
     
     context = {
         'equipos': equipos,
@@ -161,6 +161,7 @@ def crear_equipo(request):
         if form.is_valid():
             equipo = form.save(commit=False)
             equipo.dirigente = request.user
+            equipo.organizacion = request.organizacion
             equipo.save()
             messages.success(request, f"Equipo '{equipo.nombre}' creado exitosamente.")
             return redirect('club_portal')
@@ -176,9 +177,9 @@ def editar_equipo(request, equipo_id):
         
     # Obtener equipo. Permitir edición si es superadmin, superuser, o el dirigente del equipo
     if request.user.role == 'superadmin' or request.user.is_superuser:
-        equipo = get_object_or_404(Equipo, id=equipo_id)
+        equipo = get_object_or_404(Equipo, id=equipo_id, organizacion=request.organizacion)
     else:
-        equipo = get_object_or_404(Equipo, id=equipo_id, dirigente=request.user)
+        equipo = get_object_or_404(Equipo, id=equipo_id, organizacion=request.organizacion, dirigente=request.user)
         
     if request.method == 'POST':
         form = EquipoForm(request.POST, request.FILES, instance=equipo, user=request.user)
@@ -193,9 +194,9 @@ def editar_equipo(request, equipo_id):
 @login_required
 def generar_invitacion(request, equipo_id):
     if request.user.role == 'superadmin' or request.user.is_superuser:
-        equipo = get_object_or_404(Equipo, id=equipo_id)
+        equipo = get_object_or_404(Equipo, id=equipo_id, organizacion=request.organizacion)
     else:
-        equipo = get_object_or_404(Equipo, id=equipo_id, dirigente=request.user)
+        equipo = get_object_or_404(Equipo, id=equipo_id, organizacion=request.organizacion, dirigente=request.user)
     
     tipo = request.GET.get('tipo', 'jugador')
     if tipo not in ['jugador', 'dt']:
@@ -206,7 +207,7 @@ def generar_invitacion(request, equipo_id):
         messages.error(request, "Debe seleccionar un torneo para generar la invitación.")
         return redirect('club_portal')
         
-    torneo = get_object_or_404(Torneo, id=torneo_id)
+    torneo = get_object_or_404(Torneo, id=torneo_id, organizacion=request.organizacion)
         
     if tipo == 'jugador':
         # Validar límite de jugadores excluyendo lesionados y rechazados
@@ -404,8 +405,8 @@ def secretaria_dashboard(request):
         messages.error(request, "No tienes permisos para acceder al Módulo de Secretaría.")
         return redirect('club_portal')
         
-    pendientes_jugadores = FichaJugador.objects.filter(estado_validacion='pendiente').select_related('user', 'equipo')
-    pendientes_dt = FichaDT.objects.filter(estado_validacion='pendiente').select_related('user', 'equipo')
+    pendientes_jugadores = FichaJugador.objects.filter(organizacion=request.organizacion, estado_validacion='pendiente').select_related('user', 'equipo')
+    pendientes_dt = FichaDT.objects.filter(organizacion=request.organizacion, estado_validacion='pendiente').select_related('user', 'equipo')
     
     # Combinar listas de pendientes con un tag para identificar el tipo
     pendientes = []
@@ -420,8 +421,8 @@ def secretaria_dashboard(request):
     # FichaDT no tiene fecha_firma en la base de datos pero sí firma_digital, usemos el ID
     pendientes.sort(key=lambda x: x.id)
 
-    historial_jugadores = FichaJugador.objects.exclude(estado_validacion='pendiente').select_related('user', 'equipo')
-    historial_dt = FichaDT.objects.exclude(estado_validacion='pendiente').select_related('user', 'equipo')
+    historial_jugadores = FichaJugador.objects.filter(organizacion=request.organizacion).exclude(estado_validacion='pendiente').select_related('user', 'equipo')
+    historial_dt = FichaDT.objects.filter(organizacion=request.organizacion).exclude(estado_validacion='pendiente').select_related('user', 'equipo')
     
     historial = []
     for hj in historial_jugadores:
@@ -448,9 +449,9 @@ def aprobar_jugador(request, ficha_id):
         
     tipo = request.GET.get('tipo', 'jugador')
     if tipo == 'dt':
-        ficha = get_object_or_404(FichaDT, id=ficha_id)
+        ficha = get_object_or_404(FichaDT, id=ficha_id, organizacion=request.organizacion)
     else:
-        ficha = get_object_or_404(FichaJugador, id=ficha_id)
+        ficha = get_object_or_404(FichaJugador, id=ficha_id, organizacion=request.organizacion)
         
     ficha.estado_validacion = 'aprobado'
     ficha.motivo_rechazo = None
@@ -480,9 +481,9 @@ def rechazar_jugador(request, ficha_id):
         
     tipo = request.GET.get('tipo', 'jugador')
     if tipo == 'dt':
-        ficha = get_object_or_404(FichaDT, id=ficha_id)
+        ficha = get_object_or_404(FichaDT, id=ficha_id, organizacion=request.organizacion)
     else:
-        ficha = get_object_or_404(FichaJugador, id=ficha_id)
+        ficha = get_object_or_404(FichaJugador, id=ficha_id, organizacion=request.organizacion)
         
     if request.method == 'POST':
         motivo = request.POST.get('motivo_rechazo', 'Documentación ilegible o incompleta.')
@@ -675,7 +676,7 @@ def lista_categorias(request):
         messages.error(request, "No tienes permisos para acceder a este módulo.")
         return redirect('club_portal')
     
-    categorias = Categoria.objects.all().order_by('nombre')
+    categorias = Categoria.objects.filter(organizacion=request.organizacion).order_by('nombre')
     return render(request, 'teams/lista_categorias.html', {'categorias': categorias})
 
 
@@ -688,7 +689,9 @@ def crear_categoria(request):
     if request.method == 'POST':
         form = CategoriaForm(request.POST)
         if form.is_valid():
-            form.save()
+            categoria = form.save(commit=False)
+            categoria.organizacion = request.organizacion
+            categoria.save()
             messages.success(request, "Categoría creada con éxito.")
             return redirect('lista_categorias')
     else:
@@ -702,7 +705,7 @@ def editar_categoria(request, categoria_id):
         messages.error(request, "No tienes permisos para acceder a este módulo.")
         return redirect('club_portal')
         
-    categoria = get_object_or_404(Categoria, id=categoria_id)
+    categoria = get_object_or_404(Categoria, id=categoria_id, organizacion=request.organizacion)
     if request.method == 'POST':
         form = CategoriaForm(request.POST, instance=categoria)
         if form.is_valid():
@@ -720,7 +723,7 @@ def eliminar_categoria(request, categoria_id):
         messages.error(request, "No tienes permisos para acceder a este módulo.")
         return redirect('club_portal')
         
-    categoria = get_object_or_404(Categoria, id=categoria_id)
+    categoria = get_object_or_404(Categoria, id=categoria_id, organizacion=request.organizacion)
     if request.method == 'POST':
         try:
             categoria.delete()

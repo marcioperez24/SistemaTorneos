@@ -15,7 +15,7 @@ User = get_user_model()
 
 def partidos_lista(request):
     torneo_id = request.GET.get('torneo')
-    torneos = Torneo.objects.all().order_by('-fecha_creacion')
+    torneos = Torneo.objects.filter(organizacion=request.organizacion).order_by('-fecha_creacion')
     
     selected_torneo = None
     if torneo_id:
@@ -29,8 +29,8 @@ def partidos_lista(request):
             partidos = Partido.objects.filter(torneo=selected_torneo).select_related('equipo_local', 'equipo_visitante').order_by('jornada', 'fecha_hora')
             equipos = selected_torneo.equipos.all()
         else:
-            partidos = Partido.objects.all().select_related('equipo_local', 'equipo_visitante').order_by('jornada', 'fecha_hora')
-            equipos = Equipo.objects.all()
+            partidos = Partido.objects.filter(organizacion=request.organizacion).select_related('equipo_local', 'equipo_visitante').order_by('jornada', 'fecha_hora')
+            equipos = Equipo.objects.filter(organizacion=request.organizacion)
     
     tabla_tipo = 'general'
     tabla_posiciones = []
@@ -267,10 +267,12 @@ def vocalia_dashboard(request):
         
     # Partidos asignados a este vocal
     partidos = Partido.objects.filter(
+        organizacion=request.organizacion,
         vocal=request.user
     ).exclude(estado='finalizado').select_related('equipo_local', 'equipo_visitante').order_by('fecha_hora')
     
     historial = Partido.objects.filter(
+        organizacion=request.organizacion,
         vocal=request.user,
         estado='finalizado'
     ).select_related('equipo_local', 'equipo_visitante').order_by('-fecha_hora')[:10]
@@ -732,7 +734,7 @@ def gestion_torneos(request):
     else:
         form = TorneoForm()
         
-    torneos = Torneo.objects.all().order_by('-fecha_creacion')
+    torneos = Torneo.objects.filter(organizacion=request.organizacion).order_by('-fecha_creacion')
     
     context = {
         'form': form,
