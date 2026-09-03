@@ -33,7 +33,7 @@
         /* SaaS Layout Variables */
         :root {
             --sidebar-width: 260px;
-            --sidebar-bg: #0f172a;
+            --sidebar-bg: #ffffff;
             --topbar-height: 60px;
             --primary-gradient: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
             --accent-color: #f59e0b;
@@ -62,7 +62,7 @@
         .sidebar {
             width: var(--sidebar-width);
             background: var(--sidebar-bg);
-            color: white;
+            color: #1e293b;
             display: flex;
             flex-direction: column;
             position: fixed;
@@ -71,7 +71,8 @@
             left: 0;
             z-index: 1000;
             transition: var(--transition);
-            box-shadow: 4px 0 24px rgba(0,0,0,0.1);
+            box-shadow: 4px 0 24px rgba(0,0,0,0.05);
+            border-right: 1px solid #e2e8f0;
         }
 
         .sidebar-header {
@@ -79,12 +80,12 @@
             display: flex;
             align-items: center;
             padding: 0 1.5rem;
-            background: rgba(0,0,0,0.15);
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
         }
 
         .sidebar-brand {
-            color: white;
+            color: #0f172a;
             text-decoration: none;
             font-weight: 900;
             font-size: 1.2rem;
@@ -96,7 +97,7 @@
         }
         
         .sidebar-brand:hover {
-            color: white;
+            color: #1e3a8a;
         }
 
         .sidebar-menu {
@@ -106,7 +107,7 @@
         }
 
         .sidebar-menu .nav-link {
-            color: #94a3b8;
+            color: #475569;
             padding: 0.75rem 1.5rem;
             font-weight: 500;
             font-size: 0.85rem;
@@ -123,24 +124,24 @@
         }
 
         .sidebar-menu .nav-link:hover, .sidebar-menu .nav-link.active {
-            color: white;
-            background: rgba(255,255,255,0.05);
+            color: #1e40af;
+            background: #eff6ff;
             border-left: 4px solid var(--accent-color);
         }
 
-        /* Adjust icon colors for dark background */
+        /* Adjust icon colors for light background */
         .sidebar-menu .nav-link i.text-primary {
-            color: #60a5fa !important; /* Bright blue */
+            color: #2563eb !important; 
         }
         .sidebar-menu .nav-link i.text-success {
-            color: #34d399 !important; /* Bright green */
+            color: #10b981 !important; 
         }
         .sidebar-menu .nav-link i.text-danger {
-            color: #f87171 !important; /* Bright red */
+            color: #ef4444 !important;
         }
         
         .sidebar-menu .nav-title {
-            color: #64748b !important;
+            color: #94a3b8 !important;
         }
 
         /* Main Wrapper */
@@ -745,7 +746,7 @@
                             {{ user.username|make_list|first|upper }}
                         </div>
                         <div class="ms-3 overflow-hidden">
-                            <h6 class="mb-0 text-truncate text-white" style="font-size: 0.85rem;">{{ user.get_full_name|default:user.username }}</h6>
+                            <h6 class="mb-0 text-truncate text-dark" style="font-size: 0.85rem;">{{ user.get_full_name|default:user.username }}</h6>
                             <small class="text-muted text-truncate d-block" style="font-size: 0.7rem;">{{ user.get_role_display }}</small>
                         </div>
                         <a href="{% url 'logout' %}" class="ms-auto text-danger" title="Cerrar Sesión">
@@ -777,8 +778,8 @@
                 
                 <div class="ms-auto d-flex align-items-center">
                     {% if request.session.current_organizacion_id and user.role == 'superadmin' %}
-                        <a href="{% url 'torre_control' %}" class="btn btn-sm btn-outline-danger me-3">
-                            <i class="fa-solid fa-times me-1"></i> Salir de Organización
+                        <a href="{% url 'torre_control' %}" class="btn btn-sm btn-outline-danger">
+                            <i class="fa-solid fa-times"></i> <span class="d-none d-md-inline ms-1">Salir de Organización</span>
                         </a>
                     {% endif %}
                 </div>
