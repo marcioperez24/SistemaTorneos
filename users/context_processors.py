@@ -5,7 +5,7 @@ def permissions_context(request):
     # If superuser or superadmin, they get access to all modules automatically
     is_admin = request.user.is_superuser or request.user.role == 'superadmin'
 
-    modules = ['partidos', 'equipos', 'vocalia', 'secretaria', 'tesoreria']
+    modules = ['partidos', 'equipos', 'vocalia', 'secretaria', 'arbitros', 'vocales', 'torneos', 'categorias', 'tesoreria', 'usuarios']
 
     if is_admin:
         user_perms = {m: True for m in modules}
