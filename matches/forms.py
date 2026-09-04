@@ -133,3 +133,10 @@ class TorneoForm(forms.ModelForm):
             'equipos': 'Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples equipos.',
         }
 
+    def __init__(self, *args, **kwargs):
+        organizacion = kwargs.pop('organizacion', None)
+        super(TorneoForm, self).__init__(*args, **kwargs)
+        if organizacion:
+            self.fields['equipos'].queryset = self.fields['equipos'].queryset.filter(organizacion=organizacion)
+            self.fields['categoria'].queryset = self.fields['categoria'].queryset.filter(organizacion=organizacion)
+

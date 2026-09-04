@@ -17,11 +17,14 @@ class EquipoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
+        organizacion = kwargs.pop('organizacion', None)
         super().__init__(*args, **kwargs)
         if user and user.role == 'dirigente':
             if self.instance and self.instance.pk:
                 self.fields['nombre'].disabled = True
                 self.fields['logo'].disabled = True
+        if organizacion:
+            self.fields['categoria'].queryset = self.fields['categoria'].queryset.filter(organizacion=organizacion)
 
 
 class PlayerRegistrationForm(forms.ModelForm):

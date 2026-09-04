@@ -736,15 +736,18 @@ def gestion_torneos(request):
         return redirect('partidos_lista')
         
     if request.method == 'POST':
-        form = TorneoForm(request.POST)
+        form = TorneoForm(request.POST, organizacion=request.organizacion)
         if form.is_valid():
-            torneo = form.save()
+            torneo = form.save(commit=False)
+            torneo.organizacion = request.organizacion
+            torneo.save()
+            form.save_m2m()
             messages.success(request, f"Torneo/Liga '{torneo.nombre}' creado exitosamente.")
             return redirect('gestion_torneos')
         else:
             messages.error(request, "Error al crear el torneo. Por favor, revisa los datos.")
     else:
-        form = TorneoForm()
+        form = TorneoForm(organizacion=request.organizacion)
         
     torneos = Torneo.objects.filter(organizacion=request.organizacion).order_by('-fecha_creacion')
     
