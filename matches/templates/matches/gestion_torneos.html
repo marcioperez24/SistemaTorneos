@@ -38,9 +38,10 @@
 <div class="container my-5">
     <div class="row">
         <!-- Lista de Torneos -->
-        <div class="col-lg-7 mb-4">
+        <div class="col-lg-10 mx-auto mb-4">
             <div class="card card-custom p-4 border-0 shadow-sm h-100">
-                <div class="d-flex align-items-center mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                    <div class="d-flex align-items-center">
                     <div class="bg-primary-subtle text-primary rounded-circle p-3 me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
                         <i class="fa-solid fa-table-list fa-lg text-primary"></i>
                     </div>
@@ -48,6 +49,9 @@
                         <h4 class="fw-bold mb-0">Campeonatos Activos</h4>
                         <p class="text-muted mb-0 small">Listado de ligas de todos contra todos y torneos de fases de grupos.</p>
                     </div>
+                    <button type="button" class="btn btn-custom-accent fw-bold rounded-pill shadow-sm px-4 py-2" data-bs-toggle="modal" data-bs-target="#crearCompetenciaModal">
+                        <i class="fa-solid fa-circle-plus me-2"></i>Crear Competencia
+                    </button>
                 </div>
 
                 <div class="row g-3">
@@ -103,104 +107,120 @@
                     {% empty %}
                         <div class="col-12 text-center py-5 text-muted">
                             <i class="fa-solid fa-folder-open d-block fa-3x mb-3 text-secondary-50"></i>
-                            Aún no hay torneos o ligas configuradas. ¡Crea el primero usando el formulario lateral derecho!
+                            <h5 class="fw-bold mb-3">Aún no hay competencias configuradas</h5>
+                            <p class="mb-4">Comienza creando tu primer torneo o liga para administrar los equipos y partidos.</p>
+                            <button type="button" class="btn btn-custom-accent fw-bold rounded-pill shadow-sm px-4 py-2" data-bs-toggle="modal" data-bs-target="#crearCompetenciaModal">
+                                <i class="fa-solid fa-circle-plus me-2"></i>Crear Mi Primera Competencia
+                            </button>
                         </div>
                     {% endfor %}
                 </div>
             </div>
         </div>
 
-        <!-- Formulario de Creación -->
-        <div class="col-lg-5 mb-4">
-            <div class="card card-custom p-4 border-0 shadow-sm h-100">
-                <div class="d-flex align-items-center mb-4">
-                    <div class="bg-success-subtle text-success rounded-circle p-3 me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                        <i class="fa-solid fa-trophy fa-lg text-success"></i>
+        <!-- Formulario de Creación (Modal) -->
+        <div class="modal fade" id="crearCompetenciaModal" tabindex="-1" aria-labelledby="crearCompetenciaModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+                <div class="modal-content border-0 shadow-lg rounded-4">
+                    <div class="modal-header bg-success-subtle text-success border-0 rounded-top-4 pb-4 px-4 pt-4">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-white text-success rounded-circle p-3 me-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 50px; height: 50px;">
+                                <i class="fa-solid fa-trophy fa-lg text-success"></i>
+                            </div>
+                            <div>
+                                <h4 class="fw-bold mb-0 text-dark" id="crearCompetenciaModalLabel">Crear Competencia</h4>
+                                <p class="text-muted mb-0 small">Registrar una nueva liga o copa eliminatoria.</p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div>
-                        <h4 class="fw-bold mb-0">Crear Competencia</h4>
-                        <p class="text-muted mb-0 small">Registrar una nueva liga o copa eliminatoria.</p>
-                    </div>
-                </div>
-
-                <form method="POST">
-                    {% csrf_token %}
-                    
-                    {% for field in form %}
-                        <div class="mb-4">
-                            <label class="form-label fw-bold text-secondary d-flex justify-content-between mb-1 fs-7">
-                                <span>{{ field.label }}</span>
-                                {% if not field.field.required %}
-                                    <span class="text-muted font-monospace fs-8">(Opcional)</span>
-                                {% endif %}
-                            </label>
+                    <div class="modal-body px-4 py-4">
+                        <form method="POST">
+                            {% csrf_token %}
                             
-                            {% if field.name == 'equipos' %}
-                                <!-- Ocultamos el select real pero lo mantenemos para que Django procese el POST -->
-                                <select name="{{ field.name }}" id="id_{{ field.name }}" multiple class="d-none">
-                                    {% for team in field.field.queryset %}
-                                        <option value="{{ team.id }}" {% if team.id|stringformat:"i" in field.value or team in field.value or team.id in field.value %}selected{% endif %}>{{ team.nombre }}</option>
-                                    {% endfor %}
-                                </select>
-                                
-                                <!-- Buscador y contador de equipos seleccionados -->
-                                <div class="d-flex align-items-center justify-content-between mb-2 gap-2">
-                                    <div class="input-group input-group-sm" style="max-width: 65%;">
-                                        <span class="input-group-text bg-light border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass fs-9"></i></span>
-                                        <input type="text" id="teamSearchInput" class="form-control form-control-sm border-start-0 fs-8 bg-light" placeholder="Buscar equipo..." onkeyup="filterTeams()">
-                                    </div>
-                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-8 px-2.5 py-1.5 rounded-pill" id="selectedTeamsCount">
-                                        0 Seleccionados
-                                    </span>
-                                </div>
+                            <div class="row">
+                                {% for field in form %}
+                                    <div class="{% if field.name == 'equipos' or field.name == 'nombre' %}col-12{% else %}col-md-6{% endif %} mb-4">
+                                        <label class="form-label fw-bold text-secondary d-flex justify-content-between mb-1 fs-7">
+                                            <span>{{ field.label }}</span>
+                                            {% if not field.field.required %}
+                                                <span class="text-muted font-monospace fs-8">(Opcional)</span>
+                                            {% endif %}
+                                        </label>
+                                        
+                                        {% if field.name == 'equipos' %}
+                                            <!-- Ocultamos el select real pero lo mantenemos para que Django procese el POST -->
+                                            <select name="{{ field.name }}" id="id_{{ field.name }}" multiple class="d-none">
+                                                {% for team in field.field.queryset %}
+                                                    <option value="{{ team.id }}" {% if team.id|stringformat:"i" in field.value or team in field.value or team.id in field.value %}selected{% endif %}>{{ team.nombre }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            
+                                            <!-- Buscador y contador de equipos seleccionados -->
+                                            <div class="d-flex align-items-center justify-content-between mb-2 gap-2">
+                                                <div class="input-group input-group-sm" style="max-width: 65%;">
+                                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="fa-solid fa-magnifying-glass fs-9"></i></span>
+                                                    <input type="text" id="teamSearchInput" class="form-control form-control-sm border-start-0 fs-8 bg-light" placeholder="Buscar equipo..." onkeyup="filterTeams()">
+                                                </div>
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-8 px-2.5 py-1.5 rounded-pill" id="selectedTeamsCount">
+                                                    0 Seleccionados
+                                                </span>
+                                            </div>
 
-                                <!-- Contenedor visual premium con tarjetas interactivas -->
-                                <div class="team-selection-container border rounded-4 p-2 bg-white shadow-sm" style="max-height: 280px; overflow-y: auto; border: 1.5px solid #cbd5e1 !important;">
-                                    <div class="row g-2 m-0">
-                                        {% for team in field.field.queryset %}
-                                            <div class="col-12 px-0">
-                                                <div class="card team-select-card p-2.5 d-flex flex-row align-items-center justify-content-between" data-value="{{ team.id }}" data-category="{{ team.categoria.id }}" onclick="toggleTeamSelection(this)">
-                                                    <div class="d-flex align-items-center">
-                                                        {% if team.logo %}
-                                                            <img src="{{ team.logo.url }}" alt="{{ team.nombre }}" class="rounded-circle border me-2.5 shadow-sm" style="width: 34px; height: 34px; object-fit: cover;">
-                                                        {% else %}
-                                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-2.5 shadow-sm" style="width: 34px; height: 34px; font-size: 12px; background: linear-gradient(135deg, #1e3c72 0%, #2563eb 100%) !important;">
-                                                                {{ team.nombre|slice:":2"|upper }}
+                                            <!-- Contenedor visual premium con tarjetas interactivas -->
+                                            <div class="team-selection-container border rounded-4 p-2 bg-light shadow-sm" style="max-height: 280px; overflow-y: auto; border: 1.5px solid #cbd5e1 !important;">
+                                                <div class="row g-2 m-0">
+                                                    {% for team in field.field.queryset %}
+                                                        <div class="col-md-6 px-1">
+                                                            <div class="card team-select-card p-2 d-flex flex-row align-items-center justify-content-between h-100 bg-white" data-value="{{ team.id }}" data-category="{{ team.categoria.id }}" onclick="toggleTeamSelection(this)">
+                                                                <div class="d-flex align-items-center">
+                                                                    {% if team.logo %}
+                                                                        <img src="{{ team.logo.url }}" alt="{{ team.nombre }}" class="rounded-circle border me-2 shadow-sm" style="width: 30px; height: 30px; object-fit: cover;">
+                                                                    {% else %}
+                                                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-2 shadow-sm" style="width: 30px; height: 30px; font-size: 11px; background: linear-gradient(135deg, #1e3c72 0%, #2563eb 100%) !important;">
+                                                                            {{ team.nombre|slice:":2"|upper }}
+                                                                        </div>
+                                                                    {% endif %}
+                                                                    <div class="text-start">
+                                                                        <div class="fw-bold text-dark fs-8 lh-sm mb-0 text-truncate" style="max-width: 100px;" title="{{ team.nombre }}">{{ team.nombre }}</div>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="checkbox-indicator text-muted fs-6">
+                                                                    <i class="fa-regular fa-circle-check"></i>
+                                                                </div>
                                                             </div>
-                                                        {% endif %}
-                                                        <div class="text-start">
-                                                            <div class="fw-bold text-dark fs-7 lh-sm mb-1">{{ team.nombre }}</div>
-                                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-1.5 py-0.5 rounded-1 text-uppercase tracking-wider" style="font-size: 0.65rem !important;">{{ team.get_categoria_display }}</span>
                                                         </div>
-                                                    </div>
-                                                    <div class="checkbox-indicator text-muted fs-5 pe-1">
-                                                        <i class="fa-regular fa-circle-check"></i>
-                                                    </div>
+                                                    {% empty %}
+                                                        <div class="col-12 text-center text-muted py-3 small">
+                                                            <i class="fa-solid fa-users-slash d-block fs-4 mb-2"></i>
+                                                            No hay equipos disponibles en esta liga.
+                                                        </div>
+                                                    {% endfor %}
                                                 </div>
                                             </div>
-                                        {% endfor %}
+                                        {% else %}
+                                            {{ field }}
+                                        {% endif %}
+                                        
+                                        {% if field.help_text and field.name != 'equipos' %}
+                                            <div class="form-text text-muted small mt-1 fs-8"><i class="fa-solid fa-circle-info me-1"></i>{{ field.help_text }}</div>
+                                        {% endif %}
+                                        
+                                        {% if field.errors %}
+                                            {% for error in field.errors %}
+                                                <div class="text-danger small mt-1 fs-8"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ error }}</div>
+                                            {% endfor %}
+                                        {% endif %}
                                     </div>
-                                </div>
-                            {% else %}
-                                {{ field }}
-                            {% endif %}
-                            
-                            {% if field.help_text and field.name != 'equipos' %}
-                                <div class="form-text text-muted small mt-1 fs-8"><i class="fa-solid fa-circle-info me-1"></i>{{ field.help_text }}</div>
-                            {% endif %}
-                            
-                            {% if field.errors %}
-                                {% for error in field.errors %}
-                                    <div class="text-danger small mt-1 fs-8"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ error }}</div>
                                 {% endfor %}
-                            {% endif %}
-                        </div>
-                    {% endfor %}
+                            </div>
 
-                    <button type="submit" class="btn btn-custom-accent w-100 py-2.5 text-uppercase fw-bold shadow mt-2">
-                        <i class="fa-solid fa-circle-plus me-2"></i>Crear Competencia
-                    </button>
-                </form>
+                            <button type="submit" class="btn btn-custom-accent w-100 py-3 text-uppercase fw-bold shadow-sm mt-2 rounded-3">
+                                <i class="fa-solid fa-check-circle me-2"></i>Guardar Competencia
+                            </button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
