@@ -773,9 +773,10 @@
         {% endif %}
         
         <!-- Main Wrapper -->
-        <div class="main-wrapper">
+        <div class="main-wrapper" {% if hide_navbar %}style="margin-left: 0 !important;"{% endif %}>
             
             <!-- Topbar (Compact) -->
+            {% if not hide_navbar %}
             <header class="topbar d-flex align-items-center px-4">
                 <div class="me-auto">
                     <!-- Hamburger (mobile) -->
@@ -796,11 +797,12 @@
                     {% endif %}
                 </div>
             </header>
+            {% endif %}
 
             <!-- Main Content -->
-            <main class="content p-4">
+            <main class="content {% if hide_navbar %}p-0 pb-4{% else %}p-4{% endif %}">
                 {% if messages %}
-                    <div class="container-fluid mb-3">
+                    <div class="container-fluid mb-3 {% if hide_navbar %}pt-3 px-4{% endif %}">
                         {% for message in messages %}
                             <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
                                 {{ message }}
@@ -814,9 +816,11 @@
             </main>
 
             <!-- Footer -->
+            {% if not hide_navbar %}
             <footer class="footer text-center p-3 mt-auto">
                 <p class="mb-0 text-muted" style="font-size: 0.85rem;">&copy; 2026 Fútbol Pro SaaS. Diseño Premium.</p>
             </footer>
+            {% endif %}
 
         </div> <!-- /.main-wrapper -->
     </div> <!-- /.app-layout -->
