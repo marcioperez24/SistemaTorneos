@@ -27,7 +27,28 @@
                                     <span class="text-muted font-monospace fs-8">(Opcional)</span>
                                 {% endif %}
                             </label>
-                            {{ field }}
+                            {% if field.name == 'categorias' %}
+                                <div class="card p-3 bg-light border-0 rounded-3">
+                                    <div class="row g-2">
+                                        {% for choice in field %}
+                                            <div class="col-md-6">
+                                                <div class="form-check p-2 bg-white rounded border d-flex align-items-center gap-2">
+                                                    {{ choice.tag }}
+                                                    <label class="form-check-label mb-0 fw-semibold text-dark cursor-pointer" for="{{ choice.id_for_label }}">
+                                                        {{ choice.choice_label }}
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        {% empty %}
+                                            <div class="col-12 text-muted small">
+                                                No hay categorías registradas en la organización.
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% else %}
+                                {{ field }}
+                            {% endif %}
                             {% if field.help_text %}
                                 <div class="form-text text-muted small">{{ field.help_text }}</div>
                             {% endif %}

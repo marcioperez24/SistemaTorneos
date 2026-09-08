@@ -163,6 +163,7 @@ def crear_equipo(request):
             equipo.dirigente = request.user
             equipo.organizacion = request.organizacion
             equipo.save()
+            form.save_m2m()
             messages.success(request, f"Equipo '{equipo.nombre}' creado exitosamente.")
             return redirect('club_portal')
     else:

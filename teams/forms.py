@@ -7,24 +7,39 @@ User = get_user_model()
 class EquipoForm(forms.ModelForm):
     class Meta:
         model = Equipo
-        fields = ['nombre', 'logo', 'categoria', 'max_jugadores']
+        fields = ['nombre', 'logo', 'categorias', 'max_jugadores']
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Real Madrid'}),
             'logo': forms.ClearableFileInput(attrs={'class': 'form-control'}),
-            'categoria': forms.Select(attrs={'class': 'form-select'}),
+            'categorias': forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
             'max_jugadores': forms.NumberInput(attrs={'class': 'form-control', 'min': '5', 'max': '50'}),
+        }
+        labels = {
+            'nombre': 'Nombre del Equipo / Club',
+            'logo': 'Escudo / Logo',
+            'categorias': 'Categorías en las que participa',
+            'max_jugadores': 'Máximo de Jugadores por Plantilla',
+        }
+        help_texts = {
+            'categorias': 'Selecciona todas las categorías en las que este club compite (ej. Senior, Máster, Femenino).',
         }
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         organizacion = kwargs.pop('organizacion', None)
         super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            self.fields['categorias'].required = False
+        else:
+            self.fields['categorias'].required = False
+            
         if user and user.role == 'dirigente':
             if self.instance and self.instance.pk:
                 self.fields['nombre'].disabled = True
                 self.fields['logo'].disabled = True
         if organizacion:
-            self.fields['categoria'].queryset = self.fields['categoria'].queryset.filter(organizacion=organizacion)
+            self.instance.organizacion = organizacion
+            self.fields['categorias'].queryset = Categoria.objects.filter(organizacion=organizacion).order_by('nombre')
 
 
 class PlayerRegistrationForm(forms.ModelForm):

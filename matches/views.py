@@ -790,8 +790,9 @@ def detalle_torneo(request, torneo_id):
         for p in partidos:
             partidos_por_jornada.setdefault(p.jornada, []).append(p)
             
-    # Equipos no asignados a este torneo que pertenezcan a la misma categoría del torneo
-    equipos_no_asignados = Equipo.objects.filter(categoria=torneo.categoria).exclude(id__in=equipos.values_list('id', flat=True))
+    # Equipos no asignados a este torneo que pertenezcan a la categoría del torneo
+    equipos_candidatos = Equipo.objects.filter(organizacion=request.organizacion).exclude(id__in=equipos.values_list('id', flat=True))
+    equipos_no_asignados = [eq for eq in equipos_candidatos if eq.pertenece_a_categoria(torneo.categoria)]
     
     # Manejar POST para asignar equipos manualmente
     if request.method == 'POST':
@@ -800,7 +801,7 @@ def detalle_torneo(request, torneo_id):
             equipo_id = request.POST.get('equipo_id')
             if equipo_id:
                 equipo = get_object_or_404(Equipo, id=equipo_id)
-                if equipo.categoria != torneo.categoria:
+                if torneo.categoria and not equipo.pertenece_a_categoria(torneo.categoria):
                     messages.error(request, f"El equipo '{equipo.nombre}' ({equipo.get_categoria_display()}) no pertenece a la categoría de este torneo ({torneo.get_categoria_display()}).")
                 else:
                     torneo.equipos.add(equipo)

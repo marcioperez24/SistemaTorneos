@@ -19,7 +19,8 @@ class Equipo(models.Model):
     organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")
     nombre = models.CharField(max_length=100, verbose_name="Nombre del Equipo")
     logo = models.ImageField(upload_to='logos_equipos/', null=True, blank=True, verbose_name="Escudo/Logo")
-    categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, verbose_name="Categoría")
+    categoria = models.ForeignKey(Categoria, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Categoría Principal (Opcional)")
+    categorias = models.ManyToManyField(Categoria, blank=True, related_name='equipos', verbose_name="Categorías en las que participa")
     entrenador = models.CharField(max_length=100, blank=True, null=True, verbose_name="Entrenador / DT")
     telefono_entrenador = models.CharField(max_length=20, blank=True, null=True, verbose_name="Teléfono del Entrenador")
     alineacion = models.JSONField(default=dict, blank=True, null=True, verbose_name="Alineación Táctica")
@@ -31,7 +32,7 @@ class Equipo(models.Model):
     )
     max_jugadores = models.IntegerField(default=25, verbose_name="Máximo de Jugadores")
     fecha_creacion = models.DateTimeField(auto_now_add=True)
- 
+
     class Meta:
         verbose_name = "Equipo"
         verbose_name_plural = "Equipos"
@@ -41,7 +42,19 @@ class Equipo(models.Model):
         return f"{self.nombre} ({self.get_categoria_display()})"
 
     def get_categoria_display(self):
-        return self.categoria.nombre if self.categoria else ""
+        cats = list(self.categorias.all())
+        if cats:
+            return ", ".join([c.nombre for c in cats])
+        elif self.categoria:
+            return self.categoria.nombre
+        return "Todas las Categorías"
+
+    def pertenece_a_categoria(self, cat):
+        if not cat:
+            return True
+        if not self.categorias.exists() and not self.categoria:
+            return True
+        return self.categorias.filter(id=cat.id).exists() or self.categoria == cat
 
     def get_dt(self):
         if not hasattr(self, '_cached_dt'):
