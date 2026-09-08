@@ -231,7 +231,8 @@ def generar_invitacion(request, equipo_id):
         equipo=equipo,
         torneo=torneo,
         tipo=tipo,
-        expira_en=expira
+        expira_en=expira,
+        organizacion=request.organizacion
     )
     
     # Construir URL absoluta del enlace
