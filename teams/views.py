@@ -267,7 +267,7 @@ def registro_jugador(request, token):
         if ya_registrado_torneo:
             return render(request, 'teams/registro_error.html', {
                 'error': f'Ya te encuentras registrado en otro equipo para el torneo {invitacion.torneo.nombre}. Un jugador/DT no puede estar en dos equipos distintos en el mismo torneo.',
-                'hide_navbar': False
+                'hide_navbar': True
             })
             
         if tipo == 'jugador' and invitacion.torneo:
@@ -281,7 +281,7 @@ def registro_jugador(request, token):
             if num_jugadores_actuales >= invitacion.torneo.max_jugadores_por_equipo:
                 return render(request, 'teams/registro_error.html', {
                     'error': f'El equipo {invitacion.equipo.nombre} ya ha alcanzado el límite máximo de jugadores ({invitacion.torneo.max_jugadores_por_equipo}) permitidos en el torneo {invitacion.torneo.nombre}.',
-                    'hide_navbar': False
+                    'hide_navbar': True
                 })
             
         # Buscar su registro anterior para copiar archivos
@@ -337,7 +337,7 @@ def registro_jugador(request, token):
                 'equipo': invitacion.equipo,
                 'tipo': tipo,
                 'ficha_anterior': ficha_anterior,
-                'hide_navbar': False
+                'hide_navbar': True
             })
             
     # Si no tiene cuenta o está logueado pero es su primera ficha (ej. admin o nuevo usuario)
@@ -394,7 +394,7 @@ def registro_jugador(request, token):
     return render(request, template_name, {
         'form': form,
         'equipo': invitacion.equipo,
-        'hide_navbar': False if request.user.is_authenticated else True
+        'hide_navbar': True
     })
 
 def registro_exito(request):
