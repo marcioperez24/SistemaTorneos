@@ -137,6 +137,7 @@ class TorneoForm(forms.ModelForm):
         organizacion = kwargs.pop('organizacion', None)
         super(TorneoForm, self).__init__(*args, **kwargs)
         if organizacion:
+            self.instance.organizacion = organizacion
             self.fields['equipos'].queryset = self.fields['equipos'].queryset.filter(organizacion=organizacion)
             self.fields['categoria'].queryset = self.fields['categoria'].queryset.filter(organizacion=organizacion)
 

@@ -8,7 +8,7 @@ class Torneo(models.Model):
         ('liga', 'Liga (Todos contra todos por fechas)'),
         ('torneo', 'Torneo (Fase de Grupos + Eliminatorias)'),
     )
-    nombre = models.CharField(max_length=100, unique=True, verbose_name="Nombre del Torneo / Liga")
+    nombre = models.CharField(max_length=100, verbose_name="Nombre del Torneo / Liga")
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='liga', verbose_name="Tipo de Campeonato")
     categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, verbose_name="Categoría")
     temporada = models.CharField(max_length=50, default="Temporada 2026", verbose_name="Temporada")
@@ -23,6 +23,7 @@ class Torneo(models.Model):
     class Meta:
         verbose_name = "Torneo / Liga"
         verbose_name_plural = "Torneos y Ligas"
+        unique_together = ('organizacion', 'nombre')
 
     def __str__(self):
         return f"{self.nombre} - {self.get_tipo_display()} ({self.temporada})"

@@ -745,7 +745,11 @@ def gestion_torneos(request):
             messages.success(request, f"Torneo/Liga '{torneo.nombre}' creado exitosamente.")
             return redirect('gestion_torneos')
         else:
-            messages.error(request, "Error al crear el torneo. Por favor, revisa los datos.")
+            error_details = []
+            for field_name, errs in form.errors.items():
+                label = form.fields[field_name].label if field_name in form.fields else field_name
+                error_details.append(f"{label}: {', '.join(errs)}")
+            messages.error(request, f"Error al crear el torneo: {' | '.join(error_details)}")
     else:
         form = TorneoForm(organizacion=request.organizacion)
         

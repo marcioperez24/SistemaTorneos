@@ -40,16 +40,17 @@
         <!-- Lista de Torneos -->
         <div class="col-lg-10 mx-auto mb-4">
             <div class="card card-custom p-4 border-0 shadow-sm h-100">
-                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                <div class="d-flex justify-content-between align-items-sm-center flex-column flex-sm-row mb-4 gap-3">
                     <div class="d-flex align-items-center">
-                    <div class="bg-primary-subtle text-primary rounded-circle p-3 me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                        <i class="fa-solid fa-table-list fa-lg text-primary"></i>
+                        <div class="bg-primary-subtle text-primary rounded-circle p-3 me-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 50px; height: 50px;">
+                            <i class="fa-solid fa-table-list fa-lg text-primary"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-bold mb-0">Campeonatos Activos</h4>
+                            <p class="text-muted mb-0 small">Listado de ligas de todos contra todos y torneos de fases de grupos.</p>
+                        </div>
                     </div>
-                    <div>
-                        <h4 class="fw-bold mb-0">Campeonatos Activos</h4>
-                        <p class="text-muted mb-0 small">Listado de ligas de todos contra todos y torneos de fases de grupos.</p>
-                    </div>
-                    <button type="button" class="btn btn-custom-accent fw-bold rounded-pill shadow-sm px-4 py-2" data-bs-toggle="modal" data-bs-target="#crearCompetenciaModal">
+                    <button type="button" class="btn btn-custom-accent fw-bold rounded-pill shadow-sm px-4 py-2 align-self-start align-self-sm-auto text-nowrap" data-bs-toggle="modal" data-bs-target="#crearCompetenciaModal">
                         <i class="fa-solid fa-circle-plus me-2"></i>Crear Competencia
                     </button>
                 </div>
@@ -338,6 +339,14 @@
         
         // Initial filter on load
         filterTeamsByCategory();
+
+        {% if form.errors %}
+        const crearModalEl = document.getElementById('crearCompetenciaModal');
+        if (crearModalEl) {
+            const modalInstance = new bootstrap.Modal(crearModalEl);
+            modalInstance.show();
+        }
+        {% endif %}
     });
 </script>
 {% endblock %}
