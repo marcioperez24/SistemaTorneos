@@ -2,20 +2,24 @@
 {% block title %}Calendario y Posiciones - Sistema Deportivo{% endblock %}
 
 {% block content %}
-<div class="gradient-header text-center">
-    <div class="container">
-        <h1 class="fw-bold"><i class="fa-solid fa-ranking-star me-2 text-warning"></i>Resultados y Posiciones</h1>
-        <p class="lead mb-3 text-white-50">Consulta el calendario de encuentros, resultados de partidos en vivo y la tabla de posiciones en tiempo real.</p>
+<div class="container mt-4 mb-4">
+    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between pb-3 border-bottom mb-4 gap-3">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">
+                <i class="fa-solid fa-trophy text-warning me-2"></i>Resultados y Posiciones
+            </h2>
+            <p class="text-muted mb-0">Consulta el calendario de encuentros, resultados de partidos y la tabla de posiciones en tiempo real.</p>
+        </div>
         
         <!-- Filtro de Torneo -->
         {% if torneos.exists %}
-            <div class="d-flex justify-content-center align-items-center gap-2 flex-wrap">
-                <label class="text-white fw-semibold me-2 fs-6"><i class="fa-solid fa-filter me-1 text-warning"></i>Competencia:</label>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="text-secondary fw-semibold small text-uppercase"><i class="fa-solid fa-filter me-1 text-primary"></i>Competencia:</span>
                 <div class="dropdown">
-                    <button class="btn btn-light dropdown-toggle rounded-pill px-4 fw-bold shadow-sm text-primary" type="button" id="dropdownTorneos" data-bs-toggle="dropdown" aria-expanded="false">
+                    <button class="btn btn-primary dropdown-toggle rounded-pill px-4 fw-bold shadow-sm" type="button" id="dropdownTorneos" data-bs-toggle="dropdown" aria-expanded="false">
                         {{ selected_torneo.nombre|default:"Todos los Torneos" }}
                     </button>
-                    <ul class="dropdown-menu shadow" aria-labelledby="dropdownTorneos">
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 mt-2" aria-labelledby="dropdownTorneos">
                         {% for tor in torneos %}
                             <li>
                                 <a class="dropdown-item {% if tor.id == selected_torneo.id %}active bg-primary text-white{% endif %}" href="?torneo={{ tor.id }}">
@@ -239,7 +243,7 @@
                                                                 {% endif %}
                                                             </small>
                                                         </div>
-                                                        <button onclick="enviarWhatsApp('{{ partido.arbitro.telefono }}', 'Recordatorio: Tienes asignado el partido {{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }} el {{ partido.fecha_hora|date:\'d/m/Y\' }} a las {{ partido.fecha_hora|date:\'H:i\' }} en {{ partido.estadio }}. Por favor, confirma tu asistencia.')" 
+                                                        <button onclick="enviarWhatsApp('{{ partido.arbitro.telefono }}', 'Recordatorio: Tienes asignado el partido {{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }} el {{ partido.fecha_hora|date:"d/m/Y" }} a las {{ partido.fecha_hora|date:"H:i" }} en {{ partido.estadio }}. Por favor, confirma tu asistencia.')" 
                                                                 class="btn btn-success btn-sm rounded-pill px-3 {% if not partido.arbitro.telefono %}disabled{% endif %}">
                                                             <i class="fa-brands fa-whatsapp me-1"></i>Enviar
                                                         </button>
@@ -258,7 +262,7 @@
                                                                 {% endif %}
                                                             </small>
                                                         </div>
-                                                        <button onclick="enviarWhatsApp('{{ partido.vocal.telefono }}', 'Recordatorio: Tienes asignado el control de mesa digital del partido {{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }} el {{ partido.fecha_hora|date:\'d/m/Y\' }} a las {{ partido.fecha_hora|date:\'H:i\' }} en {{ partido.estadio }}. Por favor, confirma tu asistencia.')" 
+                                                        <button onclick="enviarWhatsApp('{{ partido.vocal.telefono }}', 'Recordatorio: Tienes asignado el control de mesa digital del partido {{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }} el {{ partido.fecha_hora|date:"d/m/Y" }} a las {{ partido.fecha_hora|date:"H:i" }} en {{ partido.estadio }}. Por favor, confirma tu asistencia.')" 
                                                                 class="btn btn-success btn-sm rounded-pill px-3 {% if not partido.vocal.telefono %}disabled{% endif %}">
                                                             <i class="fa-brands fa-whatsapp me-1"></i>Enviar
                                                         </button>
@@ -277,7 +281,7 @@
                                                                 {% endif %}
                                                             </small>
                                                         </div>
-                                                        <button onclick="enviarWhatsApp('{{ partido.equipo_local.get_dt_telefono }}', 'Recordatorio: Su equipo {{ partido.equipo_local.nombre }} tiene programado el partido contra {{ partido.equipo_visitante.nombre }} el {{ partido.fecha_hora|date:\'d/m/Y\' }} a las {{ partido.fecha_hora|date:\'H:i\' }} en el estadio {{ partido.estadio }}.')" 
+                                                        <button onclick="enviarWhatsApp('{{ partido.equipo_local.get_dt_telefono }}', 'Recordatorio: Su equipo {{ partido.equipo_local.nombre }} tiene programado el partido contra {{ partido.equipo_visitante.nombre }} el {{ partido.fecha_hora|date:"d/m/Y" }} a las {{ partido.fecha_hora|date:"H:i" }} en el estadio {{ partido.estadio }}.')" 
                                                                 class="btn btn-success btn-sm rounded-pill px-3 {% if not partido.equipo_local.get_dt_telefono %}disabled{% endif %}">
                                                             <i class="fa-brands fa-whatsapp me-1"></i>Enviar
                                                         </button>
@@ -296,7 +300,7 @@
                                                                 {% endif %}
                                                             </small>
                                                         </div>
-                                                        <button onclick="enviarWhatsApp('{{ partido.equipo_visitante.get_dt_telefono }}', 'Recordatorio: Su equipo {{ partido.equipo_visitante.nombre }} tiene programado el partido contra {{ partido.equipo_local.nombre }} el {{ partido.fecha_hora|date:\'d/m/Y\' }} a las {{ partido.fecha_hora|date:\'H:i\' }} en el estadio {{ partido.estadio }}.')" 
+                                                        <button onclick="enviarWhatsApp('{{ partido.equipo_visitante.get_dt_telefono }}', 'Recordatorio: Su equipo {{ partido.equipo_visitante.nombre }} tiene programado el partido contra {{ partido.equipo_local.nombre }} el {{ partido.fecha_hora|date:"d/m/Y" }} a las {{ partido.fecha_hora|date:"H:i" }} en el estadio {{ partido.estadio }}.')" 
                                                                 class="btn btn-success btn-sm rounded-pill px-3 {% if not partido.equipo_visitante.get_dt_telefono %}disabled{% endif %}">
                                                             <i class="fa-brands fa-whatsapp me-1"></i>Enviar
                                                         </button>
