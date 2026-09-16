@@ -358,23 +358,49 @@
                         </div>
                         {% endif %}
 
-                        <!-- Botón desplegable para Plantilla, Alineación y Finanzas -->
-                        <button class="btn btn-light btn-sm border w-100 fw-bold py-2 d-flex align-items-center justify-content-center gap-2 collapse-toggle-header {% if not forloop.first or equipos|length > 1 %}collapsed{% endif %}" 
+                        <!-- Botón para abrir Modal XL de Plantilla, Alineación y Finanzas -->
+                        <button class="btn btn-primary btn-sm w-100 fw-bold py-2.5 d-flex align-items-center justify-content-center gap-2 shadow-sm" 
                                 type="button"
-                                data-bs-toggle="collapse" 
-                                data-bs-target="#collapseEquipo{{ equipo.id }}" 
-                                aria-expanded="{% if forloop.first and equipos|length == 1 %}true{% else %}false{% endif %}" 
-                                aria-controls="collapseEquipo{{ equipo.id }}"
+                                data-bs-toggle="modal" 
+                                data-bs-target="#modalGestionEquipo{{ equipo.id }}"
                                 style="border-radius: 10px;">
-                            <i class="fa-solid fa-users me-1 text-primary"></i>
-                            <span>Plantilla y Alineaciones</span>
-                            <i class="fa-solid fa-chevron-down text-muted collapse-arrow"></i>
+                            <i class="fa-solid fa-users-gear fs-6"></i>
+                            <span>Administrar Plantilla y Tácticas</span>
                         </button>
                     </div>
+                </div> <!-- /card -->
+            </div> <!-- /col -->
 
-                    <!-- Contenido Colapsable (Plantilla, Alineación Táctica y Estado de Cuenta) -->
-                    <div id="collapseEquipo{{ equipo.id }}" class="collapse {% if forloop.first and equipos|length == 1 %}show{% endif %} border-top">
-                        <div class="card-body p-3 p-md-4">
+            <!-- Modal XL de Gestión para {{ equipo.nombre }} -->
+            <div class="modal fade" id="modalGestionEquipo{{ equipo.id }}" tabindex="-1" aria-labelledby="modalGestionEquipoLabel{{ equipo.id }}" aria-hidden="true">
+                <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content border-0 shadow-lg rounded-4">
+                        <div class="modal-header bg-dark text-white rounded-top-4 py-3 px-4">
+                            <div class="d-flex align-items-center gap-3">
+                                {% if equipo.logo %}
+                                    <img src="{{ equipo.logo.url }}" alt="{{ equipo.nombre }}" class="rounded-circle border border-2 border-white shadow-sm" style="width: 44px; height: 44px; object-fit: cover;">
+                                {% else %}
+                                    <div class="bg-primary text-white rounded-circle border border-2 border-white shadow-sm d-flex align-items-center justify-content-center fw-bold" style="width: 44px; height: 44px; font-size: 18px;">
+                                        {{ equipo.nombre|slice:":2"|upper }}
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <h5 class="modal-title fw-bold text-white mb-0" id="modalGestionEquipoLabel{{ equipo.id }}">
+                                        {{ equipo.nombre }}
+                                    </h5>
+                                    <div class="d-flex align-items-center gap-2 mt-0.5">
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-0.5" style="font-size: 0.75rem;">
+                                            <i class="fa-solid fa-tags me-1"></i>{{ equipo.get_categoria_display }}
+                                        </span>
+                                        <span class="badge bg-secondary-subtle text-light border border-secondary px-2.5 py-0.5 rounded-pill" style="font-size: 0.75rem;">
+                                            <i class="fa-solid fa-users me-1 text-primary"></i>{{ equipo.jugadores.count }} / {{ equipo.max_jugadores }} Jugadores
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-4">
                     <!-- Si acabamos de generar una invitación, la mostramos para copiar -->
                     {% if nuevo_enlace and nuevo_enlace_equipo_id == equipo.id %}
                         <div class="alert alert-success border-0 shadow-sm mb-4" role="alert">
@@ -746,10 +772,10 @@
                     if (!window.teamLineups) window.teamLineups = {};
                     window.teamLineups[{{ equipo.id }}] = {% if equipo.alineacion %}{{ equipo.alineacion|safe }}{% else %}{}{% endif %};
                 </script>
-            </div> <!-- /card-body -->
-        </div> <!-- /collapseEquipo -->
-    </div> <!-- /card -->
-</div> <!-- /col -->
+                        </div> <!-- /modal-body -->
+                    </div> <!-- /modal-content -->
+                </div> <!-- /modal-dialog -->
+            </div> <!-- /modalGestionEquipo -->
         {% endfor %}
     </div> <!-- /row -->
     {% endif %}
