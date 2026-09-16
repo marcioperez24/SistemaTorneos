@@ -739,118 +739,132 @@ def eliminar_categoria(request, categoria_id):
 @login_required
 def descargar_plantilla_equipos(request):
     import io
-    import openpyxl
-    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-    from openpyxl.worksheet.datavalidation import DataValidation
     from django.http import HttpResponse
 
     if not request.user.has_module_access('equipos'):
         messages.error(request, "No tienes permiso para acceder a este módulo.")
         return redirect('club_portal')
 
-    categorias = list(Categoria.objects.filter(organizacion=request.organizacion).order_by('nombre'))
-    cat_names = [c.nombre for c in categorias]
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.worksheet.datavalidation import DataValidation
+    except ImportError:
+        messages.error(request, "El generador de Excel (openpyxl) no está disponible en el servidor. Por favor ejecute pip install openpyxl.")
+        return redirect('club_portal')
 
-    wb = openpyxl.Workbook()
+    try:
+        categorias = list(Categoria.objects.filter(organizacion=request.organizacion).order_by('nombre'))
+        cat_names = [c.nombre for c in categorias]
 
-    # Hoja 1: Equipos
-    ws_equipos = wb.active
-    ws_equipos.title = "Equipos"
-    ws_equipos.views.sheetView[0].showGridLines = True
+        wb = openpyxl.Workbook()
 
-    # Hoja 2: Categorías Habilitadas
-    ws_cats = wb.create_sheet(title="Categorias_Habilitadas")
-    ws_cats.views.sheetView[0].showGridLines = True
-    ws_cats.append(["ID Categoría", "Nombre de Categoría"])
+        # Hoja 1: Equipos
+        ws_equipos = wb.active
+        ws_equipos.title = "Equipos"
+        ws_equipos.views.sheetView[0].showGridLines = True
 
-    header_fill_cats = PatternFill(start_color="334155", end_color="334155", fill_type="solid")
-    header_font_cats = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
-    for col in range(1, 3):
-        cell = ws_cats.cell(row=1, column=col)
-        cell.fill = header_fill_cats
-        cell.font = header_font_cats
-        cell.alignment = Alignment(horizontal="center", vertical="center")
+        # Hoja 2: Categorías Habilitadas
+        ws_cats = wb.create_sheet(title="Categorias_Habilitadas")
+        ws_cats.views.sheetView[0].showGridLines = True
+        ws_cats.append(["ID Categoría", "Nombre de Categoría"])
 
-    for idx, c in enumerate(categorias, start=2):
-        ws_cats.cell(row=idx, column=1, value=c.id)
-        ws_cats.cell(row=idx, column=2, value=c.nombre)
+        header_fill_cats = PatternFill(start_color="334155", end_color="334155", fill_type="solid")
+        header_font_cats = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+        for col in range(1, 3):
+            cell = ws_cats.cell(row=1, column=col)
+            cell.fill = header_fill_cats
+            cell.font = header_font_cats
+            cell.alignment = Alignment(horizontal="center", vertical="center")
 
-    ws_cats.column_dimensions['A'].width = 15
-    ws_cats.column_dimensions['B'].width = 30
+        for idx, c in enumerate(categorias, start=2):
+            ws_cats.cell(row=idx, column=1, value=c.id)
+            ws_cats.cell(row=idx, column=2, value=c.nombre)
 
-    # Estilos para Hoja Equipos
-    header_fill = PatternFill(start_color="1E3C72", end_color="1E3C72", fill_type="solid")
-    header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
-    thin_border = Border(
-        left=Side(style='thin', color='CBD5E1'),
-        right=Side(style='thin', color='CBD5E1'),
-        top=Side(style='thin', color='CBD5E1'),
-        bottom=Side(style='thin', color='CBD5E1')
-    )
+        ws_cats.column_dimensions['A'].width = 15
+        ws_cats.column_dimensions['B'].width = 30
 
-    headers = [
-        "Nombre del Equipo (Obligatorio)",
-        "Categorías (Obligatorio / Separadas por coma)",
-        "Nombre Entrenador / DT (Opcional)",
-        "Teléfono Entrenador (Opcional)",
-        "Máximo Jugadores (Opcional)"
-    ]
-    ws_equipos.append(headers)
+        # Estilos para Hoja Equipos
+        header_fill = PatternFill(start_color="1E3C72", end_color="1E3C72", fill_type="solid")
+        header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+        thin_border = Border(
+            left=Side(style='thin', color='CBD5E1'),
+            right=Side(style='thin', color='CBD5E1'),
+            top=Side(style='thin', color='CBD5E1'),
+            bottom=Side(style='thin', color='CBD5E1')
+        )
 
-    for col_idx, h in enumerate(headers, start=1):
-        cell = ws_equipos.cell(row=1, column=col_idx)
-        cell.fill = header_fill
-        cell.font = header_font
-        cell.alignment = Alignment(horizontal="center", vertical="center")
+        headers = [
+            "Nombre del Equipo (Obligatorio)",
+            "Categorías (Obligatorio / Separadas por coma)",
+            "Nombre Entrenador / DT (Opcional)",
+            "Teléfono Entrenador (Opcional)",
+            "Máximo Jugadores (Opcional)"
+        ]
+        ws_equipos.append(headers)
 
-    # Filas de ejemplo
-    ejemplos = [
-        ["Real Madrid FC", cat_names[0] if cat_names else "Senior", "Zinedine Zidane", "+593987654321", 25],
-        ["FC Barcelona", ", ".join(cat_names[:2]) if len(cat_names) >= 2 else "Senior, Máster", "Pep Guardiola", "+593987654322", 25],
-    ]
+        for col_idx, h in enumerate(headers, start=1):
+            cell = ws_equipos.cell(row=1, column=col_idx)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal="center", vertical="center")
 
-    for row_data in ejemplos:
-        ws_equipos.append(row_data)
+        # Filas de ejemplo
+        ejemplos = [
+            ["Real Madrid FC", cat_names[0] if cat_names else "Senior", "Zinedine Zidane", "+593987654321", 25],
+            ["FC Barcelona", ", ".join(cat_names[:2]) if len(cat_names) >= 2 else "Senior, Máster", "Pep Guardiola", "+593987654322", 25],
+        ]
 
-    # Añadir DataValidation para la columna B (Categorías) en Excel
-    if cat_names:
-        formula_cats = f'"' + ",".join(cat_names) + '"'
-        dv = DataValidation(type="list", formula1=formula_cats, allow_blank=True)
-        dv.error = 'Por favor selecciona una categoría válida de la lista'
-        dv.errorTitle = 'Categoría no válida'
-        dv.prompt = 'Selecciona una categoría de la lista'
-        dv.promptTitle = 'Categoría'
-        ws_equipos.add_data_validation(dv)
-        dv.add("B2:B100")
+        for row_data in ejemplos:
+            ws_equipos.append(row_data)
 
-    # Anchos de columna
-    column_widths = {'A': 32, 'B': 42, 'C': 30, 'D': 22, 'E': 22}
-    for col_letter, width in column_widths.items():
-        ws_equipos.column_dimensions[col_letter].width = width
+        # Añadir DataValidation para la columna B (Categorías) en Excel usando rango dinámico
+        if cat_names:
+            last_row = len(cat_names) + 1
+            formula_cats = f"Categorias_Habilitadas!$B$2:$B${last_row}"
+            dv = DataValidation(type="list", formula1=formula_cats, allow_blank=True)
+            dv.error = 'Por favor selecciona una categoría válida de la lista'
+            dv.errorTitle = 'Categoría no válida'
+            dv.prompt = 'Selecciona una categoría de la lista'
+            dv.promptTitle = 'Categoría'
+            ws_equipos.add_data_validation(dv)
+            dv.add("B2:B100")
 
-    # Bordes y alineación para filas 2 a 100
-    for row in range(2, 101):
-        for col in range(1, 6):
-            cell = ws_equipos.cell(row=row, column=col)
-            cell.border = thin_border
-            if col == 5:
-                cell.alignment = Alignment(horizontal="center")
+        # Anchos de columna
+        column_widths = {'A': 32, 'B': 42, 'C': 30, 'D': 22, 'E': 22}
+        for col_letter, width in column_widths.items():
+            ws_equipos.column_dimensions[col_letter].width = width
 
-    output = io.BytesIO()
-    wb.save(output)
-    output.seek(0)
+        # Bordes y alineación para filas 2 a 100
+        for row in range(2, 101):
+            for col in range(1, 6):
+                cell = ws_equipos.cell(row=row, column=col)
+                cell.border = thin_border
+                if col == 5:
+                    cell.alignment = Alignment(horizontal="center")
 
-    response = HttpResponse(
-        output.read(),
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
-    response['Content-Disposition'] = 'attachment; filename="Plantilla_Equipos_FutbolPro.xlsx"'
-    return response
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        response = HttpResponse(
+            output.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="Plantilla_Equipos_FutbolPro.xlsx"'
+        return response
+    except Exception as e:
+        messages.error(request, f"Error al generar la plantilla Excel: {str(e)}")
+        return redirect('club_portal')
 
 
 @login_required
 def cargar_equipos_excel(request):
-    import openpyxl
+    try:
+        import openpyxl
+    except ImportError:
+        messages.error(request, "El módulo openpyxl no está instalado en el servidor.")
+        return redirect('club_portal')
 
     if not request.user.has_module_access('equipos'):
         messages.error(request, "No tienes permiso para acceder a este módulo.")
