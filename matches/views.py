@@ -245,13 +245,9 @@ def generar_fixture_view(request):
                     # Configurar hora del partido (separados por 2 horas en el mismo estadio de forma ilustrativa)
                     hora_partido = fecha_jornada.replace(hour=8, minute=0, second=0, microsecond=0) + timedelta(hours=p*2)
                     
-                    # Asignar un vocal y árbitro de prueba al azar si existen en la BD
-                    vocal = User.objects.filter(role='vocal').first()
-                    arbitro = User.objects.filter(role='arbitro').first()
-                    if not vocal:
-                        vocal = User.objects.filter(is_superuser=True).first()
-                    if not arbitro:
-                        arbitro = User.objects.filter(is_superuser=True).first()
+                    # Asignar un vocal y árbitro de la organización actual si existen
+                    vocal = User.objects.filter(role='vocal', organizaciones__organizacion=request.organizacion).distinct().first()
+                    arbitro = User.objects.filter(role='arbitro', organizaciones__organizacion=request.organizacion).distinct().first()
 
                     Partido.objects.create(
                         equipo_local=eq_local,
@@ -591,9 +587,9 @@ def editar_partido(request, partido_id):
         messages.success(request, f"¡Partido {partido.equipo_local.nombre} vs {partido.equipo_visitante.nombre} actualizado correctamente!")
         return redirect('partidos_lista')
         
-    # Obtener usuarios con roles específicos para asignar
-    arbitros = User.objects.filter(role__in=['arbitro', 'superadmin'])
-    vocales = User.objects.filter(role__in=['vocal', 'superadmin'])
+    # Obtener usuarios de la organización actual para asignar
+    arbitros = User.objects.filter(role__in=['arbitro', 'superadmin', 'comision'], organizaciones__organizacion=request.organizacion).distinct().order_by('first_name', 'last_name')
+    vocales = User.objects.filter(role__in=['vocal', 'superadmin', 'comision'], organizaciones__organizacion=request.organizacion).distinct().order_by('first_name', 'last_name')
     
     context = {
         'partido': partido,
@@ -789,8 +785,8 @@ def detalle_torneo(request, torneo_id):
     partidos = Partido.objects.filter(torneo=torneo).select_related('equipo_local', 'equipo_visitante', 'vocal', 'arbitro').order_by('jornada', 'fecha_hora')
     
     todos_equipos = Equipo.objects.filter(categoria=torneo.categoria).order_by('nombre')
-    todos_arbitros = User.objects.filter(role='arbitro').order_by('first_name', 'last_name')
-    todos_vocales = User.objects.filter(role='vocal').order_by('first_name', 'last_name')
+    todos_arbitros = User.objects.filter(role='arbitro', organizaciones__organizacion=request.organizacion).distinct().order_by('first_name', 'last_name')
+    todos_vocales = User.objects.filter(role='vocal', organizaciones__organizacion=request.organizacion).distinct().order_by('first_name', 'last_name')
     
     # Agrupar partidos por fase o fecha para el UI
     partidos_regular = partidos.filter(fase='regular')
@@ -927,13 +923,14 @@ def generar_fixture_torneo(request, torneo_id):
         messages.error(request, "Se necesitan al menos 2 equipos para generar el fixture.")
         return redirect('detalle_torneo', torneo_id=torneo.id)
         
-    # Obtener vocales y arbitros para asignación rotativa / aleatoria
-    vocales = list(User.objects.filter(role='vocal'))
-    arbitros = list(User.objects.filter(role='arbitro'))
+    # Obtener vocales y árbitros pertenecientes exclusivamente a esta organización
+    vocales = list(User.objects.filter(role='vocal', organizaciones__organizacion=request.organizacion).distinct())
+    arbitros = list(User.objects.filter(role='arbitro', organizaciones__organizacion=request.organizacion).distinct())
     
-    if not vocales or not arbitros:
-        messages.error(request, "Debe registrar al menos un Vocal de Mesa y un Árbitro en el sistema primero.")
-        return redirect('detalle_torneo', torneo_id=torneo.id)
+    if not vocales:
+        vocales = [None]
+    if not arbitros:
+        arbitros = [None]
         
     if request.method == 'POST':
         tipo_gen = request.POST.get('tipo_gen', 'liga')
@@ -1138,12 +1135,13 @@ def generar_cruces_eliminatorios(request, torneo_id):
         return redirect('partidos_lista')
         
     torneo = get_object_or_404(Torneo, id=torneo_id)
-    vocales = list(User.objects.filter(role='vocal'))
-    arbitros = list(User.objects.filter(role='arbitro'))
+    vocales = list(User.objects.filter(role='vocal', organizaciones__organizacion=request.organizacion).distinct())
+    arbitros = list(User.objects.filter(role='arbitro', organizaciones__organizacion=request.organizacion).distinct())
     
-    if not vocales or not arbitros:
-        messages.error(request, "Debe registrar al menos un Vocal de Mesa y un Árbitro en el sistema primero.")
-        return redirect('detalle_torneo', torneo_id=torneo.id)
+    if not vocales:
+        vocales = [None]
+    if not arbitros:
+        arbitros = [None]
 
     # Calcular posiciones de cada grupo
     partidos_grupos = Partido.objects.filter(torneo=torneo, fase='grupos')
@@ -1289,8 +1287,8 @@ def crear_partido_torneo(request, torneo_id):
             
         eq_local = get_object_or_404(Equipo, id=eq_local_id)
         eq_visitante = get_object_or_404(Equipo, id=eq_visitante_id)
-        vocal = get_object_or_404(User, id=vocal_id, role='vocal')
-        arbitro = get_object_or_404(User, id=arbitro_id, role='arbitro')
+        vocal = User.objects.filter(id=vocal_id, role='vocal', organizaciones__organizacion=request.organizacion).first() if vocal_id else None
+        arbitro = User.objects.filter(id=arbitro_id, role='arbitro', organizaciones__organizacion=request.organizacion).first() if arbitro_id else None
         
         Partido.objects.create(
             equipo_local=eq_local,
