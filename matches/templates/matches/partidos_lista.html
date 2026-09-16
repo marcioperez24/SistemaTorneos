@@ -41,12 +41,24 @@
     <ul class="nav nav-pills flex-column flex-sm-row nav-fill bg-white p-2 rounded-4 shadow-sm mb-4 gap-2 gap-sm-0" id="pills-tab" role="tablist">
         <li class="nav-item">
             <button class="nav-link active rounded-pill fw-semibold py-2.5 w-100" id="tab-calendario" data-bs-toggle="pill" data-bs-target="#pane-calendario" type="button">
-                <i class="fa-solid fa-calendar-days me-2"></i>Calendario y Fixture
+                <i class="fa-solid fa-calendar-days me-2 text-primary"></i>Calendario y Fixture
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link rounded-pill fw-semibold py-2.5 w-100" id="tab-posiciones" data-bs-toggle="pill" data-bs-target="#pane-posiciones" type="button">
-                <i class="fa-solid fa-list-ol me-2"></i>Tabla de Posiciones
+                <i class="fa-solid fa-list-ol me-2 text-success"></i>Tabla de Posiciones
+            </button>
+        </li>
+        {% if selected_torneo and selected_torneo.tipo == 'torneo' or partidos_eliminatorias %}
+        <li class="nav-item">
+            <button class="nav-link rounded-pill fw-semibold py-2.5 w-100" id="tab-eliminatorias" data-bs-toggle="pill" data-bs-target="#pane-eliminatorias" type="button">
+                <i class="fa-solid fa-sitemap me-2 text-warning"></i>Fase Eliminatoria
+            </button>
+        </li>
+        {% endif %}
+        <li class="nav-item">
+            <button class="nav-link rounded-pill fw-semibold py-2.5 w-100" id="tab-estadisticas" data-bs-toggle="pill" data-bs-target="#pane-estadisticas" type="button">
+                <i class="fa-solid fa-chart-line me-2 text-info"></i>Líderes y Estadísticas
             </button>
         </li>
     </ul>
@@ -82,7 +94,7 @@
                 <div class="card card-custom p-5 text-center my-4">
                     <div class="text-muted mb-3"><i class="fa-solid fa-circle-exclamation fa-4x"></i></div>
                     <h3>No hay partidos programados aún</h3>
-                    <p class="text-secondary mb-0">Los organizadores aún no han generado el fixture del torneo.</p>
+                    <p class="text-secondary mb-0">Los organizadores aún no han generado el fixture de esta competencia.</p>
                 </div>
             {% else %}
                 <!-- Agrupador por Jornadas -->
@@ -227,7 +239,7 @@
                                                                 {% endif %}
                                                             </small>
                                                         </div>
-                                                        <button onclick="enviarWhatsApp('{{ partido.arbitro.telefono }}', 'Recordatorio: Tienes asignado el partido {{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }} el {{ partido.fecha_hora|date:'d/m/Y' }} a las {{ partido.fecha_hora|date:'H:i' }} en {{ partido.estadio }}. Por favor, confirma tu asistencia.')" 
+                                                        <button onclick="enviarWhatsApp('{{ partido.arbitro.telefono }}', 'Recordatorio: Tienes asignado el partido {{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }} el {{ partido.fecha_hora|date:\'d/m/Y\' }} a las {{ partido.fecha_hora|date:\'H:i\' }} en {{ partido.estadio }}. Por favor, confirma tu asistencia.')" 
                                                                 class="btn btn-success btn-sm rounded-pill px-3 {% if not partido.arbitro.telefono %}disabled{% endif %}">
                                                             <i class="fa-brands fa-whatsapp me-1"></i>Enviar
                                                         </button>
@@ -246,7 +258,7 @@
                                                                 {% endif %}
                                                             </small>
                                                         </div>
-                                                        <button onclick="enviarWhatsApp('{{ partido.vocal.telefono }}', 'Recordatorio: Tienes asignado el control de mesa digital del partido {{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }} el {{ partido.fecha_hora|date:'d/m/Y' }} a las {{ partido.fecha_hora|date:'H:i' }} en {{ partido.estadio }}. Por favor, confirma tu asistencia.')" 
+                                                        <button onclick="enviarWhatsApp('{{ partido.vocal.telefono }}', 'Recordatorio: Tienes asignado el control de mesa digital del partido {{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }} el {{ partido.fecha_hora|date:\'d/m/Y\' }} a las {{ partido.fecha_hora|date:\'H:i\' }} en {{ partido.estadio }}. Por favor, confirma tu asistencia.')" 
                                                                 class="btn btn-success btn-sm rounded-pill px-3 {% if not partido.vocal.telefono %}disabled{% endif %}">
                                                             <i class="fa-brands fa-whatsapp me-1"></i>Enviar
                                                         </button>
@@ -265,7 +277,7 @@
                                                                 {% endif %}
                                                             </small>
                                                         </div>
-                                                        <button onclick="enviarWhatsApp('{{ partido.equipo_local.get_dt_telefono }}', 'Recordatorio: Su equipo {{ partido.equipo_local.nombre }} tiene programado el partido contra {{ partido.equipo_visitante.nombre }} el {{ partido.fecha_hora|date:'d/m/Y' }} a las {{ partido.fecha_hora|date:'H:i' }} en el estadio {{ partido.estadio }}.')" 
+                                                        <button onclick="enviarWhatsApp('{{ partido.equipo_local.get_dt_telefono }}', 'Recordatorio: Su equipo {{ partido.equipo_local.nombre }} tiene programado el partido contra {{ partido.equipo_visitante.nombre }} el {{ partido.fecha_hora|date:\'d/m/Y\' }} a las {{ partido.fecha_hora|date:\'H:i\' }} en el estadio {{ partido.estadio }}.')" 
                                                                 class="btn btn-success btn-sm rounded-pill px-3 {% if not partido.equipo_local.get_dt_telefono %}disabled{% endif %}">
                                                             <i class="fa-brands fa-whatsapp me-1"></i>Enviar
                                                         </button>
@@ -284,7 +296,7 @@
                                                                 {% endif %}
                                                             </small>
                                                         </div>
-                                                        <button onclick="enviarWhatsApp('{{ partido.equipo_visitante.get_dt_telefono }}', 'Recordatorio: Su equipo {{ partido.equipo_visitante.nombre }} tiene programado el partido contra {{ partido.equipo_local.nombre }} el {{ partido.fecha_hora|date:'d/m/Y' }} a las {{ partido.fecha_hora|date:'H:i' }} en el estadio {{ partido.estadio }}.')" 
+                                                        <button onclick="enviarWhatsApp('{{ partido.equipo_visitante.get_dt_telefono }}', 'Recordatorio: Su equipo {{ partido.equipo_visitante.nombre }} tiene programado el partido contra {{ partido.equipo_local.nombre }} el {{ partido.fecha_hora|date:\'d/m/Y\' }} a las {{ partido.fecha_hora|date:\'H:i\' }} en el estadio {{ partido.estadio }}.')" 
                                                                 class="btn btn-success btn-sm rounded-pill px-3 {% if not partido.equipo_visitante.get_dt_telefono %}disabled{% endif %}">
                                                             <i class="fa-brands fa-whatsapp me-1"></i>Enviar
                                                         </button>
@@ -307,15 +319,20 @@
         <!-- Panel 2: Tabla de Posiciones -->
         <div class="tab-pane fade" id="pane-posiciones">
             {% if tabla_tipo == 'grupos' %}
-                <h3 class="fw-bold text-secondary mb-4"><i class="fa-solid fa-people-roof me-2 text-primary"></i>Fase de Grupos - Tabla de Posiciones</h3>
+                <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+                    <h3 class="fw-bold text-secondary mb-0"><i class="fa-solid fa-people-roof me-2 text-primary"></i>Fase de Grupos - Tabla de Posiciones</h3>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-bold">
+                        <i class="fa-solid fa-layer-group me-1"></i>{{ tablas_grupos|length }} Grupos Activos
+                    </span>
+                </div>
                 
                 <div class="row g-4">
                     {% for grupo_data in tablas_grupos %}
-                        <div class="col-12">
+                        <div class="col-lg-6">
                             <div class="card card-custom p-4 bg-white shadow-sm h-100">
                                 <h4 class="fw-bold text-primary mb-3"><i class="fa-solid fa-circle-nodes me-2"></i>{{ grupo_data.grupo }}</h4>
                                 <div class="table-responsive">
-                                    <table class="table table-hover align-middle" style="min-width: 750px;">
+                                    <table class="table table-hover align-middle" style="min-width: 500px;">
                                         <thead class="table-light text-uppercase fs-9 tracking-wider">
                                             <tr>
                                                 <th style="width: 40px;">Pos</th>
@@ -332,7 +349,7 @@
                                         </thead>
                                         <tbody>
                                             {% for fila in grupo_data.tabla %}
-                                                <tr {% if forloop.first %}class="table-success"{% endif %}>
+                                                <tr {% if selected_torneo and forloop.counter <= selected_torneo.clasificados_por_grupo %}class="table-success"{% endif %}>
                                                     <td class="fw-bold font-monospace">{{ forloop.counter }}</td>
                                                     <td>
                                                         <div class="d-flex align-items-center">
@@ -361,7 +378,7 @@
                                                 </tr>
                                             {% empty %}
                                                 <tr>
-                                                    <td colspan="10" class="text-center py-3 text-muted small">No hay equipos registrados o no han disputado partidos en este grupo.</td>
+                                                    <td colspan="10" class="text-center py-3 text-muted small">No hay equipos o partidos registrados en este grupo.</td>
                                                 </tr>
                                             {% endfor %}
                                         </tbody>
@@ -369,20 +386,82 @@
                                 </div>
                             </div>
                         </div>
-                    {% empty %}
-                        <div class="col-12">
-                            <div class="card card-custom p-5 text-center bg-white shadow-sm">
-                                <div class="text-muted mb-3"><i class="fa-solid fa-users-slash fa-3x"></i></div>
-                                <h4>No hay grupos generados aún</h4>
-                                <p class="text-secondary mb-0">Los grupos del torneo y sus fixtures no se han creado todavía.</p>
-                            </div>
-                        </div>
                     {% endfor %}
                 </div>
-            {% else %}
-                <h3 class="fw-bold text-secondary mb-4"><i class="fa-solid fa-table me-2 text-primary"></i>Tabla General de Posiciones</h3>
+            {% elif tabla_tipo == 'grupos_sin_sorteo' %}
+                <div class="alert alert-info border-0 shadow-sm rounded-4 mb-4 p-4">
+                    <div class="d-flex align-items-center">
+                        <i class="fa-solid fa-circle-info fa-2x me-3 text-primary"></i>
+                        <div>
+                            <h5 class="fw-bold text-dark mb-1">Formato Fase de Grupos + Eliminatorias</h5>
+                            <p class="mb-0 text-secondary small">
+                                Este torneo está configurado como Fase de Grupos y Eliminatorias Directas. Aún no se han generado los grupos. A continuación se visualiza la <strong>Tabla Acumulada General</strong> de todos los equipos participantes.
+                            </p>
+                        </div>
+                    </div>
+                </div>
                 
-                <div class="card card-custom p-4 bg-white">
+                <h3 class="fw-bold text-secondary mb-4"><i class="fa-solid fa-table me-2 text-primary"></i>Tabla Acumulada General</h3>
+                <div class="card card-custom p-4 bg-white shadow-sm">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle" style="min-width: 750px;">
+                            <thead class="table-light text-uppercase fs-8 tracking-wider">
+                                <tr>
+                                    <th style="width: 50px;">Pos</th>
+                                    <th>Club / Equipo</th>
+                                    <th class="text-center">PJ</th>
+                                    <th class="text-center">PG</th>
+                                    <th class="text-center">PE</th>
+                                    <th class="text-center">PP</th>
+                                    <th class="text-center">GF</th>
+                                    <th class="text-center">GC</th>
+                                    <th class="text-center">GD</th>
+                                    <th class="text-center fw-bold bg-light">PTS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for fila in tabla %}
+                                    <tr {% if forloop.first %}class="table-success"{% endif %}>
+                                        <td class="fw-bold font-monospace">{{ forloop.counter }}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                {% if fila.equipo.logo %}
+                                                    <img src="{{ fila.equipo.logo.url }}" alt="{{ fila.equipo.nombre }}" class="rounded-circle border me-2.5" style="width: 35px; height: 35px; object-fit: cover;">
+                                                {% else %}
+                                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-2.5" style="width: 35px; height: 35px; font-size: 13px;">
+                                                        {{ fila.equipo.nombre|slice:":2"|upper }}
+                                                    </div>
+                                                {% endif %}
+                                                <div>
+                                                    <span class="fw-bold text-dark">{{ fila.equipo.nombre }}</span>
+                                                    <small class="text-muted d-block fs-9">{{ fila.equipo.get_categoria_display }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center font-monospace">{{ fila.pj }}</td>
+                                        <td class="text-center font-monospace text-success">{{ fila.pg }}</td>
+                                        <td class="text-center font-monospace text-warning">{{ fila.pe }}</td>
+                                        <td class="text-center font-monospace text-danger">{{ fila.pp }}</td>
+                                        <td class="text-center font-monospace text-secondary">{{ fila.gf }}</td>
+                                        <td class="text-center font-monospace text-secondary">{{ fila.gc }}</td>
+                                        <td class="text-center font-monospace fw-semibold {% if fila.gd >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {% if fila.gd > 0 %}+{% endif %}{{ fila.gd }}
+                                        </td>
+                                        <td class="text-center fw-bold font-monospace bg-light fs-6 text-primary">{{ fila.pts }}</td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="10" class="text-center py-4 text-muted">No hay equipos registrados en este torneo.</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% else %}
+                <h3 class="fw-bold text-secondary mb-4"><i class="fa-solid fa-table me-2 text-primary"></i>Tabla General de Posiciones (Liga)</h3>
+                
+                <div class="card card-custom p-4 bg-white shadow-sm">
                     <div class="table-responsive">
                         <table class="table table-hover align-middle" style="min-width: 750px;">
                             <thead class="table-light text-uppercase fs-8 tracking-wider">
@@ -440,6 +519,200 @@
                 </div>
             {% endif %}
         </div>
+
+        <!-- Panel 3: Fase Eliminatoria -->
+        {% if selected_torneo and selected_torneo.tipo == 'torneo' or partidos_eliminatorias %}
+        <div class="tab-pane fade" id="pane-eliminatorias">
+            <h3 class="fw-bold text-secondary mb-4"><i class="fa-solid fa-sitemap me-2 text-warning"></i>Cuadro de Eliminación Directa</h3>
+            
+            {% if not partidos_eliminatorias %}
+                <div class="card card-custom p-5 text-center bg-white shadow-sm">
+                    <div class="text-muted mb-3"><i class="fa-solid fa-diagram-project fa-3x"></i></div>
+                    <h4>No se han programado las llaves eliminatorias aún</h4>
+                    <p class="text-secondary mb-0">Los cruces de eliminación directa se generarán al finalizar la Fase de Grupos.</p>
+                </div>
+            {% else %}
+                {% regroup partidos_eliminatorias by get_fase_display as cruces_fase %}
+                <div class="row g-4">
+                    {% for fase in cruces_fase %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card card-custom p-4 bg-white shadow-sm h-100 border-top border-warning border-4">
+                                <h5 class="fw-bold text-dark mb-3 border-bottom pb-2"><i class="fa-solid fa-trophy me-2 text-warning"></i>{{ fase.grouper }}</h5>
+                                <div class="d-flex flex-column gap-3">
+                                    {% for p in fase.list %}
+                                        <div class="border rounded-3 p-3 bg-light">
+                                            <div class="d-flex justify-content-between text-muted fs-9 font-monospace mb-2">
+                                                <span>{{ p.fecha_hora|date:"d/m/Y H:i" }}</span>
+                                                <span class="badge {% if p.estado == 'finalizado' %}bg-secondary{% elif p.estado == 'en_curso' %}bg-danger{% else %}bg-primary{% endif %}">
+                                                    {{ p.get_estado_display }}
+                                                </span>
+                                            </div>
+                                            <div class="d-flex align-items-center justify-content-between fw-bold mb-1">
+                                                <span>{{ p.equipo_local.nombre }}</span>
+                                                <span class="fs-6 text-primary font-monospace">{{ p.goles_local }}</span>
+                                            </div>
+                                            <div class="d-flex align-items-center justify-content-between fw-bold">
+                                                <span>{{ p.equipo_visitante.nombre }}</span>
+                                                <span class="fs-6 text-primary font-monospace">{{ p.goles_visitante }}</span>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Panel 4: Líderes y Estadísticas de Jugadores -->
+        <div class="tab-pane fade" id="pane-estadisticas">
+            <h3 class="fw-bold text-secondary mb-4"><i class="fa-solid fa-chart-line me-2 text-info"></i>Líderes e Incidencias de la Competencia</h3>
+            
+            <div class="row g-4">
+                <!-- Goleadores -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="card card-custom p-3 bg-white shadow-sm h-100 border-top border-success border-4">
+                        <h5 class="fw-bold text-success mb-3"><i class="fa-solid fa-futbol me-2"></i>Goleadores</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr class="fs-9 text-uppercase text-muted">
+                                        <th>Jugador</th>
+                                        <th class="text-end">Goles</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in top_goleadores %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <span class="fw-bold me-2 fs-9 text-muted">{{ forloop.counter }}.</span>
+                                                    <div>
+                                                        <strong class="d-block text-dark fs-8">{{ item.nombre_jugador }}</strong>
+                                                        <small class="text-muted fs-9">{{ item.equipo }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-end font-monospace fw-bold text-success fs-7">{{ item.total }}</td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr><td colspan="2" class="text-muted text-center fs-8 py-3">Sin goles registrados</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Asistidores -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="card card-custom p-3 bg-white shadow-sm h-100 border-top border-info border-4">
+                        <h5 class="fw-bold text-info mb-3"><i class="fa-solid fa-hands-clapping me-2"></i>Asistencias</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr class="fs-9 text-uppercase text-muted">
+                                        <th>Jugador</th>
+                                        <th class="text-end">Asist.</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in top_asistidores %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <span class="fw-bold me-2 fs-9 text-muted">{{ forloop.counter }}.</span>
+                                                    <div>
+                                                        <strong class="d-block text-dark fs-8">{{ item.nombre_jugador }}</strong>
+                                                        <small class="text-muted fs-9">{{ item.equipo }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-end font-monospace fw-bold text-info fs-7">{{ item.total }}</td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr><td colspan="2" class="text-muted text-center fs-8 py-3">Sin asistencias</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tarjetas Amarillas -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="card card-custom p-3 bg-white shadow-sm h-100 border-top border-warning border-4">
+                        <h5 class="fw-bold text-warning mb-3"><i class="fa-solid fa-square me-2"></i>Amarillas</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr class="fs-9 text-uppercase text-muted">
+                                        <th>Jugador</th>
+                                        <th class="text-end">Tarj.</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in top_amarillas %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <span class="fw-bold me-2 fs-9 text-muted">{{ forloop.counter }}.</span>
+                                                    <div>
+                                                        <strong class="d-block text-dark fs-8">{{ item.nombre_jugador }}</strong>
+                                                        <small class="text-muted fs-9">{{ item.equipo }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-end font-monospace fw-bold text-warning fs-7">{{ item.total }}</td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr><td colspan="2" class="text-muted text-center fs-8 py-3">Sin amarillas</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tarjetas Rojas -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="card card-custom p-3 bg-white shadow-sm h-100 border-top border-danger border-4">
+                        <h5 class="fw-bold text-danger mb-3"><i class="fa-solid fa-square me-2"></i>Rojas / Expulsiones</h5>
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr class="fs-9 text-uppercase text-muted">
+                                        <th>Jugador</th>
+                                        <th class="text-end">Rojas</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in top_rojas %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <span class="fw-bold me-2 fs-9 text-muted">{{ forloop.counter }}.</span>
+                                                    <div>
+                                                        <strong class="d-block text-dark fs-8">{{ item.nombre_jugador }}</strong>
+                                                        <small class="text-muted fs-9">{{ item.equipo }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-end font-monospace fw-bold text-danger fs-7">{{ item.total }}</td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr><td colspan="2" class="text-muted text-center fs-8 py-3">Sin rojas</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>   </div>
     </div>
 </div>
 {% endblock %}

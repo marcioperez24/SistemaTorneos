@@ -19,161 +19,177 @@ def partidos_lista(request):
     
     selected_torneo = None
     if torneo_id:
-        selected_torneo = get_object_or_404(Torneo, id=torneo_id)
-        partidos = Partido.objects.filter(torneo=selected_torneo).select_related('equipo_local', 'equipo_visitante').order_by('jornada', 'fecha_hora')
+        selected_torneo = get_object_or_404(Torneo, id=torneo_id, organizacion=request.organizacion)
+    elif torneos.exists():
+        selected_torneo = torneos.first()
+        
+    if selected_torneo:
+        partidos = Partido.objects.filter(torneo=selected_torneo).select_related('equipo_local', 'equipo_visitante', 'arbitro', 'vocal').order_by('jornada', 'fecha_hora')
         equipos = selected_torneo.equipos.all()
     else:
-        # Por defecto, si hay algún torneo, filtramos por el más reciente
-        if torneos.exists():
-            selected_torneo = torneos.first()
-            partidos = Partido.objects.filter(torneo=selected_torneo).select_related('equipo_local', 'equipo_visitante').order_by('jornada', 'fecha_hora')
-            equipos = selected_torneo.equipos.all()
-        else:
-            partidos = Partido.objects.filter(organizacion=request.organizacion).select_related('equipo_local', 'equipo_visitante').order_by('jornada', 'fecha_hora')
-            equipos = Equipo.objects.filter(organizacion=request.organizacion)
+        partidos = Partido.objects.filter(organizacion=request.organizacion).select_related('equipo_local', 'equipo_visitante', 'arbitro', 'vocal').order_by('jornada', 'fecha_hora')
+        equipos = Equipo.objects.filter(organizacion=request.organizacion)
     
     tabla_tipo = 'general'
     tabla_posiciones = []
     tablas_grupos = []
+    partidos_eliminatorias = []
     
+    # 1. Tabla General de Posiciones
+    for eq in equipos:
+        if selected_torneo:
+            partidos_jugados = Partido.objects.filter(
+                Q(equipo_local=eq) | Q(equipo_visitante=eq),
+                torneo=selected_torneo,
+                estado='finalizado'
+            )
+        else:
+            partidos_jugados = Partido.objects.filter(
+                Q(equipo_local=eq) | Q(equipo_visitante=eq),
+                estado='finalizado'
+            )
+        
+        pj = partidos_jugados.count()
+        pg = pe = pp = gf = gc = 0
+        for p in partidos_jugados:
+            if p.equipo_local == eq:
+                gf += p.goles_local
+                gc += p.goles_visitante
+                if p.goles_local > p.goles_visitante:
+                    pg += 1
+                elif p.goles_local == p.goles_visitante:
+                    pe += 1
+                else:
+                    pp += 1
+            else:
+                gf += p.goles_visitante
+                gc += p.goles_local
+                if p.goles_visitante > p.goles_local:
+                    pg += 1
+                elif p.goles_local == p.goles_visitante:
+                    pe += 1
+                else:
+                    pp += 1
+        
+        pts = (pg * 3) + pe
+        gd = gf - gc
+        tabla_posiciones.append({
+            'equipo': eq, 'pj': pj, 'pg': pg, 'pe': pe, 'pp': pp,
+            'gf': gf, 'gc': gc, 'gd': gd, 'pts': pts
+        })
+    tabla_posiciones = sorted(tabla_posiciones, key=lambda x: (-x['pts'], -x['gd'], -x['gf']))
+
+    # 2. Si el torneo es de tipo 'torneo' (Fase de Grupos + Eliminatorias)
     if selected_torneo and selected_torneo.tipo == 'torneo':
         tabla_tipo = 'grupos'
-        # Obtener todos los partidos de fase de grupos
         partidos_grupos = Partido.objects.filter(torneo=selected_torneo, fase='grupos')
         
-        # Mapear qué equipos están en qué grupo
-        grupos_dict = {}  # { 'Grupo A': set(equipos) }
-        for p in partidos_grupos:
-            g_name = p.grupo or "Grupo A"
-            grupos_dict.setdefault(g_name, set()).add(p.equipo_local)
-            grupos_dict.setdefault(g_name, set()).add(p.equipo_visitante)
-            
-        # Para cada grupo, calcular su tabla de posiciones
-        for g_name, eq_set in sorted(grupos_dict.items()):
-            grupo_tabla = []
-            for eq in eq_set:
-                partidos_jugados = Partido.objects.filter(
-                    Q(equipo_local=eq) | Q(equipo_visitante=eq),
-                    torneo=selected_torneo,
-                    fase='grupos',
-                    grupo=g_name,
-                    estado='finalizado'
-                )
+        if partidos_grupos.exists():
+            grupos_dict = {}
+            for p in partidos_grupos:
+                g_name = p.grupo or "Grupo A"
+                grupos_dict.setdefault(g_name, set()).add(p.equipo_local)
+                grupos_dict.setdefault(g_name, set()).add(p.equipo_visitante)
                 
-                pj = partidos_jugados.count()
-                pg = 0
-                pe = 0
-                pp = 0
-                gf = 0
-                gc = 0
-                
-                for p in partidos_jugados:
-                    if p.equipo_local == eq:
-                        gf += p.goles_local
-                        gc += p.goles_visitante
-                        if p.goles_local > p.goles_visitante:
-                            pg += 1
-                        elif p.goles_local == p.goles_visitante:
-                            pe += 1
+            for g_name, eq_set in sorted(grupos_dict.items()):
+                grupo_tabla = []
+                for eq in eq_set:
+                    partidos_jugados = Partido.objects.filter(
+                        Q(equipo_local=eq) | Q(equipo_visitante=eq),
+                        torneo=selected_torneo,
+                        fase='grupos',
+                        grupo=g_name,
+                        estado='finalizado'
+                    )
+                    pj = partidos_jugados.count()
+                    pg = pe = pp = gf = gc = 0
+                    for p in partidos_jugados:
+                        if p.equipo_local == eq:
+                            gf += p.goles_local
+                            gc += p.goles_visitante
+                            if p.goles_local > p.goles_visitante: pg += 1
+                            elif p.goles_local == p.goles_visitante: pe += 1
+                            else: pp += 1
                         else:
-                            pp += 1
-                    else:
-                        gf += p.goles_visitante
-                        gc += p.goles_local
-                        if p.goles_visitante > p.goles_local:
-                            pg += 1
-                        elif p.goles_local == p.goles_visitante:
-                            pe += 1
-                        else:
-                            pp += 1
-                
-                pts = (pg * 3) + pe
-                gd = gf - gc
-                
-                grupo_tabla.append({
-                    'equipo': eq,
-                    'pj': pj,
-                    'pg': pg,
-                    'pe': pe,
-                    'pp': pp,
-                    'gf': gf,
-                    'gc': gc,
-                    'gd': gd,
-                    'pts': pts
-                })
-            
-            grupo_tabla = sorted(grupo_tabla, key=lambda x: (-x['pts'], -x['gd'], -x['gf']))
-            tablas_grupos.append({
-                'grupo': g_name,
-                'tabla': grupo_tabla
-            })
-    else:
-        # Liga o sin torneo seleccionado (Tabla General)
-        tabla_tipo = 'general'
-        for eq in equipos:
-            if selected_torneo:
-                partidos_jugados = Partido.objects.filter(
-                    Q(equipo_local=eq) | Q(equipo_visitante=eq),
-                    torneo=selected_torneo,
-                    estado='finalizado'
-                )
-            else:
-                partidos_jugados = Partido.objects.filter(
-                    Q(equipo_local=eq) | Q(equipo_visitante=eq),
-                    estado='finalizado'
-                )
-            
-            pj = partidos_jugados.count()
-            pg = 0
-            pe = 0
-            pp = 0
-            gf = 0
-            gc = 0
-            
-            for p in partidos_jugados:
-                if p.equipo_local == eq:
-                    gf += p.goles_local
-                    gc += p.goles_visitante
-                    if p.goles_local > p.goles_visitante:
-                        pg += 1
-                    elif p.goles_local == p.goles_visitante:
-                        pe += 1
-                    else:
-                        pp += 1
-                else:
-                    gf += p.goles_visitante
-                    gc += p.goles_local
-                    if p.goles_visitante > p.goles_local:
-                        pg += 1
-                    elif p.goles_local == p.goles_visitante:
-                        pe += 1
-                    else:
-                        pp += 1
-            
-            pts = (pg * 3) + pe
-            gd = gf - gc
-            
-            tabla_posiciones.append({
-                'equipo': eq,
-                'pj': pj,
-                'pg': pg,
-                'pe': pe,
-                'pp': pp,
-                'gf': gf,
-                'gc': gc,
-                'gd': gd,
-                'pts': pts
-            })
+                            gf += p.goles_visitante
+                            gc += p.goles_local
+                            if p.goles_visitante > p.goles_local: pg += 1
+                            elif p.goles_local == p.goles_visitante: pe += 1
+                            else: pp += 1
+                    pts = (pg * 3) + pe
+                    gd = gf - gc
+                    grupo_tabla.append({
+                        'equipo': eq, 'pj': pj, 'pg': pg, 'pe': pe, 'pp': pp,
+                        'gf': gf, 'gc': gc, 'gd': gd, 'pts': pts
+                    })
+                grupo_tabla = sorted(grupo_tabla, key=lambda x: (-x['pts'], -x['gd'], -x['gf']))
+                tablas_grupos.append({'grupo': g_name, 'tabla': grupo_tabla})
         
-        tabla_posiciones = sorted(tabla_posiciones, key=lambda x: (-x['pts'], -x['gd'], -x['gf']))
+        if not tablas_grupos:
+            tabla_tipo = 'grupos_sin_sorteo'
+            
+        # Partidos de Fase Eliminatoria
+        partidos_eliminatorias = Partido.objects.filter(
+            torneo=selected_torneo,
+            fase__in=['dieciseisavos', 'octavos', 'cuartos', 'semifinal', 'final']
+        ).select_related('equipo_local', 'equipo_visitante').order_by('fase', 'id')
+
+    # 3. Estadísticas de Jugadores (Líderes) para la competencia seleccionada
+    def get_top_events(event_type):
+        qs = EventoPartido.objects.filter(tipo=event_type, jugador__isnull=False)
+        if selected_torneo:
+            qs = qs.filter(partido__torneo=selected_torneo)
+        else:
+            qs = qs.filter(partido__organizacion=request.organizacion)
+            
+        events = qs.values(
+            'jugador__id', 'jugador__first_name', 'jugador__last_name',
+            'equipo__id', 'equipo__nombre', 'equipo__logo'
+        ).annotate(total=Count('id')).order_by('-total')[:10]
+        
+        stats = []
+        for evt in events:
+            ficha = None
+            if selected_torneo:
+                ficha = FichaJugador.objects.filter(
+                    user_id=evt['jugador__id'], equipo_id=evt['equipo__id'], torneo=selected_torneo
+                ).first()
+            if not ficha:
+                ficha = FichaJugador.objects.filter(
+                    user_id=evt['jugador__id'], equipo_id=evt['equipo__id']
+                ).order_by('-id').first()
+                
+            numero_camiseta = ficha.numero_camiseta if ficha and ficha.numero_camiseta else '-'
+            foto_url = ficha.foto.url if ficha and ficha.foto else None
+            logo_url = '/media/' + evt['equipo__logo'] if evt['equipo__logo'] else None
+            
+            stats.append({
+                'nombre_jugador': f"{evt['jugador__first_name']} {evt['jugador__last_name']}".strip(),
+                'equipo': evt['equipo__nombre'],
+                'numero_camiseta': numero_camiseta,
+                'total': evt['total'],
+                'foto_url': foto_url,
+                'logo_url': logo_url
+            })
+        return stats
+
+    top_goleadores = get_top_events('gol')
+    top_asistidores = get_top_events('asistencia')
+    top_amarillas = get_top_events('amarilla')
+    top_rojas = get_top_events('roja')
 
     context = {
         'partidos': partidos,
         'tabla': tabla_posiciones,
         'tablas_grupos': tablas_grupos,
+        'partidos_eliminatorias': partidos_eliminatorias,
         'tabla_tipo': tabla_tipo,
         'torneos': torneos,
         'selected_torneo': selected_torneo,
+        'top_goleadores': top_goleadores,
+        'top_asistidores': top_asistidores,
+        'top_amarillas': top_amarillas,
+        'top_rojas': top_rojas,
     }
     return render(request, 'matches/partidos_lista.html', context)
 
