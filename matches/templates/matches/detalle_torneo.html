@@ -114,9 +114,35 @@
                     </form>
                 {% else %}
                     <!-- Copa de Grupos y Eliminatorias -->
-                    <p class="text-muted fs-8 mb-3">Puedes generar una Fase de Grupos todos contra todos seleccionando un grupo y los equipos que lo integran.</p>
-                    <button type="button" class="btn btn-custom-accent w-100 py-2 fw-bold text-uppercase fs-8 mb-2" data-bs-toggle="modal" data-bs-target="#modalGrupoFixture" {% if equipos|length < 2 %}disabled{% endif %}>
-                        <i class="fa-solid fa-people-roof me-2"></i>Generar Fixture de Grupo
+                    <p class="text-muted fs-8 mb-3">Configura y administra la Fase de Grupos (distribución y calendarios) y las Llaves Eliminatorias (Playoffs).</p>
+                    
+                    <!-- 1. Sorteo de Grupos -->
+                    <form method="POST" action="{% url 'sortear_grupos_torneo' torneo.id %}" class="mb-2">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-primary w-100 py-2 fw-bold text-uppercase fs-8" {% if equipos|length < 2 %}disabled{% endif %}>
+                            <i class="fa-solid fa-shuffle me-2"></i>1. Sortear Equipos en {{ torneo.numero_grupos }} Grupos
+                        </button>
+                    </form>
+
+                    <!-- 2. Generar Fixture de Todos los Grupos -->
+                    <form method="POST" action="{% url 'generar_fixture_torneo' torneo.id %}" class="mb-2">
+                        {% csrf_token %}
+                        <input type="hidden" name="tipo_gen" value="todos_los_grupos">
+                        <button type="submit" class="btn btn-custom-accent w-100 py-2 fw-bold text-uppercase fs-8" {% if equipos|length < 2 %}disabled{% endif %}>
+                            <i class="fa-solid fa-calendar-week me-2"></i>2. Generar Fixture de Grupos
+                        </button>
+                    </form>
+
+                    <!-- 3. Generar Cruces Eliminatorios -->
+                    <form method="POST" action="{% url 'generar_cruces_eliminatorios' torneo.id %}" class="mb-2">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-dark w-100 py-2 fw-bold text-uppercase fs-8" data-confirm="¿Generar las llaves de eliminatorias directas basadas en las posiciones de los grupos?">
+                            <i class="fa-solid fa-sitemap me-2"></i>3. Generar Cruces Eliminatorios
+                        </button>
+                    </form>
+
+                    <button type="button" class="btn btn-sm btn-light w-100 text-muted fs-9 border" data-bs-toggle="modal" data-bs-target="#modalGrupoFixture">
+                        <i class="fa-solid fa-plus me-1"></i>Crear Fixture Manual por Grupo
                     </button>
                 {% endif %}
                 {% if equipos|length < 2 %}
@@ -185,6 +211,11 @@
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
+                            <button class="nav-link py-2 fs-8 fw-semibold" id="16vos-tab" data-bs-toggle="tab" data-bs-target="#dieciseisavos-pane" type="button" role="tab" aria-controls="dieciseisavos-pane" aria-selected="false">
+                                16vos ({{ partidos_dieciseisavos.count }})
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
                             <button class="nav-link py-2 fs-8 fw-semibold" id="octavos-tab" data-bs-toggle="tab" data-bs-target="#octavos-pane" type="button" role="tab" aria-controls="octavos-pane" aria-selected="false">
                                 Octavos ({{ partidos_octavos.count }})
                             </button>
@@ -223,6 +254,9 @@
                                     <p class="mb-0">No hay partidos de fase de grupos programados.</p>
                                 </div>
                             {% endif %}
+                        </div>
+                        <div class="tab-pane fade" id="dieciseisavos-pane" role="tabpanel" aria-labelledby="16vos-tab" tabindex="0">
+                            {% include 'matches/partials_torneo_partido_list.html' with matches_list=partidos_dieciseisavos %}
                         </div>
                         <div class="tab-pane fade" id="octavos-pane" role="tabpanel" aria-labelledby="octavos-tab" tabindex="0">
                             {% include 'matches/partials_torneo_partido_list.html' with matches_list=partidos_octavos %}

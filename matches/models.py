@@ -8,6 +8,13 @@ class Torneo(models.Model):
         ('liga', 'Liga (Todos contra todos por fechas)'),
         ('torneo', 'Torneo (Fase de Grupos + Eliminatorias)'),
     )
+    FASE_ELIMINATORIA_CHOICES = (
+        ('dieciseisavos', '16vos de Final'),
+        ('octavos', 'Octavos de Final'),
+        ('cuartos', 'Cuartos de Final'),
+        ('semifinal', 'Semifinales'),
+    )
+
     nombre = models.CharField(max_length=100, verbose_name="Nombre del Torneo / Liga")
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default='liga', verbose_name="Tipo de Campeonato")
     categoria = models.ForeignKey(Categoria, on_delete=models.PROTECT, verbose_name="Categoría")
@@ -18,6 +25,13 @@ class Torneo(models.Model):
     costo_amarilla = models.DecimalField(max_digits=10, decimal_places=2, default=50.00, verbose_name="Costo de Tarjeta Amarilla ($)")
     costo_roja = models.DecimalField(max_digits=10, decimal_places=2, default=150.00, verbose_name="Costo de Tarjeta Roja ($)")
     equipos = models.ManyToManyField(Equipo, related_name='torneos', verbose_name="Equipos Participantes")
+    
+    # Configuración de Fase de Grupos + Eliminatorias
+    numero_grupos = models.IntegerField(default=2, verbose_name="Número de Grupos")
+    clasificados_por_grupo = models.IntegerField(default=2, verbose_name="Clasificados por Grupo")
+    fase_eliminatoria_inicial = models.CharField(max_length=20, choices=FASE_ELIMINATORIA_CHOICES, default='octavos', verbose_name="Fase Eliminatoria Inicial")
+    distribucion_grupos = models.JSONField(default=dict, blank=True, null=True, verbose_name="Distribución de Equipos en Grupos")
+
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -42,6 +56,7 @@ class Partido(models.Model):
     FASE_CHOICES = (
         ('regular', 'Liga / Fecha Regular'),
         ('grupos', 'Fase de Grupos'),
+        ('dieciseisavos', '16vos de Final'),
         ('octavos', 'Octavos de Final'),
         ('cuartos', 'Cuartos de Final'),
         ('semifinal', 'Semifinales'),

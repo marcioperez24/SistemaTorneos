@@ -779,6 +779,7 @@ def detalle_torneo(request, torneo_id):
     # Agrupar partidos por fase o fecha para el UI
     partidos_regular = partidos.filter(fase='regular')
     partidos_grupos = partidos.filter(fase='grupos')
+    partidos_dieciseisavos = partidos.filter(fase='dieciseisavos')
     partidos_octavos = partidos.filter(fase='octavos')
     partidos_cuartos = partidos.filter(fase='cuartos')
     partidos_semis = partidos.filter(fase='semifinal')
@@ -825,6 +826,7 @@ def detalle_torneo(request, torneo_id):
         'partidos': partidos,
         'partidos_regular': partidos_regular,
         'partidos_grupos': partidos_grupos,
+        'partidos_dieciseisavos': partidos_dieciseisavos,
         'partidos_octavos': partidos_octavos,
         'partidos_cuartos': partidos_cuartos,
         'partidos_semis': partidos_semis,
@@ -970,16 +972,236 @@ def generar_fixture_torneo(request, torneo_id):
                             temporada=torneo.temporada,
                             torneo=torneo,
                             fase='grupos',
-                            grupo=grupo_nombre
+                            grupo=grupo_nombre,
+                            organizacion=request.organizacion
                         )
                         partidos_creados += 1
                         
                 equipos_grupo = [equipos_grupo[0]] + [equipos_grupo[-1]] + equipos_grupo[1:-1]
                 
             messages.success(request, f"Fixture para '{grupo_nombre}' generado exitosamente. Se crearon {partidos_creados} partidos.")
+
+        elif tipo_gen == 'todos_los_grupos':
+            import random
+            if not torneo.distribucion_grupos:
+                num_grupos = max(2, torneo.numero_grupos or 2)
+                group_names = [f"Grupo {chr(65 + i)}" for i in range(num_grupos)]
+                equipos_shuffled = list(equipos)
+                random.shuffle(equipos_shuffled)
+                distribucion = {g: [] for g in group_names}
+                for idx, eq in enumerate(equipos_shuffled):
+                    distribucion[group_names[idx % num_grupos]].append(eq.id)
+                torneo.distribucion_grupos = distribucion
+                torneo.save()
+                
+            distribucion = torneo.distribucion_grupos
+            partidos_totales = 0
+            fecha_inicial = timezone.now() + timedelta(days=1)
+            
+            for g_name, eq_ids in distribucion.items():
+                eqs_grupo = [e for e in equipos if e.id in eq_ids]
+                if len(eqs_grupo) < 2:
+                    continue
+                n = len(eqs_grupo)
+                if n % 2 != 0:
+                    eqs_grupo.append(None)
+                    n += 1
+                fechas = n - 1
+                partidos_por_fecha = n // 2
+                for f in range(fechas):
+                    for p in range(partidos_por_fecha):
+                        home = eqs_grupo[p]
+                        away = eqs_grupo[n - 1 - p]
+                        if home is not None and away is not None:
+                            if f % 2 == 1:
+                                home, away = away, home
+                            vocal_asig = vocales[partidos_totales % len(vocales)]
+                            arbitro_asig = arbitros[partidos_totales % len(arbitros)]
+                            hora_partido = fecha_inicial.replace(hour=14, minute=0, second=0, microsecond=0) + timedelta(days=f * 7, hours=(partidos_totales % 4) * 2)
+                            Partido.objects.create(
+                                equipo_local=home,
+                                equipo_visitante=away,
+                                fecha_hora=hora_partido,
+                                estadio="Campo Central",
+                                vocal=vocal_asig,
+                                arbitro=arbitro_asig,
+                                jornada=f + 1,
+                                temporada=torneo.temporada,
+                                torneo=torneo,
+                                fase='grupos',
+                                grupo=g_name,
+                                organizacion=request.organizacion
+                            )
+                            partidos_totales += 1
+                    eqs_grupo = [eqs_grupo[0]] + [eqs_grupo[-1]] + eqs_grupo[1:-1]
+                    
+            messages.success(request, f"Fixture multigrupo generado exitosamente. Se crearon {partidos_totales} partidos en todos los grupos.")
             
         return redirect('detalle_torneo', torneo_id=torneo.id)
         
+    return redirect('detalle_torneo', torneo_id=torneo.id)
+
+
+@login_required
+def sortear_grupos_torneo(request, torneo_id):
+    if request.user.role not in ['superadmin', 'comision']:
+        messages.error(request, "No tienes autorización para administrar grupos.")
+        return redirect('partidos_lista')
+        
+    torneo = get_object_or_404(Torneo, id=torneo_id)
+    equipos = list(torneo.equipos.all())
+    
+    if len(equipos) < 2:
+        messages.error(request, "Se necesitan al menos 2 equipos para realizar el sorteo de grupos.")
+        return redirect('detalle_torneo', torneo_id=torneo.id)
+        
+    import random
+    num_grupos = max(2, torneo.numero_grupos or 2)
+    group_names = [f"Grupo {chr(65 + i)}" for i in range(num_grupos)]
+    
+    random.shuffle(equipos)
+    distribucion = {g: [] for g in group_names}
+    for idx, eq in enumerate(equipos):
+        g_name = group_names[idx % num_grupos]
+        distribucion[g_name].append(eq.id)
+        
+    torneo.distribucion_grupos = distribucion
+    torneo.save()
+    
+    messages.success(request, f"Se distribuyeron {len(equipos)} equipos en {num_grupos} grupos ({', '.join(group_names)}) exitosamente.")
+    return redirect('detalle_torneo', torneo_id=torneo.id)
+
+
+@login_required
+def generar_cruces_eliminatorios(request, torneo_id):
+    if request.user.role not in ['superadmin', 'comision']:
+        messages.error(request, "No tienes autorización para generar cruces de eliminatorias.")
+        return redirect('partidos_lista')
+        
+    torneo = get_object_or_404(Torneo, id=torneo_id)
+    vocales = list(User.objects.filter(role='vocal'))
+    arbitros = list(User.objects.filter(role='arbitro'))
+    
+    if not vocales or not arbitros:
+        messages.error(request, "Debe registrar al menos un Vocal de Mesa y un Árbitro en el sistema primero.")
+        return redirect('detalle_torneo', torneo_id=torneo.id)
+
+    # Calcular posiciones de cada grupo
+    partidos_grupos = Partido.objects.filter(torneo=torneo, fase='grupos')
+    grupos_dict = {}
+    for p in partidos_grupos:
+        g_name = p.grupo or "Grupo A"
+        grupos_dict.setdefault(g_name, set()).add(p.equipo_local)
+        grupos_dict.setdefault(g_name, set()).add(p.equipo_visitante)
+        
+    if not grupos_dict and torneo.distribucion_grupos:
+        for g_name, eq_ids in torneo.distribucion_grupos.items():
+            eqs = list(Equipo.objects.filter(id__in=eq_ids))
+            if eqs:
+                grupos_dict[g_name] = set(eqs)
+                
+    if not grupos_dict:
+        messages.error(request, "No se encontraron grupos configurados ni partidos de grupo jugados.")
+        return redirect('detalle_torneo', torneo_id=torneo.id)
+
+    clasificados_por_grupo = {}
+    num_clasifican = max(1, torneo.clasificados_por_grupo or 2)
+    
+    for g_name, eq_set in sorted(grupos_dict.items()):
+        grupo_tabla = []
+        for eq in eq_set:
+            partidos_jugados = Partido.objects.filter(
+                Q(equipo_local=eq) | Q(equipo_visitante=eq),
+                torneo=torneo,
+                fase='grupos',
+                grupo=g_name,
+                estado='finalizado'
+            )
+            
+            pj = partidos_jugados.count()
+            pg = pe = pp = gf = gc = 0
+            for p in partidos_jugados:
+                if p.equipo_local == eq:
+                    gf += p.goles_local
+                    gc += p.goles_visitante
+                    if p.goles_local > p.goles_visitante: pg += 1
+                    elif p.goles_local == p.goles_visitante: pe += 1
+                    else: pp += 1
+                else:
+                    gf += p.goles_visitante
+                    gc += p.goles_local
+                    if p.goles_visitante > p.goles_local: pg += 1
+                    elif p.goles_local == p.goles_visitante: pe += 1
+                    else: pp += 1
+            pts = (pg * 3) + pe
+            gd = gf - gc
+            grupo_tabla.append({
+                'equipo': eq,
+                'pts': pts,
+                'gd': gd,
+                'gf': gf
+            })
+        grupo_tabla = sorted(grupo_tabla, key=lambda x: (-x['pts'], -x['gd'], -x['gf']))
+        clasificados_por_grupo[g_name] = [item['equipo'] for item in grupo_tabla[:num_clasifican]]
+
+    g_names = sorted(list(clasificados_por_grupo.keys()))
+    matchups = []
+    
+    for i in range(0, len(g_names), 2):
+        g1 = g_names[i]
+        g2 = g_names[i + 1] if i + 1 < len(g_names) else g_names[0]
+        
+        eqs1 = clasificados_por_grupo[g1]
+        eqs2 = clasificados_por_grupo[g2]
+        
+        if len(eqs1) > 0 and len(eqs2) > 1:
+            matchups.append((eqs1[0], eqs2[1]))
+        elif len(eqs1) > 0 and len(eqs2) > 0:
+            matchups.append((eqs1[0], eqs2[0]))
+            
+        if len(eqs2) > 0 and len(eqs1) > 1:
+            matchups.append((eqs2[0], eqs1[1]))
+
+    total_clasificados = len(matchups) * 2
+    if total_clasificados > 16:
+        fase_target = 'dieciseisavos'
+    elif total_clasificados > 8:
+        fase_target = 'octavos'
+    elif total_clasificados > 4:
+        fase_target = 'cuartos'
+    elif total_clasificados > 2:
+        fase_target = 'semifinal'
+    else:
+        fase_target = 'final'
+        
+    if torneo.fase_eliminatoria_inicial:
+        fase_target = torneo.fase_eliminatoria_inicial
+
+    Partido.objects.filter(torneo=torneo, fase=fase_target, estado='programado').delete()
+    
+    fecha_inicial = timezone.now() + timedelta(days=2)
+    partidos_creados = 0
+    for idx, (home, away) in enumerate(matchups):
+        vocal_asig = vocales[idx % len(vocales)]
+        arbitro_asig = arbitros[idx % len(arbitros)]
+        hora_partido = fecha_inicial.replace(hour=15, minute=0, second=0, microsecond=0) + timedelta(hours=idx * 2)
+        
+        Partido.objects.create(
+            equipo_local=home,
+            equipo_visitante=away,
+            fecha_hora=hora_partido,
+            estadio="Estadio Principal",
+            vocal=vocal_asig,
+            arbitro=arbitro_asig,
+            jornada=1,
+            temporada=torneo.temporada,
+            torneo=torneo,
+            fase=fase_target,
+            organizacion=request.organizacion
+        )
+        partidos_creados += 1
+
+    messages.success(request, f"Cruces eliminatorios de {fase_target.upper()} generados exitosamente. Se crearon {partidos_creados} partidos de eliminación directa.")
     return redirect('detalle_torneo', torneo_id=torneo.id)
 
 

@@ -141,7 +141,7 @@
                             
                             <div class="row">
                                 {% for field in form %}
-                                    <div class="{% if field.name == 'equipos' or field.name == 'nombre' %}col-12{% else %}col-md-6{% endif %} mb-4">
+                                    <div class="{% if field.name == 'equipos' or field.name == 'nombre' %}col-12{% else %}col-md-6{% endif %} mb-4 {% if field.name == 'numero_grupos' or field.name == 'clasificados_por_grupo' or field.name == 'fase_eliminatoria_inicial' %}config-grupo-field{% endif %}">
                                         <label class="form-label fw-bold text-secondary d-flex justify-content-between mb-1 fs-7">
                                             <span>{{ field.label }}</span>
                                             {% if not field.field.required %}
@@ -339,6 +339,25 @@
             updateSelectedCount();
         }
         
+        function toggleGroupConfigFields() {
+            const tipoSelect = document.getElementById('id_tipo_competencia');
+            const groupFields = document.querySelectorAll('.config-grupo-field');
+            if (!tipoSelect) return;
+            groupFields.forEach(el => {
+                if (tipoSelect.value === 'torneo') {
+                    el.style.display = 'block';
+                } else {
+                    el.style.display = 'none';
+                }
+            });
+        }
+
+        const tipoSelect = document.getElementById('id_tipo_competencia');
+        if (tipoSelect) {
+            tipoSelect.addEventListener('change', toggleGroupConfigFields);
+            toggleGroupConfigFields();
+        }
+
         // Initial filter on load
         filterTeamsByCategory();
 
