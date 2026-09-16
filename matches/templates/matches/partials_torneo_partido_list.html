@@ -1,60 +1,116 @@
-<div class="list-group list-group-flush">
+<div class="d-flex flex-column gap-3">
     {% for partido in matches_list %}
-        <div class="list-group-item px-3 py-3 border-bottom d-flex align-items-center justify-content-between flex-wrap gap-3">
-            <div class="d-flex align-items-center flex-grow-1 flex-wrap g-3">
-                <!-- Local vs Visitante -->
-                <div class="d-flex align-items-center justify-content-center text-center px-2 py-1 rounded bg-light border me-3" style="min-width: 250px;">
-                    <span class="fw-bold text-dark fs-7 px-2 text-truncate" style="max-width: 110px;">{{ partido.equipo_local.nombre }}</span>
-                    <span class="badge bg-dark font-monospace text-white px-2.5 py-1.5 fs-7 mx-1 shadow-sm">{{ partido.goles_local }} - {{ partido.goles_visitante }}</span>
-                    <span class="fw-bold text-dark fs-7 px-2 text-truncate" style="max-width: 110px;">{{ partido.equipo_visitante.nombre }}</span>
-                </div>
+        <div class="card card-custom p-3 border shadow-sm bg-white hover-shadow transition-all">
+            <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
                 
-                <!-- Detalles Hora y Lugar -->
-                <div class="fs-8 text-secondary">
-                    <div class="mb-0.5"><i class="fa-solid fa-calendar me-1 text-primary"></i><strong>{{ partido.fecha_hora|date:"d/m/Y H:i" }}</strong></div>
-                    <div><i class="fa-solid fa-map-marker-alt me-1 text-danger"></i>{{ partido.estadio }}</div>
+                <!-- Info Torneo / Jornada / Estado Badge (Top on mobile) -->
+                <div class="w-100 d-md-none d-flex justify-content-between align-items-center pb-2 border-bottom">
+                    <span class="badge bg-light text-secondary border font-monospace fs-9">
+                        <i class="fa-regular fa-calendar-days me-1"></i>{{ partido.fecha_hora|date:"d/m/Y H:i" }}
+                    </span>
+                    {% if partido.estado == 'programado' %}
+                        <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5 py-1 fs-9 font-semibold"><i class="fa-regular fa-clock me-1"></i>Programado</span>
+                    {% elif partido.estado == 'en_curso' %}
+                        <span class="badge bg-danger text-white rounded-pill px-2.5 py-1 fs-9 font-semibold animate-pulse"><i class="fa-solid fa-circle-dot me-1"></i>En Vivo</span>
+                    {% else %}
+                        <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2.5 py-1 fs-9 font-semibold"><i class="fa-solid fa-circle-check me-1"></i>Finalizado</span>
+                    {% endif %}
                 </div>
-                
-                <!-- Vocal / Arbitro -->
-                <div class="fs-9 text-muted ms-md-4">
-                    <div>Vocal: <strong>{{ partido.vocal.get_full_name|default:partido.vocal.username }}</strong></div>
-                    <div>Árbitro: <strong>{{ partido.arbitro.get_full_name|default:partido.arbitro.username }}</strong></div>
-                </div>
-            </div>
 
-            <!-- Estado y Acciones -->
-            <div class="d-flex align-items-center gap-2">
-                {% if partido.estado == 'programado' %}
-                    <span class="badge bg-secondary-light text-secondary px-2.5 py-1.5 rounded-pill fs-9 font-semibold me-2"><i class="fa-regular fa-clock me-1"></i>Programado</span>
-                    {% if user.role in 'superadmin,comision' or user == partido.vocal %}
-                        <a href="{% url 'match_day' partido.id %}" class="btn btn-sm btn-custom-accent rounded-pill px-3 py-1.5 fs-8 shadow-sm">
-                            <i class="fa-solid fa-play me-1"></i>Iniciar
+                <!-- Equipos y Marcador -->
+                <div class="d-flex align-items-center justify-content-center flex-grow-1 w-100 w-md-auto py-1">
+                    <!-- Local -->
+                    <div class="d-flex align-items-center justify-content-end text-end flex-1" style="min-width: 120px;">
+                        <span class="fw-bold text-dark fs-7 me-2 text-truncate" style="max-width: 130px;" title="{{ partido.equipo_local.nombre }}">{{ partido.equipo_local.nombre }}</span>
+                        {% if partido.equipo_local.logo %}
+                            <img src="{{ partido.equipo_local.logo.url }}" alt="{{ partido.equipo_local.nombre }}" class="rounded-circle border shadow-sm flex-shrink-0" style="width: 36px; height: 36px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm flex-shrink-0" style="width: 36px; height: 36px; font-size: 0.75rem;">
+                                {{ partido.equipo_local.nombre|slice:":2"|upper }}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Marcador / VS -->
+                    <div class="px-3 text-center flex-shrink-0">
+                        {% if partido.estado == 'programado' %}
+                            <span class="badge bg-light text-muted border rounded-pill px-3 py-1.5 fw-extrabold fs-7 shadow-2xs">VS</span>
+                        {% else %}
+                            <span class="badge bg-dark text-white rounded-pill px-3 py-1.5 fw-bold fs-6 shadow-sm font-monospace">
+                                {{ partido.goles_local }} - {{ partido.goles_visitante }}
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Visitante -->
+                    <div class="d-flex align-items-center justify-content-start text-start flex-1" style="min-width: 120px;">
+                        {% if partido.equipo_visitante.logo %}
+                            <img src="{{ partido.equipo_visitante.logo.url }}" alt="{{ partido.equipo_visitante.nombre }}" class="rounded-circle border shadow-sm flex-shrink-0 me-2" style="width: 36px; height: 36px; object-fit: cover;">
+                        {% else %}
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm flex-shrink-0 me-2" style="width: 36px; height: 36px; font-size: 0.75rem;">
+                                {{ partido.equipo_visitante.nombre|slice:":2"|upper }}
+                            </div>
+                        {% endif %}
+                        <span class="fw-bold text-dark fs-7 text-truncate" style="max-width: 130px;" title="{{ partido.equipo_visitante.nombre }}">{{ partido.equipo_visitante.nombre }}</span>
+                    </div>
+                </div>
+
+                <!-- Detalles Horario, Lugar, Vocal, Arbitro (Desktop & Mobile) -->
+                <div class="d-flex flex-column gap-1 text-secondary fs-8 border-start border-start-md ps-0 ps-md-3 w-100 w-md-auto">
+                    <div class="d-none d-md-flex align-items-center gap-2">
+                        <span class="badge bg-light text-secondary border font-monospace fs-9">
+                            <i class="fa-regular fa-calendar-days me-1 text-primary"></i>{{ partido.fecha_hora|date:"d/m/Y H:i" }}
+                        </span>
+                        {% if partido.estado == 'programado' %}
+                            <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5 py-1 fs-9 font-semibold"><i class="fa-regular fa-clock me-1"></i>Programado</span>
+                        {% elif partido.estado == 'en_curso' %}
+                            <span class="badge bg-danger text-white rounded-pill px-2.5 py-1 fs-9 font-semibold animate-pulse"><i class="fa-solid fa-circle-dot me-1"></i>En Vivo</span>
+                        {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2.5 py-1 fs-9 font-semibold"><i class="fa-solid fa-circle-check me-1"></i>Finalizado</span>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex align-items-center gap-1 text-truncate">
+                        <i class="fa-solid fa-map-location-dot text-danger me-1"></i>
+                        <span>{{ partido.estadio }}</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 fs-9 text-muted flex-wrap">
+                        <span><i class="fa-solid fa-clipboard-user me-1 text-info"></i>Vocal: <strong>{{ partido.vocal.get_full_name|default:partido.vocal.username|default:"Sin asignar" }}</strong></span>
+                        <span><i class="fa-solid fa-whistle me-1 text-warning"></i>Árbitro: <strong>{{ partido.arbitro.get_full_name|default:partido.arbitro.username|default:"Sin asignar" }}</strong></span>
+                    </div>
+                </div>
+
+                <!-- Botones de Acción (Responsive) -->
+                <div class="d-flex align-items-center justify-content-end gap-2 w-100 w-md-auto pt-2 pt-md-0 border-top border-top-md-0">
+                    {% if partido.estado == 'programado' %}
+                        {% if user.role in 'superadmin,comision' or user == partido.vocal %}
+                            <a href="{% url 'match_day' partido.id %}" class="btn btn-sm btn-custom-accent rounded-pill px-3 py-1.5 fs-8 shadow-sm flex-grow-1 flex-md-grow-0">
+                                <i class="fa-solid fa-play me-1"></i>Iniciar
+                            </a>
+                        {% endif %}
+                        {% if user.role in 'superadmin,comision' %}
+                            <a href="{% url 'editar_partido' partido.id %}" class="btn btn-sm btn-outline-secondary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="Editar Partido">
+                                <i class="fa-solid fa-pen fs-9"></i>
+                            </a>
+                        {% endif %}
+                    {% elif partido.estado == 'en_curso' %}
+                        {% if user.role in 'superadmin,comision' or user == partido.vocal %}
+                            <a href="{% url 'match_day' partido.id %}" class="btn btn-sm btn-danger rounded-pill px-3 py-1.5 fs-8 shadow-sm flex-grow-1 flex-md-grow-0">
+                                <i class="fa-solid fa-clipboard-check me-1"></i>Mesa Vocal
+                            </a>
+                        {% endif %}
+                    {% else %}
+                        <a href="{% url 'detalle_partido' partido.id %}" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1.5 fs-8 flex-grow-1 flex-md-grow-0">
+                            <i class="fa-solid fa-file-contract me-1"></i>Ver Acta
                         </a>
                     {% endif %}
-                    {% if user.role in 'superadmin,comision' %}
-                        <a href="{% url 'editar_partido' partido.id %}" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1.5 fs-8" title="Editar Partido">
-                            <i class="fa-solid fa-pen"></i>
-                        </a>
-                    {% endif %}
-                {% elif partido.estado == 'en_curso' %}
-                    <span class="badge bg-danger-light text-danger px-2.5 py-1.5 rounded-pill fs-9 font-semibold me-2"><i class="fa-solid fa-circle-play me-1 animate__animated animate__flash animate__infinite"></i>En Vivo</span>
-                    {% if user.role in 'superadmin,comision' or user == partido.vocal %}
-                        <a href="{% url 'match_day' partido.id %}" class="btn btn-sm btn-danger rounded-pill px-3 py-1.5 fs-8 shadow-sm">
-                            <i class="fa-solid fa-clipboard-check me-1"></i>Vocalía
-                        </a>
-                    {% endif %}
-                {% else %}
-                    <span class="badge bg-success-light text-success px-2.5 py-1.5 rounded-pill fs-9 font-semibold me-2"><i class="fa-solid fa-circle-check me-1"></i>Finalizado</span>
-                    <a href="{% url 'detalle_partido' partido.id %}" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1.5 fs-8">
-                        <i class="fa-solid fa-file-contract me-1"></i>Acta
-                    </a>
-                {% endif %}
+                </div>
+
             </div>
         </div>
     {% empty %}
-        <div class="text-center py-4 text-muted small">
-            <i class="fa-regular fa-calendar-times d-block fa-2x mb-2 text-secondary-50"></i>
-            No hay partidos en esta fase o jornada.
+        <div class="text-center py-4 text-muted card card-custom border-dashed">
+            <i class="fa-regular fa-calendar-xmark d-block fa-2x mb-2 text-secondary-50"></i>
+            <span>No hay partidos programados en esta sección.</span>
         </div>
     {% endfor %}
 </div>

@@ -2,28 +2,46 @@
 {% block title %}Detalle del Torneo - {{ torneo.nombre }} - Sistema Deportivo{% endblock %}
 
 {% block content %}
-<div class="gradient-header text-center py-5 shadow-sm">
-    <div class="container">
-        <div class="d-flex justify-content-center align-items-center gap-3 mb-2">
-            <a href="{% url 'gestion_torneos' %}" class="btn btn-outline-light rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm" style="width: 40px; height: 40px;">
+<div class="container mt-4 mb-5">
+    <!-- Header de Torneo -->
+    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between pb-3 border-bottom mb-4 gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <a href="{% url 'gestion_torneos' %}" class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 42px; height: 42px;" title="Volver a Torneos">
                 <i class="fa-solid fa-arrow-left"></i>
             </a>
-            <h1 class="fw-bold mb-0 display-6">{{ torneo.nombre|upper }}</h1>
+            <div>
+                <h2 class="fw-bold text-dark mb-1 d-flex align-items-center flex-wrap gap-2">
+                    <span>{{ torneo.nombre|upper }}</span>
+                    {% if torneo.tipo == 'liga' %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill fs-9 fw-bold px-3">
+                            <i class="fa-solid fa-ranking-star me-1"></i>Formato Liga
+                        </span>
+                    {% else %}
+                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill fs-9 fw-bold px-3">
+                            <i class="fa-solid fa-sitemap me-1"></i>Grupos + Eliminatorias
+                        </span>
+                    {% endif %}
+                </h2>
+                <div class="text-muted small d-flex flex-wrap align-items-center gap-2">
+                    <span><i class="fa-solid fa-tag me-1 text-primary"></i>Categoría: <strong>{{ torneo.get_categoria_display }}</strong></span>
+                    <span>•</span>
+                    <span><i class="fa-solid fa-calendar me-1 text-info"></i>Temporada: <strong>{{ torneo.temporada }}</strong></span>
+                    <span>•</span>
+                    <span><i class="fa-solid fa-people-group me-1 text-secondary"></i>Equipos: <strong>{{ equipos|length }}</strong></span>
+                </div>
+            </div>
         </div>
-        <p class="text-white-50 mb-0 fs-5">
-            Categoría: <strong class="text-warning">{{ torneo.get_categoria_display }}</strong> | Temporada: <strong>{{ torneo.temporada }}</strong> | Formato: 
-            <strong>
-                {% if torneo.tipo == 'liga' %}
-                    Liga (Todos contra todos)
-                {% else %}
-                    Torneo de Fases (Grupos + Eliminatorias)
-                {% endif %}
-            </strong>
-        </p>
+        
+        <div class="d-flex align-items-center gap-2 w-100 w-md-auto">
+            <a href="{% url 'estadisticas_torneo' torneo.id %}" class="btn btn-outline-primary rounded-pill px-3 py-2 fw-semibold fs-8 w-100 w-md-auto">
+                <i class="fa-solid fa-chart-line me-1.5"></i>Estadísticas
+            </a>
+            <a href="{% url 'partidos_lista' %}?torneo={{ torneo.id }}" class="btn btn-primary rounded-pill px-3 py-2 fw-bold fs-8 w-100 w-md-auto shadow-sm">
+                <i class="fa-solid fa-ranking-star me-1.5"></i>Ver Tablas y Resultados
+            </a>
+        </div>
     </div>
-</div>
 
-<div class="container my-5">
     <div class="row g-4">
         <!-- Panel de Equipos Participantes -->
         <div class="col-lg-4">
@@ -189,7 +207,7 @@
                                         </button>
                                     </h2>
                                     <div id="collapseJornada{{ jornada }}" class="accordion-collapse collapse show" aria-labelledby="headingJornada{{ jornada }}" data-bs-parent="#accordionFixture">
-                                        <div class="accordion-body bg-white p-0">
+                                        <div class="accordion-body bg-white p-2">
                                             {% include 'matches/partials_torneo_partido_list.html' with matches_list=lista_partidos %}
                                         </div>
                                     </div>
@@ -203,39 +221,41 @@
                         </div>
                     {% endif %}
                 {% else %}
-                    <!-- UI Torneo: Pestañas de Fases -->
-                    <ul class="nav nav-pills nav-fill mb-4 p-1 bg-light rounded-3" id="tabFases" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active py-2 fs-8 fw-semibold" id="grupos-tab" data-bs-toggle="tab" data-bs-target="#grupos-pane" type="button" role="tab" aria-controls="grupos-pane" aria-selected="true">
-                                Grupos ({{ partidos_grupos.count }})
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link py-2 fs-8 fw-semibold" id="16vos-tab" data-bs-toggle="tab" data-bs-target="#dieciseisavos-pane" type="button" role="tab" aria-controls="dieciseisavos-pane" aria-selected="false">
-                                16vos ({{ partidos_dieciseisavos.count }})
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link py-2 fs-8 fw-semibold" id="octavos-tab" data-bs-toggle="tab" data-bs-target="#octavos-pane" type="button" role="tab" aria-controls="octavos-pane" aria-selected="false">
-                                Octavos ({{ partidos_octavos.count }})
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link py-2 fs-8 fw-semibold" id="cuartos-tab" data-bs-toggle="tab" data-bs-target="#cuartos-pane" type="button" role="tab" aria-controls="cuartos-pane" aria-selected="false">
-                                Cuartos ({{ partidos_cuartos.count }})
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link py-2 fs-8 fw-semibold" id="semis-tab" data-bs-toggle="tab" data-bs-target="#semis-pane" type="button" role="tab" aria-controls="semis-pane" aria-selected="false">
-                                Semis ({{ partidos_semis.count }})
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link py-2 fs-8 fw-semibold" id="final-tab" data-bs-toggle="tab" data-bs-target="#final-pane" type="button" role="tab" aria-controls="final-pane" aria-selected="false">
-                                Final ({{ partidos_final.count }})
-                            </button>
-                        </li>
-                    </ul>
+                    <!-- UI Torneo: Pestañas de Fases Responsive -->
+                    <div class="overflow-x-auto pb-2 mb-4">
+                        <ul class="nav nav-pills flex-nowrap bg-light p-1.5 rounded-4 shadow-2xs gap-1" id="tabFases" role="tablist" style="min-width: 500px;">
+                            <li class="nav-item flex-fill text-center" role="presentation">
+                                <button class="nav-link active py-2 fs-8 fw-bold w-100 rounded-pill" id="grupos-tab" data-bs-toggle="tab" data-bs-target="#grupos-pane" type="button" role="tab" aria-controls="grupos-pane" aria-selected="true">
+                                    Grupos ({{ partidos_grupos.count }})
+                                </button>
+                            </li>
+                            <li class="nav-item flex-fill text-center" role="presentation">
+                                <button class="nav-link py-2 fs-8 fw-bold w-100 rounded-pill" id="16vos-tab" data-bs-toggle="tab" data-bs-target="#dieciseisavos-pane" type="button" role="tab" aria-controls="dieciseisavos-pane" aria-selected="false">
+                                    16vos ({{ partidos_dieciseisavos.count }})
+                                </button>
+                            </li>
+                            <li class="nav-item flex-fill text-center" role="presentation">
+                                <button class="nav-link py-2 fs-8 fw-bold w-100 rounded-pill" id="octavos-tab" data-bs-toggle="tab" data-bs-target="#octavos-pane" type="button" role="tab" aria-controls="octavos-pane" aria-selected="false">
+                                    Octavos ({{ partidos_octavos.count }})
+                                </button>
+                            </li>
+                            <li class="nav-item flex-fill text-center" role="presentation">
+                                <button class="nav-link py-2 fs-8 fw-bold w-100 rounded-pill" id="cuartos-tab" data-bs-toggle="tab" data-bs-target="#cuartos-pane" type="button" role="tab" aria-controls="cuartos-pane" aria-selected="false">
+                                    Cuartos ({{ partidos_cuartos.count }})
+                                </button>
+                            </li>
+                            <li class="nav-item flex-fill text-center" role="presentation">
+                                <button class="nav-link py-2 fs-8 fw-bold w-100 rounded-pill" id="semis-tab" data-bs-toggle="tab" data-bs-target="#semis-pane" type="button" role="tab" aria-controls="semis-pane" aria-selected="false">
+                                    Semis ({{ partidos_semis.count }})
+                                </button>
+                            </li>
+                            <li class="nav-item flex-fill text-center" role="presentation">
+                                <button class="nav-link py-2 fs-8 fw-bold w-100 rounded-pill" id="final-tab" data-bs-toggle="tab" data-bs-target="#final-pane" type="button" role="tab" aria-controls="final-pane" aria-selected="false">
+                                    Final ({{ partidos_final.count }})
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
 
                     <div class="tab-content" id="tabFasesContent">
                         <div class="tab-pane fade show active" id="grupos-pane" role="tabpanel" aria-labelledby="grupos-tab" tabindex="0">
@@ -243,14 +263,20 @@
                                 {% regroup partidos_grupos by grupo as partidos_grupos_regrouped %}
                                 {% for g in partidos_grupos_regrouped %}
                                     <div class="mb-4">
-                                        <h5 class="fw-bold text-success border-bottom pb-2 mb-3">
-                                            <i class="fa-solid fa-circle-nodes me-2"></i>{{ g.grouper|default:"Fase de Grupos" }}
-                                        </h5>
+                                        <div class="d-flex align-items-center justify-content-between bg-light p-3 rounded-3 border mb-3">
+                                            <h5 class="fw-bold text-primary mb-0 d-flex align-items-center">
+                                                <i class="fa-solid fa-circle-nodes me-2 text-primary"></i>{{ g.grouper|default:"Fase de Grupos" }}
+                                            </h5>
+                                            <span class="badge bg-primary text-white rounded-pill px-3 py-1.5 font-monospace fs-9 shadow-2xs">
+                                                {{ g.list|length }} partidos
+                                            </span>
+                                        </div>
                                         {% include 'matches/partials_torneo_partido_list.html' with matches_list=g.list %}
                                     </div>
                                 {% endfor %}
                             {% else %}
-                                <div class="text-center py-4 text-muted">
+                                <div class="text-center py-4 text-muted card card-custom border-dashed">
+                                    <i class="fa-regular fa-calendar-xmark d-block fa-2x mb-2 text-secondary-50"></i>
                                     <p class="mb-0">No hay partidos de fase de grupos programados.</p>
                                 </div>
                             {% endif %}
