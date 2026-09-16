@@ -260,6 +260,47 @@
 </div>
 
 <div class="container mb-5">
+    <!-- Banner de Enlace de Invitación recién generado -->
+    {% if nuevo_enlace %}
+        <div class="card border-0 bg-success-subtle shadow-sm rounded-4 mb-4 overflow-hidden position-relative border-start border-success border-4">
+            <div class="card-body p-4">
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style="width: 54px; height: 54px;">
+                            <i class="fa-solid fa-link fa-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-bold text-success-emphasis mb-1">¡Enlace de Invitación Creado Exitosamente!</h4>
+                            <p class="text-secondary mb-0 small">
+                                Comparte este enlace con tus jugadores o equipo técnico para que completen su registro. El enlace es válido por 48 horas.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <a href="https://wa.me/?text={{ '¡Hola! Regístrate en nuestro equipo ingresando a este enlace: '|urlencode }}{{ nuevo_enlace|urlencode }}" 
+                           target="_blank" 
+                           class="btn btn-success fw-bold d-flex align-items-center gap-2 py-2.5 px-3.5 shadow-sm rounded-3">
+                            <i class="fa-brands fa-whatsapp fs-5"></i>
+                            <span>Enviar por WhatsApp</span>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <label class="form-label text-uppercase font-monospace fw-bold text-muted mb-1" style="font-size: 0.72rem;">Copia tu enlace único:</label>
+                    <div class="input-group input-group-lg shadow-sm">
+                        <span class="input-group-text bg-white border-end-0 text-success"><i class="fa-solid fa-globe"></i></span>
+                        <input type="text" class="form-control bg-white font-monospace fs-6 fw-bold border-start-0 border-end-0 text-dark" id="inviteLinkInputTop" value="{{ nuevo_enlace }}" readonly>
+                        <button class="btn btn-primary fw-bold px-4 d-flex align-items-center gap-2" type="button" id="copyLinkBtnTop" onclick="copyInviteLinkTop()">
+                            <i class="fa-regular fa-copy"></i>
+                            <span id="copyBtnText">Copiar Enlace</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
     {% if not equipos %}
         <div class="row justify-content-center">
             <div class="col-md-8 text-center my-5 py-5">
@@ -852,13 +893,38 @@
         modal.show();
     }
 
-    function copyInviteLink() {
-        var copyText = document.getElementById("inviteLinkInput");
-        copyText.select();
-        copyText.setSelectionRange(0, 99999); // For mobile devices
-        navigator.clipboard.writeText(copyText.value);
-        alert("Enlace de invitación copiado en el portapapeles.");
+    function copyInviteLinkTop() {
+        var copyText = document.getElementById("inviteLinkInputTop") || document.getElementById("inviteLinkInput");
+        if (copyText) {
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(copyText.value);
+            
+            var btnText = document.getElementById("copyBtnText");
+            if (btnText) {
+                btnText.innerHTML = '<i class="fa-solid fa-check me-1"></i>¡Copiado!';
+                setTimeout(function() {
+                    btnText.innerHTML = 'Copiar Enlace';
+                }, 3000);
+            } else {
+                alert("Enlace de invitación copiado al portapapeles.");
+            }
+        }
     }
+
+    function copyInviteLink() {
+        copyInviteLinkTop();
+    }
+
+    {% if nuevo_enlace_equipo_id %}
+    document.addEventListener('DOMContentLoaded', function() {
+        var modalEl = document.getElementById('modalGestionEquipo{{ nuevo_enlace_equipo_id }}');
+        if (modalEl) {
+            var modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+    });
+    {% endif %}
 
     // LÓGICA DE ALINEACIÓN TÁCTICA
     let activeEquipoId = null;
