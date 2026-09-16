@@ -186,7 +186,10 @@
                 <p class="lead mb-0 text-white-50">Gestiona tu equipo, genera invitaciones de jugadores y monitorea su registro.</p>
             </div>
             {% if request.user.role != 'jugador' %}
-            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <div class="col-md-5 text-md-end mt-3 mt-md-0 d-flex justify-content-md-end gap-2 flex-wrap">
+                <button type="button" class="btn btn-outline-light py-2.5 px-3 shadow fw-bold border-2" data-bs-toggle="modal" data-bs-target="#modalCargaMasivaEquipos">
+                    <i class="fa-solid fa-file-excel text-success me-2 fs-6"></i>Carga Masiva (Excel)
+                </button>
                 <a href="{% url 'crear_equipo' %}" class="btn btn-custom-accent py-2.5 px-4 shadow">
                     <i class="fa-solid fa-plus me-2"></i>Registrar Nuevo Equipo
                 </a>
@@ -1107,4 +1110,74 @@
         });
     }
 </script>
+
+<!-- Modal: Carga Masiva de Equipos vía Excel -->
+<div class="modal fade" id="modalCargaMasivaEquipos" tabindex="-1" aria-labelledby="modalCargaMasivaEquiposLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-gradient bg-primary text-white border-0 rounded-top-4 p-4">
+                <div class="d-flex align-items-center">
+                    <div class="bg-white text-primary rounded-circle p-3 me-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 52px; height: 52px;">
+                        <i class="fa-solid fa-file-excel fa-xl text-success"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-0 text-white" id="modalCargaMasivaEquiposLabel">Carga Masiva de Equipos</h4>
+                        <p class="text-white-50 mb-0 small">Importación inteligente mediante hoja de cálculo Excel (.xlsx)</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-4">
+                    <!-- Paso 1 -->
+                    <div class="col-md-6">
+                        <div class="card h-100 border-0 bg-light rounded-4 p-3.5 shadow-sm text-center">
+                            <div class="bg-primary-subtle text-primary rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                <i class="fa-solid fa-file-arrow-down fa-lg"></i>
+                            </div>
+                            <h5 class="fw-bold mb-2 text-dark">Paso 1: Descargar Plantilla</h5>
+                            <p class="text-muted fs-8 mb-3">Descarga el formato Excel preparado con las **categorías habilitadas** de tu organización y listas desplegables.</p>
+                            <a href="{% url 'descargar_plantilla_equipos' %}" class="btn btn-outline-primary rounded-pill fw-bold w-100 py-2.5 mt-auto">
+                                <i class="fa-solid fa-download me-2"></i>Descargar Plantilla Excel (.xlsx)
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Paso 2 -->
+                    <div class="col-md-6">
+                        <div class="card h-100 border-0 bg-light rounded-4 p-3.5 shadow-sm text-center">
+                            <div class="bg-success-subtle text-success rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                <i class="fa-solid fa-cloud-arrow-up fa-lg"></i>
+                            </div>
+                            <h5 class="fw-bold mb-2 text-dark">Paso 2: Subir Excel Completado</h5>
+                            <p class="text-muted fs-8 mb-3">Una vez rellenados los datos de los clubes, sube el archivo para realizar la validación e importación.</p>
+                            
+                            <form method="POST" action="{% url 'cargar_equipos_excel' %}" enctype="multipart/form-data" class="mt-auto">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <input type="file" name="archivo_excel" accept=".xlsx, .xls" class="form-control form-control-sm rounded-3" required>
+                                </div>
+                                <button type="submit" class="btn btn-success rounded-pill fw-bold w-100 py-2.5 shadow-sm">
+                                    <i class="fa-solid fa-file-import me-2"></i>Importar Equipos
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info border-0 rounded-4 mt-4 mb-0 p-3 fs-8">
+                    <div class="d-flex align-items-center mb-1">
+                        <i class="fa-solid fa-circle-info me-2 fs-6 text-info"></i>
+                        <strong class="text-dark">Instrucciones y Recomendaciones:</strong>
+                    </div>
+                    <ul class="mb-0 ps-3 text-secondary">
+                        <li>El **Nombre del Equipo** es obligatorio.</li>
+                        <li>Las **Categorías** deben coincidir con las registradas en tu organización (puedes ingresar varias separadas por coma, ej. <em>Senior, Máster</em>).</li>
+                        <li>Equipos con nombres duplicados en tu organización serán detectados e ignorados automáticamente.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

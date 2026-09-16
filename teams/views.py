@@ -735,3 +735,208 @@ def eliminar_categoria(request, categoria_id):
         
     return redirect('lista_categorias')
 
+
+@login_required
+def descargar_plantilla_equipos(request):
+    import io
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.worksheet.datavalidation import DataValidation
+    from django.http import HttpResponse
+
+    if not request.user.has_module_access('equipos'):
+        messages.error(request, "No tienes permiso para acceder a este módulo.")
+        return redirect('club_portal')
+
+    categorias = list(Categoria.objects.filter(organizacion=request.organizacion).order_by('nombre'))
+    cat_names = [c.nombre for c in categorias]
+
+    wb = openpyxl.Workbook()
+
+    # Hoja 1: Equipos
+    ws_equipos = wb.active
+    ws_equipos.title = "Equipos"
+    ws_equipos.views.sheetView[0].showGridLines = True
+
+    # Hoja 2: Categorías Habilitadas
+    ws_cats = wb.create_sheet(title="Categorias_Habilitadas")
+    ws_cats.views.sheetView[0].showGridLines = True
+    ws_cats.append(["ID Categoría", "Nombre de Categoría"])
+
+    header_fill_cats = PatternFill(start_color="334155", end_color="334155", fill_type="solid")
+    header_font_cats = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    for col in range(1, 3):
+        cell = ws_cats.cell(row=1, column=col)
+        cell.fill = header_fill_cats
+        cell.font = header_font_cats
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    for idx, c in enumerate(categorias, start=2):
+        ws_cats.cell(row=idx, column=1, value=c.id)
+        ws_cats.cell(row=idx, column=2, value=c.nombre)
+
+    ws_cats.column_dimensions['A'].width = 15
+    ws_cats.column_dimensions['B'].width = 30
+
+    # Estilos para Hoja Equipos
+    header_fill = PatternFill(start_color="1E3C72", end_color="1E3C72", fill_type="solid")
+    header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    thin_border = Border(
+        left=Side(style='thin', color='CBD5E1'),
+        right=Side(style='thin', color='CBD5E1'),
+        top=Side(style='thin', color='CBD5E1'),
+        bottom=Side(style='thin', color='CBD5E1')
+    )
+
+    headers = [
+        "Nombre del Equipo (Obligatorio)",
+        "Categorías (Obligatorio / Separadas por coma)",
+        "Nombre Entrenador / DT (Opcional)",
+        "Teléfono Entrenador (Opcional)",
+        "Máximo Jugadores (Opcional)"
+    ]
+    ws_equipos.append(headers)
+
+    for col_idx, h in enumerate(headers, start=1):
+        cell = ws_equipos.cell(row=1, column=col_idx)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    # Filas de ejemplo
+    ejemplos = [
+        ["Real Madrid FC", cat_names[0] if cat_names else "Senior", "Zinedine Zidane", "+593987654321", 25],
+        ["FC Barcelona", ", ".join(cat_names[:2]) if len(cat_names) >= 2 else "Senior, Máster", "Pep Guardiola", "+593987654322", 25],
+    ]
+
+    for row_data in ejemplos:
+        ws_equipos.append(row_data)
+
+    # Añadir DataValidation para la columna B (Categorías) en Excel
+    if cat_names:
+        formula_cats = f'"' + ",".join(cat_names) + '"'
+        dv = DataValidation(type="list", formula1=formula_cats, allow_blank=True)
+        dv.error = 'Por favor selecciona una categoría válida de la lista'
+        dv.errorTitle = 'Categoría no válida'
+        dv.prompt = 'Selecciona una categoría de la lista'
+        dv.promptTitle = 'Categoría'
+        ws_equipos.add_data_validation(dv)
+        dv.add("B2:B100")
+
+    # Anchos de columna
+    column_widths = {'A': 32, 'B': 42, 'C': 30, 'D': 22, 'E': 22}
+    for col_letter, width in column_widths.items():
+        ws_equipos.column_dimensions[col_letter].width = width
+
+    # Bordes y alineación para filas 2 a 100
+    for row in range(2, 101):
+        for col in range(1, 6):
+            cell = ws_equipos.cell(row=row, column=col)
+            cell.border = thin_border
+            if col == 5:
+                cell.alignment = Alignment(horizontal="center")
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    response = HttpResponse(
+        output.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="Plantilla_Equipos_FutbolPro.xlsx"'
+    return response
+
+
+@login_required
+def cargar_equipos_excel(request):
+    import openpyxl
+
+    if not request.user.has_module_access('equipos'):
+        messages.error(request, "No tienes permiso para acceder a este módulo.")
+        return redirect('club_portal')
+
+    if request.method == 'POST' and request.FILES.get('archivo_excel'):
+        archivo = request.FILES['archivo_excel']
+        if not (archivo.name.endswith('.xlsx') or archivo.name.endswith('.xls')):
+            messages.error(request, "El archivo debe ser en formato Excel (.xlsx o .xls).")
+            return redirect('club_portal')
+
+        try:
+            wb = openpyxl.load_workbook(archivo, data_only=True)
+            ws = wb.active
+        except Exception as e:
+            messages.error(request, f"Error al abrir el archivo Excel: {str(e)}")
+            return redirect('club_portal')
+
+        cats_org = Categoria.objects.filter(organizacion=request.organizacion)
+        cat_map = {c.nombre.strip().lower(): c for c in cats_org}
+
+        creados = 0
+        omitidos = 0
+        errores = []
+
+        for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+            if not row or not any(row):
+                continue
+
+            nombre_equipo = str(row[0]).strip() if row[0] is not None else ""
+            cat_str = str(row[1]).strip() if len(row) > 1 and row[1] is not None else ""
+            entrenador = str(row[2]).strip() if len(row) > 2 and row[2] is not None else ""
+            telefono_dt = str(row[3]).strip() if len(row) > 3 and row[3] is not None else ""
+            max_jug = row[4] if len(row) > 4 and row[4] is not None else 25
+
+            if not nombre_equipo or nombre_equipo.lower() in ['none', 'null']:
+                continue
+
+            if Equipo.objects.filter(organizacion=request.organizacion, nombre__iexact=nombre_equipo).exists():
+                omitidos += 1
+                errores.append(f"Fila {row_idx}: El equipo '{nombre_equipo}' ya existe en tu organización.")
+                continue
+
+            try:
+                max_jugadores_val = int(max_jug)
+                if max_jugadores_val < 5 or max_jugadores_val > 100:
+                    max_jugadores_val = 25
+            except (ValueError, TypeError):
+                max_jugadores_val = 25
+
+            equipo = Equipo.objects.create(
+                nombre=nombre_equipo,
+                entrenador=entrenador if entrenador and entrenador.lower() != 'none' else None,
+                telefono_entrenador=telefono_dt if telefono_dt and telefono_dt.lower() != 'none' else None,
+                max_jugadores=max_jugadores_val,
+                dirigente=request.user,
+                organizacion=request.organizacion
+            )
+
+            if cat_str and cat_str.lower() != 'none':
+                raw_cats = [c.strip().lower() for c in cat_str.split(',') if c.strip()]
+                matched_cats = []
+                for rc in raw_cats:
+                    if rc in cat_map:
+                        matched_cats.append(cat_map[rc])
+                    else:
+                        for c_name, c_obj in cat_map.items():
+                            if rc in c_name or c_name in rc:
+                                matched_cats.append(c_obj)
+                                break
+                if matched_cats:
+                    equipo.categorias.add(*matched_cats)
+
+            creados += 1
+
+        if creados > 0:
+            messages.success(request, f"¡Importación exitosa! Se registraron {creados} equipo(s) en tu organización.")
+        
+        if omitidos > 0 or errores:
+            detalles = "<br>".join(errores[:5])
+            if len(errores) > 5:
+                detalles += f"<br>... y {len(errores) - 5} observaciones más."
+            messages.warning(request, f"Se omitieron {omitidos} registro(s) por duplicidad o formato:<br>{detalles}")
+
+        return redirect('club_portal')
+
+    messages.error(request, "No se seleccionó ningún archivo Excel para subir.")
+    return redirect('club_portal')
+

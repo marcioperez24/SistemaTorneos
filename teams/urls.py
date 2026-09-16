@@ -15,6 +15,8 @@ urlpatterns = [
     # Dirigente Portal
     path('', views.club_portal, name='club_portal'),
     path('equipo/nuevo/', views.crear_equipo, name='crear_equipo'),
+    path('equipo/plantilla-excel/', views.descargar_plantilla_equipos, name='descargar_plantilla_equipos'),
+    path('equipo/cargar-excel/', views.cargar_equipos_excel, name='cargar_equipos_excel'),
     path('equipo/<int:equipo_id>/editar/', views.editar_equipo, name='editar_equipo'),
     path('equipo/<int:equipo_id>/invitar/', views.generar_invitacion, name='generar_invitacion'),
     
