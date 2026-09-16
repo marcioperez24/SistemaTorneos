@@ -840,6 +840,7 @@ def detalle_torneo(request, torneo_id):
         'torneo': torneo,
         'equipos': equipos,
         'partidos': partidos,
+        'total_partidos': partidos.count(),
         'partidos_regular': partidos_regular,
         'partidos_grupos': partidos_grupos,
         'partidos_dieciseisavos': partidos_dieciseisavos,
@@ -854,6 +855,48 @@ def detalle_torneo(request, torneo_id):
         'equipos_no_asignados': equipos_no_asignados,
     }
     return render(request, 'matches/detalle_torneo.html', context)
+
+
+@login_required
+def imprimir_fixture_torneo(request, torneo_id):
+    torneo = get_object_or_404(Torneo, id=torneo_id, organizacion=request.organizacion)
+    equipos = torneo.equipos.all()
+    partidos = Partido.objects.filter(torneo=torneo).select_related('equipo_local', 'equipo_visitante', 'vocal', 'arbitro').order_by('jornada', 'fecha_hora')
+    
+    total_partidos = partidos.count()
+    
+    # Agrupar partidos por jornada si es liga
+    partidos_por_jornada = {}
+    if torneo.tipo == 'liga':
+        for p in partidos:
+            partidos_por_jornada.setdefault(p.jornada, []).append(p)
+            
+    # Agrupar partidos por grupo si es torneo de fases
+    partidos_grupos = partidos.filter(fase='grupos')
+    partidos_grupos_dict = {}
+    if torneo.tipo == 'torneo' and partidos_grupos.exists():
+        for p in partidos_grupos:
+            g_name = p.grupo or "Fase de Grupos"
+            partidos_grupos_dict.setdefault(g_name, []).append(p)
+            
+    # Agrupar eliminatorias
+    partidos_eliminatorias = partidos.filter(fase__in=['dieciseisavos', 'octavos', 'cuartos', 'semifinal', 'final'])
+    partidos_eliminatoria_dict = {}
+    for p in partidos_eliminatorias:
+        fase_display = p.get_fase_display()
+        partidos_eliminatoria_dict.setdefault(fase_display, []).append(p)
+
+    context = {
+        'torneo': torneo,
+        'equipos': equipos,
+        'partidos': partidos,
+        'total_partidos': total_partidos,
+        'partidos_por_jornada': sorted(partidos_por_jornada.items()),
+        'partidos_grupos_dict': sorted(partidos_grupos_dict.items()),
+        'partidos_eliminatoria_dict': sorted(partidos_eliminatoria_dict.items()),
+        'fecha_impresion': timezone.now(),
+    }
+    return render(request, 'matches/imprimir_fixture.html', context)
 
 
 @login_required

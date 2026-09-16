@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fixture de Partidos - {{ torneo.nombre }}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Font Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+            color: #212529;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .print-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .table-print th {
+            background-color: #f1f3f5 !important;
+            color: #343a40;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        .table-print td {
+            font-size: 0.9rem;
+            vertical-align: middle;
+        }
+
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background: #ffffff !important;
+                padding: 0 !important;
+            }
+            .print-container {
+                box-shadow: none !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+            .table-print tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            .section-break {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+        }
+    </style>
+</head>
+<body class="py-4">
+
+    <!-- Toolbar Flotante (No Imprimible) -->
+    <div class="container mb-4 no-print" style="max-width: 1000px;">
+        <div class="d-flex justify-content-between align-items-center bg-white p-3 rounded-3 shadow-sm border">
+            <a href="{% url 'detalle_torneo' torneo.id %}" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
+                <i class="fa-solid fa-arrow-left me-2"></i>Volver al Torneo
+            </a>
+            <div class="d-flex gap-2">
+                <button onclick="window.print()" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
+                    <i class="fa-solid fa-print me-2"></i>Imprimir / Guardar en PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hoja de Impresión -->
+    <div class="print-container">
+        <!-- Encabezado de la Organización y Torneo -->
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-4 mb-4">
+            <div>
+                <h4 class="fw-bold text-uppercase mb-1 text-primary">
+                    <i class="fa-solid fa-shield-halved me-2"></i>{{ request.organizacion.nombre }}
+                </h4>
+                <h2 class="fw-extrabold text-dark mb-2">{{ torneo.nombre|upper }}</h2>
+                <div class="d-flex flex-wrap gap-3 text-secondary small fw-semibold">
+                    <span><i class="fa-solid fa-tag me-1 text-primary"></i>Categoría: {{ torneo.get_categoria_display }}</span>
+                    <span>•</span>
+                    <span><i class="fa-solid fa-calendar me-1 text-info"></i>Temporada: {{ torneo.temporada }}</span>
+                    <span>•</span>
+                    <span><i class="fa-solid fa-sitemap me-1 text-warning"></i>Formato: {{ torneo.get_tipo_display }}</span>
+                </div>
+            </div>
+            <div class="text-end">
+                <div class="badge bg-primary fs-6 px-3 py-2 rounded-pill font-monospace mb-2 shadow-2xs">
+                    <i class="fa-solid fa-gamepad me-1.5"></i>Partidos Totales: {{ total_partidos }}
+                </div>
+                <div class="text-muted small">
+                    <i class="fa-solid fa-clock me-1"></i>Generado: {{ fecha_impresion|date:"d/m/Y H:i" }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Caso 1: Torneo Formato Liga -->
+        {% if torneo.tipo == 'liga' %}
+            {% if partidos_por_jornada %}
+                {% for jornada, lista_partidos in partidos_por_jornada %}
+                    <div class="mb-4 section-break">
+                        <div class="bg-light p-2.5 rounded-2 border border-secondary-subtle fw-bold text-dark fs-7 mb-2 d-flex justify-content-between align-items-center">
+                            <span><i class="fa-solid fa-calendar-week me-2 text-primary"></i>JORNADA / FECHA {{ jornada }}</span>
+                            <span class="badge bg-secondary font-monospace">{{ lista_partidos|length }} Encuentros</span>
+                        </div>
+
+                        <table class="table table-bordered table-sm table-print mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;" class="text-center">#</th>
+                                    <th style="width: 28%;">Equipo Local</th>
+                                    <th style="width: 15%;" class="text-center">Resultado</th>
+                                    <th style="width: 28%;">Equipo Visitante</th>
+                                    <th style="width: 15%;">Fecha / Estadio</th>
+                                    <th style="width: 14%;">Vocal / Árbitro</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for partido in lista_partidos %}
+                                    <tr>
+                                        <td class="text-center fw-bold text-muted">{{ forloop.counter }}</td>
+                                        <td class="fw-bold text-dark">
+                                            {{ partido.equipo_local.nombre }}
+                                        </td>
+                                        <td class="text-center fw-bold font-monospace fs-7">
+                                            {% if partido.estado == 'programado' %}
+                                                <span class="badge bg-light text-muted border">VS</span>
+                                            {% else %}
+                                                {{ partido.goles_local }} - {{ partido.goles_visitante }}
+                                            {% endif %}
+                                        </td>
+                                        <td class="fw-bold text-dark">
+                                            {{ partido.equipo_visitante.nombre }}
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold"><i class="fa-regular fa-clock me-1 text-primary"></i>{{ partido.fecha_hora|date:"d/m/Y H:i" }}</div>
+                                            <div class="small text-muted"><i class="fa-solid fa-map-marker-alt me-1 text-danger"></i>{{ partido.estadio }}</div>
+                                        </td>
+                                        <td class="small text-muted">
+                                            <div>Vocal: {{ partido.vocal.get_full_name|default:partido.vocal.username|default:"-" }}</div>
+                                            <div>Árbitro: {{ partido.arbitro.get_full_name|default:partido.arbitro.username|default:"-" }}</div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-5 text-muted border rounded-3 my-4">
+                    <p class="mb-0 fs-6">No hay partidos programados para esta liga.</p>
+                </div>
+            {% endif %}
+
+        <!-- Caso 2: Torneo Formato Grupos + Eliminatorias -->
+        {% else %}
+            <!-- Fase de Grupos -->
+            {% if partidos_grupos_dict %}
+                {% for g_name, lista_partidos in partidos_grupos_dict %}
+                    <div class="mb-4 section-break">
+                        <div class="bg-light p-2.5 rounded-2 border border-secondary-subtle fw-bold text-dark fs-7 mb-2 d-flex justify-content-between align-items-center">
+                            <span><i class="fa-solid fa-circle-nodes me-2 text-primary"></i>{{ g_name }}</span>
+                            <span class="badge bg-primary font-monospace">{{ lista_partidos|length }} Encuentros</span>
+                        </div>
+
+                        <table class="table table-bordered table-sm table-print mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;" class="text-center">#</th>
+                                    <th style="width: 28%;">Equipo Local</th>
+                                    <th style="width: 15%;" class="text-center">Resultado</th>
+                                    <th style="width: 28%;">Equipo Visitante</th>
+                                    <th style="width: 15%;">Fecha / Estadio</th>
+                                    <th style="width: 14%;">Vocal / Árbitro</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for partido in lista_partidos %}
+                                    <tr>
+                                        <td class="text-center fw-bold text-muted">{{ forloop.counter }}</td>
+                                        <td class="fw-bold text-dark">
+                                            {{ partido.equipo_local.nombre }}
+                                        </td>
+                                        <td class="text-center fw-bold font-monospace fs-7">
+                                            {% if partido.estado == 'programado' %}
+                                                <span class="badge bg-light text-muted border">VS</span>
+                                            {% else %}
+                                                {{ partido.goles_local }} - {{ partido.goles_visitante }}
+                                            {% endif %}
+                                        </td>
+                                        <td class="fw-bold text-dark">
+                                            {{ partido.equipo_visitante.nombre }}
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold"><i class="fa-regular fa-clock me-1 text-primary"></i>{{ partido.fecha_hora|date:"d/m/Y H:i" }}</div>
+                                            <div class="small text-muted"><i class="fa-solid fa-map-marker-alt me-1 text-danger"></i>{{ partido.estadio }}</div>
+                                        </td>
+                                        <td class="small text-muted">
+                                            <div>Vocal: {{ partido.vocal.get_full_name|default:partido.vocal.username|default:"-" }}</div>
+                                            <div>Árbitro: {{ partido.arbitro.get_full_name|default:partido.arbitro.username|default:"-" }}</div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Fase Eliminatoria -->
+            {% if partidos_eliminatoria_dict %}
+                {% for fase_name, lista_partidos in partidos_eliminatoria_dict %}
+                    <div class="mb-4 section-break">
+                        <div class="bg-dark text-white p-2.5 rounded-2 fw-bold fs-7 mb-2 d-flex justify-content-between align-items-center">
+                            <span><i class="fa-solid fa-trophy me-2 text-warning"></i>FASE ELIMINATORIA: {{ fase_name|upper }}</span>
+                            <span class="badge bg-warning text-dark font-monospace">{{ lista_partidos|length }} Encuentros</span>
+                        </div>
+
+                        <table class="table table-bordered table-sm table-print mb-0">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50px;" class="text-center">#</th>
+                                    <th style="width: 28%;">Equipo Local</th>
+                                    <th style="width: 15%;" class="text-center">Resultado</th>
+                                    <th style="width: 28%;">Equipo Visitante</th>
+                                    <th style="width: 15%;">Fecha / Estadio</th>
+                                    <th style="width: 14%;">Vocal / Árbitro</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for partido in lista_partidos %}
+                                    <tr>
+                                        <td class="text-center fw-bold text-muted">{{ forloop.counter }}</td>
+                                        <td class="fw-bold text-dark">
+                                            {{ partido.equipo_local.nombre }}
+                                        </td>
+                                        <td class="text-center fw-bold font-monospace fs-7">
+                                            {% if partido.estado == 'programado' %}
+                                                <span class="badge bg-light text-muted border">VS</span>
+                                            {% else %}
+                                                {{ partido.goles_local }} - {{ partido.goles_visitante }}
+                                            {% endif %}
+                                        </td>
+                                        <td class="fw-bold text-dark">
+                                            {{ partido.equipo_visitante.nombre }}
+                                        </td>
+                                        <td>
+                                            <div class="fw-semibold"><i class="fa-regular fa-clock me-1 text-primary"></i>{{ partido.fecha_hora|date:"d/m/Y H:i" }}</div>
+                                            <div class="small text-muted"><i class="fa-solid fa-map-marker-alt me-1 text-danger"></i>{{ partido.estadio }}</div>
+                                        </td>
+                                        <td class="small text-muted">
+                                            <div>Vocal: {{ partido.vocal.get_full_name|default:partido.vocal.username|default:"-" }}</div>
+                                            <div>Árbitro: {{ partido.arbitro.get_full_name|default:partido.arbitro.username|default:"-" }}</div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endif %}
+
+        <!-- Pie de página impreso -->
+        <div class="border-top pt-3 mt-4 d-flex justify-content-between align-items-center text-muted small">
+            <div><strong>{{ request.organizacion.nombre }}</strong> - Sistema Deportivo de Gestión de Torneos</div>
+            <div>Página impresa el {{ fecha_impresion|date:"d/m/Y a las H:i" }}</div>
+        </div>
+    </div>
+
+</body>
+</html>

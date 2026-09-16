@@ -39,5 +39,6 @@ urlpatterns = [
     path('torneos/<int:torneo_id>/generar-eliminatorias/', views.generar_cruces_eliminatorios, name='generar_cruces_eliminatorios'),
     path('torneos/<int:torneo_id>/crear-partido/', views.crear_partido_torneo, name='crear_partido_torneo'),
     path('torneos/<int:torneo_id>/estadisticas/', views.estadisticas_torneo, name='estadisticas_torneo'),
+    path('torneos/<int:torneo_id>/imprimir/', views.imprimir_fixture_torneo, name='imprimir_fixture_torneo'),
 ]
 

@@ -26,6 +26,8 @@
                     <span><i class="fa-solid fa-tag me-1 text-primary"></i>Categoría: <strong>{{ torneo.get_categoria_display }}</strong></span>
                     <span>•</span>
                     <span><i class="fa-solid fa-calendar me-1 text-info"></i>Temporada: <strong>{{ torneo.temporada }}</strong></span>
+                    <span>•</span>
+                    <span><i class="fa-solid fa-gamepad me-1 text-warning"></i>Partidos Totales: <strong>{{ total_partidos }}</strong></span>
                 </div>
             </div>
         </div>
@@ -43,6 +45,11 @@
                     <i class="fa-solid fa-wand-magic-sparkles me-1.5 text-primary"></i>Generar Fixture
                 </button>
             {% endif %}
+
+            <!-- Botón Imprimir Fixture -->
+            <a href="{% url 'imprimir_fixture_torneo' torneo.id %}" target="_blank" class="btn btn-outline-dark rounded-pill px-3 py-2 fw-semibold fs-8 flex-grow-1 flex-xl-grow-0">
+                <i class="fa-solid fa-print me-1.5 text-secondary"></i>Imprimir Fixture
+            </a>
 
             <!-- Estadísticas Link -->
             <a href="{% url 'estadisticas_torneo' torneo.id %}" class="btn btn-outline-warning text-dark rounded-pill px-3 py-2 fw-semibold fs-8 flex-grow-1 flex-xl-grow-0 border-warning">
