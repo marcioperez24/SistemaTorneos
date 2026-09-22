@@ -935,9 +935,9 @@ class TorneoPersonalizadoPhase5Tests(TestCase):
         res_sort = self.client.get(url_sort)
         self.assertEqual(res_sort.status_code, 200)
 
-        # Generar sorteo vía POST
-        res_prev = self.client.post(url_sort, {'tipo_sorteo': 'bombos', 'mismo_grupo_filtro': 'on'})
-        self.assertEqual(res_prev.status_code, 200)
+        # Generar sorteo vía POST -> Redirecciona a vista previa (302)
+        res_prev = self.client.post(url_sort, {'formato': 'partido_unico', 'evitar_mismo_grupo': '1'})
+        self.assertEqual(res_prev.status_code, 302)
 
         # Confirmar cuadro vía POST
         url_conf_cuadro = reverse('confirmar_cuadro_view', kwargs={'torneo_id': self.torneo.id})
