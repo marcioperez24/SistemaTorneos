@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ torneo.nombre }} - Portal Oficial</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .hero-banner { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; }
+        .tab-btn.active { border-bottom: 3px solid #1e3c72 !important; font-weight: bold; color: #1e3c72 !important; }
+    </style>
+</head>
+<body>
+
+    <!-- Hero Header -->
+    <header class="hero-banner py-4 shadow-sm mb-4">
+        <div class="container text-center">
+            <span class="badge bg-white text-dark text-uppercase px-3 py-2 rounded-pill mb-2 fw-bold">
+                <i class="bi bi-shield-check me-1 text-primary"></i> {{ torneo.organizacion.nombre }}
+            </span>
+            <h1 class="display-6 fw-bold mb-1">{{ torneo.nombre }}</h1>
+            <p class="lead mb-2 opacity-75">Categoría: {{ torneo.categoria.nombre|default:"General" }} &bull; {{ torneo.temporada }}</p>
+            <div class="d-flex justify-content-center gap-2 mt-3">
+                <a href="{{ whatsapp_link }}" target="_blank" class="btn btn-success btn-sm rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-whatsapp me-1"></i> Compartir Torneo
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Contenido Principal -->
+    <main class="container pb-5">
+
+        <!-- Campeón Banner (Si existe) -->
+        {% if resultado_final %}
+        <div class="card border-0 shadow-sm rounded-4 mb-4 text-center bg-warning bg-gradient text-dark p-4">
+            <div class="display-3">🏆</div>
+            <h2 class="fw-bold mb-1">¡Campeón Consagrado!</h2>
+            <h3 class="display-6 fw-bold text-uppercase text-dark mb-3">{{ resultado_final.campeon.nombre }}</h3>
+            <div class="d-flex justify-content-center gap-3">
+                <span class="badge bg-dark text-white px-3 py-2 rounded-pill">🥈 Subcampeón: {{ resultado_final.subcampeon.nombre }}</span>
+                {% if resultado_final.tercer_lugar %}
+                <span class="badge bg-dark text-white px-3 py-2 rounded-pill">🥉 3er Lugar: {{ resultado_final.tercer_lugar.nombre }}</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Pestañas de Secciones -->
+        <ul class="nav nav-tabs border-0 bg-white shadow-sm rounded-4 p-2 mb-4 justify-content-center" id="publicTabs">
+            <li class="nav-item">
+                <button class="nav-link tab-btn active border-0 text-secondary px-4 py-2" data-bs-toggle="tab" data-bs-target="#tab-grupos">
+                    <i class="bi bi-grid-3x3-gap me-1"></i> Grupos y Tablas
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link tab-btn border-0 text-secondary px-4 py-2" data-bs-toggle="tab" data-bs-target="#tab-fixture">
+                    <i class="bi bi-calendar-event me-1"></i> Partidos y Resultados
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link tab-btn border-0 text-secondary px-4 py-2" data-bs-toggle="tab" data-bs-target="#tab-estadisticas">
+                    <i class="bi bi-person-lines-fill me-1"></i> Goleadores y Tarjetas
+                </button>
+            </li>
+            {% if llaves %}
+            <li class="nav-item">
+                <button class="nav-link tab-btn border-0 text-secondary px-4 py-2" data-bs-toggle="tab" data-bs-target="#tab-eliminatorias">
+                    <i class="bi bi-diagram-2 me-1"></i> Cuadro Eliminatorio
+                </button>
+            </li>
+            {% endif %}
+        </ul>
+
+        <div class="tab-content" id="publicTabsContent">
+
+            <!-- TAB 1: GRUPOS Y TABLAS -->
+            <div class="tab-pane fade show active" id="tab-grupos">
+                <div class="row g-4">
+                    {% for item in grupos_data %}
+                    <div class="col-12 col-lg-6">
+                        <div class="card border-0 shadow-sm rounded-4 h-100">
+                            <div class="card-header bg-white border-0 p-4 pb-2">
+                                <h4 class="fw-bold mb-0 text-dark">{{ item.grupo.nombre }}</h4>
+                                <small class="text-muted">{{ item.grupo.sector|default:"Sector General" }}</small>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0 text-center small">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="ps-3 text-start">Pos / Equipo</th>
+                                                <th>PJ</th>
+                                                <th>PG</th>
+                                                <th>PE</th>
+                                                <th>PP</th>
+                                                <th>GF</th>
+                                                <th>GC</th>
+                                                <th>DG</th>
+                                                <th class="pe-3 fw-bold">PTS</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for row in item.posiciones %}
+                                            <tr class="{% if row.posicion <= item.grupo.cupos_clasificacion %}table-success bg-opacity-25{% endif %}">
+                                                <td class="ps-3 text-start fw-bold">
+                                                    <span class="me-1">{{ row.posicion }}.</span> {{ row.equipo.nombre }}
+                                                </td>
+                                                <td>{{ row.PJ }}</td>
+                                                <td>{{ row.PG }}</td>
+                                                <td>{{ row.PE }}</td>
+                                                <td>{{ row.PP }}</td>
+                                                <td>{{ row.GF }}</td>
+                                                <td>{{ row.GC }}</td>
+                                                <td>{{ row.DG }}</td>
+                                                <td class="pe-3 fw-bold text-primary">{{ row.PTS }}</td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="9" class="py-3 text-muted">Sin datos de tabla aún.</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- TAB 2: FIXTURE Y RESULTADOS -->
+            <div class="tab-pane fade" id="tab-fixture">
+                <div class="row g-4">
+                    {% for item in grupos_data %}
+                    <div class="col-12 col-lg-6">
+                        <div class="card border-0 shadow-sm rounded-4">
+                            <div class="card-header bg-white border-0 p-4 pb-2">
+                                <h5 class="fw-bold mb-0 text-dark">Partidos - {{ item.grupo.nombre }}</h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="list-group list-group-flush">
+                                    {% for p in item.partidos %}
+                                    <div class="list-group-item p-3 border-light">
+                                        <div class="d-flex justify-content-between align-items-center mb-1 small text-muted">
+                                            <span><i class="bi bi-clock me-1"></i> {{ p.fecha_hora|date:"d/m/Y H:i"|default:"Por definir" }}</span>
+                                            <span><i class="bi bi-geo-alt me-1"></i> {{ p.estadio|default:"Por definir" }}</span>
+                                        </div>
+                                        <div class="row align-items-center text-center">
+                                            <div class="col-5 text-end fw-bold">{{ p.equipo_local.nombre }}</div>
+                                            <div class="col-2">
+                                                {% if p.estado == 'finalizado' %}
+                                                <span class="badge bg-dark px-3 py-2 fs-6">{{ p.goles_local }} - {{ p.goles_visitante }}</span>
+                                                {% else %}
+                                                <span class="badge bg-light text-dark border px-2 py-1">VS</span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-5 text-start fw-bold">{{ p.equipo_visitante.nombre }}</div>
+                                        </div>
+                                    </div>
+                                    {% empty %}
+                                    <div class="p-4 text-center text-muted small">Sin encuentros programados.</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- TAB 3: ESTADÍSTICAS (GOLEADORES) -->
+            <div class="tab-pane fade" id="tab-estadisticas">
+                <div class="row g-4">
+                    {% for item in grupos_data %}
+                    <div class="col-12 col-md-4">
+                        <div class="card border-0 shadow-sm rounded-4 h-100">
+                            <div class="card-header bg-white border-0 p-4 pb-2">
+                                <h5 class="fw-bold mb-0 text-dark">Goleadores - {{ item.grupo.nombre }}</h5>
+                            </div>
+                            <div class="card-body p-0">
+                                <ul class="list-group list-group-flush small">
+                                    {% for gol in item.goleadores %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center p-3">
+                                        <div>
+                                            <strong class="text-dark">{{ gol.jugador__user__first_name }} {{ gol.jugador__user__last_name }}</strong>
+                                            <div class="text-muted small">{{ gol.equipo__nombre }}</div>
+                                        </div>
+                                        <span class="badge bg-success rounded-pill px-3 py-2 fs-6">{{ gol.total_goles }} Goles</span>
+                                    </li>
+                                    {% empty %}
+                                    <li class="list-group-item p-3 text-center text-muted">Sin registros de goles aún.</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- TAB 4: ELIMINATORIAS (Si existen) -->
+            {% if llaves %}
+            <div class="tab-pane fade" id="tab-eliminatorias">
+                <div class="card border-0 shadow-sm rounded-4 p-4">
+                    <h4 class="fw-bold mb-4 text-dark"><i class="bi bi-diagram-2 me-2 text-primary"></i> Cuadro Eliminatorio Directo</h4>
+                    <div class="row g-4">
+                        {% for ll in llaves %}
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="card border rounded-3 p-3 shadow-sm {% if ll.estado == 'finalizada' %}border-success{% endif %}">
+                                <div class="d-flex justify-content-between align-items-center mb-2 small text-muted">
+                                    <span class="badge bg-secondary">{{ ll.get_fase_display }}</span>
+                                    <span>Llave #{{ ll.numero_llave }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center p-2 rounded-2 {% if ll.ganador == ll.equipo_local %}bg-success bg-opacity-10 fw-bold{% else %}bg-light{% endif %} mb-1">
+                                    <span>{{ ll.equipo_local.nombre|default:"Por definir" }}</span>
+                                    <span>{{ ll.marcador_global_local }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center p-2 rounded-2 {% if ll.ganador == ll.equipo_visitante %}bg-success bg-opacity-10 fw-bold{% else %}bg-light{% endif %}">
+                                    <span>{{ ll.equipo_visitante.nombre|default:"Por definir" }}</span>
+                                    <span>{{ ll.marcador_global_visitante }}</span>
+                                </div>
+                                {% if ll.definido_por_penales %}
+                                <div class="text-center small text-muted mt-2">
+                                    Penales: {{ ll.penales_local }} - {{ ll.penales_visitante }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+
+    </main>
+
+    <footer class="bg-dark text-white-50 py-4 mt-5 text-center small">
+        <div class="container">
+            <p class="mb-0">Portal Oficial &bull; Powered by {{ torneo.organizacion.nombre }} &bull; SistemaTorneos</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

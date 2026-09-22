@@ -20,6 +20,11 @@
         </div>
 
         <div class="d-flex align-items-center gap-2 flex-wrap">
+            {% if resultado_final %}
+            <a href="{% url 'pantalla_campeon_view' torneo.id %}" class="btn btn-warning rounded-pill px-3 py-2 fw-bold fs-8 shadow-sm">
+                <i class="fa-solid fa-crown me-1.5"></i>Ver Campeón
+            </a>
+            {% endif %}
             <a href="{% url 'imprimir_cuadro_eliminatorio_view' torneo.id %}" target="_blank" class="btn btn-outline-dark rounded-pill px-3 py-2 fw-semibold fs-8 shadow-sm">
                 <i class="fa-solid fa-print me-1.5 text-secondary"></i>Imprimir Cuadro
             </a>
@@ -28,6 +33,25 @@
             </a>
         </div>
     </div>
+
+    <!-- BANNER DE CAMPEÓN SI EXISTE -->
+    {% if resultado_final %}
+    <div class="card border-0 shadow rounded-4 mb-4 bg-gradient" style="background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); color: #ffffff;">
+        <div class="card-body p-4 d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="fs-1">🏆</div>
+                <div>
+                    <span class="badge bg-warning text-dark fw-bold mb-1">¡TORNEO FINALIZADO!</span>
+                    <h3 class="fw-black text-warning mb-0 text-uppercase">{{ resultado_final.campeon.nombre }}</h3>
+                    <small class="text-light opacity-90">Campeón del Torneo {{ torneo.nombre }}</small>
+                </div>
+            </div>
+            <a href="{% url 'pantalla_campeon_view' torneo.id %}" class="btn btn-light rounded-pill px-4 py-2 fw-bold text-navy shadow-sm">
+                Ver Cuadro de Honor Completo <i class="fa-solid fa-chevron-right ms-1"></i>
+            </a>
+        </div>
+    </div>
+    {% endif %}
 
     {% if not hay_llaves %}
     <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white border">
@@ -42,81 +66,192 @@
     </div>
     {% else %}
 
-    <!-- Tarjetas de Llaves Eliminatorias de Primera Ronda -->
+    <!-- Tarjetas de Llaves Eliminatorias -->
     <h4 class="fw-bold text-dark mb-3"><i class="fa-solid fa-diagram-project text-primary me-2"></i>Llaves y Cruces Eliminatorios</h4>
 
     <div class="row g-4 mb-5">
-        {% for item in llaves_con_partidos %}
-        {% with ll=item.llave partidos=item.partidos %}
+        {% for item in llaves_con_evaluacion %}
+        {% with ll=item.llave partidos=item.partidos ev=item.evaluacion %}
         <div class="col-12 col-md-6 col-xl-4">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden border">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden border {% if ll.estado == 'finalizada' %}border-success-subtle{% elif ev.estado_sugerido == 'lista_para_confirmar' %}border-warning{% endif %}">
                 <div class="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
                     <div>
-                        <span class="badge bg-primary rounded-pill me-1.5">Llave # {{ ll.numero_llave }}</span>
+                        <span class="badge bg-primary rounded-pill me-1.5">Llave #{{ ll.numero_llave }}</span>
                         <span class="fw-bold text-dark fs-8">{{ ll.get_fase_display }}</span>
                     </div>
-                    {% if ll.es_bye %}
-                        <span class="badge bg-warning text-dark rounded-pill fs-9">Pase Directo / BYE</span>
-                    {% else %}
-                        <span class="badge bg-light text-dark border fs-9">{{ ll.get_formato_display }}</span>
-                    {% endif %}
+                    <div>
+                        {% if ll.estado == 'finalizada' %}
+                            <span class="badge bg-success rounded-pill fs-9"><i class="fa-solid fa-check me-1"></i>Finalizada</span>
+                        {% elif ev.estado_sugerido == 'lista_para_confirmar' or ll.estado == 'lista_para_confirmar' %}
+                            <span class="badge bg-warning text-dark rounded-pill fs-9"><i class="fa-solid fa-clock me-1"></i>Lista p/ Confirmar</span>
+                        {% elif ll.es_bye %}
+                            <span class="badge bg-warning text-dark rounded-pill fs-9">Pase Directo / BYE</span>
+                        {% else %}
+                            <span class="badge bg-light text-dark border fs-9">{{ ll.get_formato_display }}</span>
+                        {% endif %}
+                    </div>
                 </div>
 
                 <div class="card-body p-3.5">
                     {% if ll.es_bye %}
                     <div class="bg-light-subtle border rounded-3 p-3 text-center">
-                        <h6 class="fw-bold text-dark mb-1">{{ ll.equipo_local.nombre }}</h6>
+                        <h6 class="fw-bold text-dark mb-1">{{ ll.equipo_local.nombre|default:"Equipo BYE" }}</h6>
                         <small class="text-success fw-semibold fs-9"><i class="fa-solid fa-circle-check me-1"></i>Avanza directamente a la siguiente fase</small>
+                        {% if ll.estado != 'finalizada' and request.user.role in 'superadmin,comision' %}
+                        <form method="POST" action="{% url 'procesar_bye_view' torneo.id ll.id %}" class="mt-2">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-warning rounded-pill px-3 fw-bold">Confirmar Pase BYE</button>
+                        </form>
+                        {% endif %}
                     </div>
                     {% else %}
+
                     <!-- Local -->
-                    <div class="d-flex justify-content-between align-items-center bg-light p-2.5 rounded-3 border mb-2">
+                    <div class="d-flex justify-content-between align-items-center p-2.5 rounded-3 border mb-2 {% if ll.ganador == ll.equipo_local %}bg-success-subtle border-success{% else %}bg-light{% endif %}">
                         <div class="d-flex align-items-center gap-2">
-                            {% if ll.equipo_local.logo %}
+                            {% if ll.equipo_local and ll.equipo_local.logo %}
                                 <img src="{{ ll.equipo_local.logo.url }}" alt="{{ ll.equipo_local.nombre }}" style="width: 24px; height: 24px;" class="object-fit-contain">
                             {% endif %}
                             <div>
-                                <div class="fw-bold text-dark fs-8">{{ ll.equipo_local.nombre }}</div>
+                                <div class="fw-bold text-dark fs-8">
+                                    {{ ll.equipo_local.nombre|default:"Por Definir" }}
+                                    {% if ll.ganador == ll.equipo_local %}<i class="fa-solid fa-crown text-warning ms-1"></i>{% endif %}
+                                </div>
                                 {% if ll.clasificado_local %}
                                     <small class="text-muted fs-9">Grupo {{ ll.clasificado_local.grupo.nombre }} (Pos {{ ll.clasificado_local.posicion_grupo }})</small>
                                 {% endif %}
                             </div>
+                        </div>
+                        <div class="text-end fw-bold fs-7">
+                            {% if ll.estado in 'lista_para_confirmar,finalizada' or ev.completa %}
+                                {{ ev.marcador_global_local }}
+                                {% if ll.definido_por_penales %}<small class="text-primary ms-1">({{ ll.penales_local }})</small>{% endif %}
+                            {% endif %}
                         </div>
                     </div>
 
                     <div class="text-center my-1 text-muted fs-9 font-normal">VS</div>
 
                     <!-- Visitante -->
-                    <div class="d-flex justify-content-between align-items-center bg-light p-2.5 rounded-3 border">
+                    <div class="d-flex justify-content-between align-items-center p-2.5 rounded-3 border {% if ll.ganador == ll.equipo_visitante %}bg-success-subtle border-success{% else %}bg-light{% endif %}">
                         <div class="d-flex align-items-center gap-2">
-                            {% if ll.equipo_visitante.logo %}
+                            {% if ll.equipo_visitante and ll.equipo_visitante.logo %}
                                 <img src="{{ ll.equipo_visitante.logo.url }}" alt="{{ ll.equipo_visitante.nombre }}" style="width: 24px; height: 24px;" class="object-fit-contain">
                             {% endif %}
                             <div>
-                                <div class="fw-bold text-dark fs-8">{{ ll.equipo_visitante.nombre }}</div>
+                                <div class="fw-bold text-dark fs-8">
+                                    {{ ll.equipo_visitante.nombre|default:"Por Definir" }}
+                                    {% if ll.ganador == ll.equipo_visitante %}<i class="fa-solid fa-crown text-warning ms-1"></i>{% endif %}
+                                </div>
                                 {% if ll.clasificado_visitante %}
                                     <small class="text-muted fs-9">Grupo {{ ll.clasificado_visitante.grupo.nombre }} (Pos {{ ll.clasificado_visitante.posicion_grupo }})</small>
                                 {% endif %}
                             </div>
                         </div>
+                        <div class="text-end fw-bold fs-7">
+                            {% if ll.estado in 'lista_para_confirmar,finalizada' or ev.completa %}
+                                {{ ev.marcador_global_visitante }}
+                                {% if ll.definido_por_penales %}<small class="text-primary ms-1">({{ ll.penales_visitante }})</small>{% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Mensaje / Alerta del Servicio -->
+                    {% if ev.mensaje %}
+                    <div class="mt-2 text-center fs-9 text-muted italic">
+                        {{ ev.mensaje }}
                     </div>
                     {% endif %}
                 </div>
 
-                {% if partidos %}
+                <!-- Footer Acciones Administrativas -->
                 <div class="card-footer bg-light p-3 border-top fs-9">
-                    <div class="fw-bold text-dark mb-1"><i class="fa-solid fa-calendar-days me-1 text-primary"></i>Partidos Programados:</div>
+                    {% if partidos %}
+                    <div class="fw-bold text-dark mb-1"><i class="fa-solid fa-calendar-days me-1 text-primary"></i>Partidos Disputados:</div>
                     {% for p in partidos %}
                     <div class="d-flex justify-content-between align-items-center py-1 border-bottom-dashed">
                         <span>
                             {% if p.numero_vuelta == 1 %}Ida:{% else %}Vuelta:{% endif %}
-                            <strong>{{ p.equipo_local.nombre }}</strong> vs <strong>{{ p.equipo_visitante.nombre }}</strong>
+                            <strong>{{ p.equipo_local.nombre }}</strong> {{ p.goles_local }}-{{ p.goles_visitante }} <strong>{{ p.equipo_visitante.nombre }}</strong>
                         </span>
-                        <span class="text-muted">{{ p.fecha_hora|date:"d/m/Y H:i" }}</span>
+                        <span class="badge {% if p.estado == 'finalizado' %}bg-success{% else %}bg-secondary{% endif %}">{{ p.get_estado_display }}</span>
                     </div>
                     {% endfor %}
+                    {% endif %}
+
+                    <!-- BOTONES DE CONFIRMACIÓN O REGISTRO DE PENALES -->
+                    {% if request.user.role in 'superadmin,comision' %}
+                    <div class="mt-3 pt-2 border-top d-flex flex-wrap gap-1.5 justify-content-end">
+
+                        <!-- Si requiere o permite penales cuando está empatado -->
+                        {% if ev.requiere_penales and ll.estado != 'finalizada' %}
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 fw-bold" data-bs-toggle="collapse" data-bs-target="#penalesCollapse{{ ll.id }}">
+                            <i class="fa-solid fa-futbol me-1"></i>Registrar Penales
+                        </button>
+                        {% endif %}
+
+                        <!-- Confirmar Ganador si está lista para confirmar -->
+                        {% if ev.ganador and ll.estado != 'finalizada' %}
+                        <form method="POST" action="{% url 'confirmar_ganador_llave_view' torneo.id ll.id %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="ganador_id" value="{{ ev.ganador.id }}">
+                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 py-1 fw-bold">
+                                <i class="fa-solid fa-check me-1"></i>Confirmar Ganador ({{ ev.ganador.nombre }})
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        <!-- Reapertura de llave (Superadmin) -->
+                        {% if ll.estado == 'finalizada' and request.user.role == 'superadmin' %}
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1 fw-bold" data-bs-toggle="collapse" data-bs-target="#reabrirCollapse{{ ll.id }}">
+                            <i class="fa-solid fa-rotate-left me-1"></i>Reabrir Llave
+                        </button>
+                        {% endif %}
+                    </div>
+
+                    <!-- Panel Desplegable para Formulario de Penales -->
+                    {% if ev.requiere_penales and ll.estado != 'finalizada' %}
+                    <div class="collapse mt-2 p-2.5 bg-white rounded-3 border" id="penalesCollapse{{ ll.id }}">
+                        <form method="POST" action="{% url 'confirmar_ganador_llave_view' torneo.id ll.id %}">
+                            {% csrf_token %}
+                            <div class="fw-bold text-dark mb-2 text-center">Tanda de Penales</div>
+                            <div class="row g-2 align-items-center mb-2">
+                                <div class="col-6">
+                                    <label class="form-label fs-9 mb-0 text-truncate">{{ ll.equipo_local.nombre }}</label>
+                                    <input type="number" min="0" name="penales_local" class="form-control form-control-sm" required placeholder="Goles local">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label fs-9 mb-0 text-truncate">{{ ll.equipo_visitante.nombre }}</label>
+                                    <input type="number" min="0" name="penales_visitante" class="form-control form-control-sm" required placeholder="Goles visitante">
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label fs-9 mb-0">Selecciona Ganador en Penales:</label>
+                                <select name="ganador_id" class="form-select form-select-sm" required>
+                                    <option value="{{ ll.equipo_local.id }}">{{ ll.equipo_local.nombre }}</option>
+                                    <option value="{{ ll.equipo_visitante.id }}">{{ ll.equipo_visitante.nombre }}</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold">Guardar y Confirmar Penales</button>
+                        </form>
+                    </div>
+                    {% endif %}
+
+                    <!-- Panel Desplegable para Reapertura -->
+                    {% if ll.estado == 'finalizada' and request.user.role == 'superadmin' %}
+                    <div class="collapse mt-2 p-2.5 bg-white rounded-3 border border-danger-subtle" id="reabrirCollapse{{ ll.id }}">
+                        <form method="POST" action="{% url 'reabrir_llave_view' torneo.id ll.id %}">
+                            {% csrf_token %}
+                            <div class="fw-bold text-danger mb-1 fs-9">Motivo de Reapertura (Superadmin):</div>
+                            <input type="text" name="motivo_reapertura" minlength="5" class="form-control form-control-sm mb-2" required placeholder="Escribe la justificación...">
+                            <button type="submit" class="btn btn-sm btn-danger w-100 fw-bold">Confirmar Reapertura</button>
+                        </form>
+                    </div>
+                    {% endif %}
+
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
         </div>
         {% endwith %}

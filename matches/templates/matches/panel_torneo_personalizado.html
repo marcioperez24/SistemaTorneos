@@ -1,0 +1,301 @@
+{% extends 'teams/base.html' %}
+{% load static %}
+
+{% block title %}Centro de Control - {{ torneo.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-lg-5">
+
+    <!-- Encabezado Principal del Torneo -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden bg-white">
+        <div class="card-body p-4 bg-primary bg-gradient text-white">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div>
+                    <span class="badge bg-white text-primary fw-bold text-uppercase px-3 py-2 rounded-pill mb-2">
+                        <i class="bi bi-shield-check me-1"></i> {{ torneo.organizacion.nombre }}
+                    </span>
+                    <h1 class="h2 fw-bold text-white mb-1">{{ torneo.nombre }}</h1>
+                    <p class="mb-0 text-white-50">
+                        <i class="bi bi-tag me-1"></i> {{ torneo.categoria.nombre|default:"General" }} &bull;
+                        <i class="bi bi-calendar3 me-1"></i> {{ torneo.temporada }} &bull;
+                        <i class="bi bi-diagram-3 me-1"></i> {{ torneo.modalidad }}
+                    </p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'vista_publica_torneo' torneo.public_uuid %}" target="_blank" class="btn btn-light btn-sm fw-semibold rounded-pill px-3 shadow-sm">
+                        <i class="bi bi-globe me-1"></i> Vista Pública
+                    </a>
+                    <a href="{% url 'historial_auditoria_personalizado' torneo.id %}" class="btn btn-outline-light btn-sm fw-semibold rounded-pill px-3">
+                        <i class="bi bi-journal-text me-1"></i> Historial / Auditoría
+                    </a>
+                    <a href="{% url 'exportar_excel_consolidado_personalizado' torneo.id %}" class="btn btn-success btn-sm fw-semibold rounded-pill px-3 shadow-sm">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Excel Consolidado
+                    </a>
+                    <a href="{% url 'imprimir_torneo_consolidado_personalizado' torneo.id %}" target="_blank" class="btn btn-dark btn-sm fw-semibold rounded-pill px-3 shadow-sm">
+                        <i class="bi bi-printer me-1"></i> Imprimir
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barra de Progreso Visual (7 Pasos) -->
+        <div class="bg-light border-top p-3">
+            <div class="row g-2 text-center align-items-center">
+                {% for paso in pasos_progreso %}
+                <div class="col-12 col-sm-6 col-md">
+                    <a href="{{ paso.url }}" class="text-decoration-none">
+                        <div class="p-2 rounded-3 border transition-all {% if paso.estado == 'completado' %}bg-success text-white border-success{% elif paso.estado == 'en_curso' %}bg-primary text-white border-primary fw-bold shadow-sm{% else %}bg-white text-muted border-light{% endif %}">
+                            <div class="d-flex align-items-center justify-content-center gap-2">
+                                <span class="badge rounded-circle {% if paso.estado == 'completado' %}bg-white text-success{% elif paso.estado == 'en_curso' %}bg-white text-primary{% else %}bg-secondary text-white{% endif %}" style="width: 24px; height: 24px; line-height: 16px;">
+                                    {% if paso.estado == 'completado' %}<i class="bi bi-check"></i>{% else %}{{ paso.numero }}{% endif %}
+                                </span>
+                                <span class="small text-truncate">{{ paso.nombre }}</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Próxima Acción Recomendada & Alertas -->
+    <div class="row g-4 mb-4">
+        <!-- Próxima Acción -->
+        <div class="col-12 col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 h-100 border-start border-4 border-primary">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="badge {{ recomendacion.badge }} px-3 py-2 rounded-pill text-uppercase">
+                            <i class="bi bi-compass me-1"></i> Recomendación
+                        </span>
+                        <span class="small text-muted">Estado actual: <strong>{{ estado_general|title }}</strong></span>
+                    </div>
+                    <h3 class="h4 fw-bold text-dark mb-2">{{ recomendacion.titulo }}</h3>
+                    <p class="text-secondary mb-4">{{ recomendacion.mensaje }}</p>
+                    <a href="{{ recomendacion.url }}" class="btn btn-primary px-4 py-2 rounded-pill fw-semibold shadow-sm">
+                        {{ recomendacion.boton }} <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alertas Administrativas -->
+        <div class="col-12 col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 py-3 px-4 d-flex align-items-center justify-content-between">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-bell me-2 text-warning"></i> Alertas Operativas</h5>
+                    <span class="badge bg-light text-dark rounded-pill">{{ alertas|length }}</span>
+                </div>
+                <div class="card-body p-4 pt-0" style="max-height: 240px; overflow-y: auto;">
+                    {% if alertas %}
+                        <div class="d-flex flex-column gap-2">
+                            {% for a in alertas %}
+                            <div class="p-3 rounded-3 {% if a.nivel == 'critica' %}bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25{% elif a.nivel == 'advertencia' %}bg-warning bg-opacity-10 text-dark border border-warning border-opacity-25{% else %}bg-info bg-opacity-10 text-info border border-info border-opacity-25{% endif %}">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi {% if a.nivel == 'critica' %}bi-exclamation-triangle-fill{% elif a.nivel == 'advertencia' %}bi-exclamation-circle-fill{% else %}bi-info-circle-fill{% endif %}"></i>
+                                    <strong class="small">{{ a.titulo }}</strong>
+                                </div>
+                                <div class="small mt-1 text-opacity-75">{{ a.mensaje }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-check-circle text-success display-6"></i>
+                            <p class="small mt-2 mb-0">Sin alertas. El torneo avanza sin inconvenientes.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen de Grupos -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h4 class="fw-bold text-dark mb-0"><i class="bi bi-grid-3x3-gap me-2 text-primary"></i> Grupos y Clasificación</h4>
+        <a href="{% url 'configurar_grupos_torneo' torneo.id %}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+            <i class="bi bi-gear me-1"></i> Gestionar Grupos
+        </a>
+    </div>
+
+    <div class="row g-4 mb-4">
+        {% for item in resumen_grupos %}
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 p-4 pb-2 d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="fw-bold mb-0 text-dark">{{ item.grupo.nombre }}</h5>
+                        <small class="text-muted">{{ item.grupo.sector|default:"Sector General" }}</small>
+                    </div>
+                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">
+                        {{ item.equipos_count }} Equipos
+                    </span>
+                </div>
+                <div class="card-body px-4 py-2">
+                    <div class="d-flex justify-content-between align-items-center mb-2 small text-muted">
+                        <span>Progreso del Grupo</span>
+                        <span class="fw-bold text-dark">{{ item.progreso_pct }}%</span>
+                    </div>
+                    <div class="progress mb-3" style="height: 6px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ item.progreso_pct }}%;"></div>
+                    </div>
+
+                    <div class="p-3 bg-light rounded-3 mb-3 small">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Líder actual:</span>
+                            <span class="fw-bold text-dark">{{ item.lider.nombre|default:"Por definir" }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Partidos disputados:</span>
+                            <span class="fw-bold text-dark">{{ item.partidos_finalizados }} / {{ item.total_partidos }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <span class="small text-muted d-block mb-1">Clasificados {% if item.es_clasificacion_definitiva %}Definitivos{% else %}Provisionales{% endif %}:</span>
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for eq in item.clasificados %}
+                            <span class="badge {% if item.es_clasificacion_definitiva %}bg-success{% else %}bg-secondary{% endif %} bg-opacity-10 text-dark border me-1 mb-1">
+                                {{ eq.nombre }}
+                            </span>
+                            {% empty %}
+                            <span class="small text-muted italic">Sin clasificados aún</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-top-0 p-4 pt-0 d-flex gap-2">
+                    <a href="{% url 'ver_fixture_personalizado' torneo.id %}" class="btn btn-light btn-sm flex-fill rounded-pill">
+                        <i class="bi bi-calendar-event me-1"></i> Fixture
+                    </a>
+                    <a href="{% url 'estadisticas_torneo_personalizado' torneo.id %}" class="btn btn-outline-primary btn-sm flex-fill rounded-pill">
+                        <i class="bi bi-trophy me-1"></i> Tabla
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 p-5 text-center">
+                <i class="bi bi-folder-plus display-4 text-muted mb-3"></i>
+                <h5>No se han configurado grupos en este torneo</h5>
+                <p class="text-secondary small mb-3">Comienza agregando los grupos y asignando equipos.</p>
+                <div>
+                    <a href="{% url 'configurar_grupos_torneo' torneo.id %}" class="btn btn-primary rounded-pill px-4">
+                        Crear Primer Grupo
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Agenda Operativa / Próximos Encuentros -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-white border-0 p-4 pb-2 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <h4 class="fw-bold text-dark mb-0"><i class="bi bi-calendar-range me-2 text-primary"></i> Agenda Operativa (Próximos Encuentros)</h4>
+                <small class="text-muted">Partidos programados y asignaciones operativas</small>
+            </div>
+            <!-- Filtros -->
+            <form method="get" class="d-flex flex-wrap gap-2">
+                <select name="periodo" class="form-select form-select-sm rounded-pill" onchange="this.form.submit()">
+                    <option value="">Todos los periodos</option>
+                    <option value="hoy" {% if request.GET.periodo == 'hoy' %}selected{% endif %}>Hoy</option>
+                    <option value="semana" {% if request.GET.periodo == 'semana' %}selected{% endif %}>Esta semana</option>
+                </select>
+                <select name="grupo_id" class="form-select form-select-sm rounded-pill" onchange="this.form.submit()">
+                    <option value="">Todos los grupos</option>
+                    {% for g in grupos_activos %}
+                    <option value="{{ g.id }}" {% if request.GET.grupo_id == g.id|stringformat:"i" %}selected{% endif %}>{{ g.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Fecha / Hora</th>
+                            <th>Fase / Grupo</th>
+                            <th class="text-end">Local</th>
+                            <th class="text-center">VS</th>
+                            <th>Visitante</th>
+                            <th>Estadio / Cancha</th>
+                            <th>Árbitro / Vocal</th>
+                            <th>Estado</th>
+                            <th class="pe-4 text-end">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in agenda %}
+                        <tr>
+                            <td class="ps-4 fw-semibold small text-nowrap">
+                                <i class="bi bi-clock me-1 text-muted"></i>
+                                {{ item.partido.fecha_hora|date:"d/m/Y H:i"|default:"Por definir" }}
+                            </td>
+                            <td class="small">
+                                {% if item.partido.grupo_personalizado %}
+                                    <span class="badge bg-primary bg-opacity-10 text-primary">{{ item.partido.grupo_personalizado.nombre }}</span>
+                                {% else %}
+                                    <span class="badge bg-info bg-opacity-10 text-info">{{ item.partido.get_fase_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end fw-bold small">{{ item.partido.equipo_local.nombre }}</td>
+                            <td class="text-center small text-muted">
+                                {% if item.partido.estado == 'finalizado' %}
+                                    <span class="badge bg-dark px-2 py-1">{{ item.partido.goles_local }} - {{ item.partido.goles_visitante }}</span>
+                                {% else %}
+                                    vs
+                                {% endif %}
+                            </td>
+                            <td class="fw-bold small">{{ item.partido.equipo_visitante.nombre }}</td>
+                            <td class="small text-muted">
+                                <i class="bi bi-geo-alt me-1"></i> {{ item.partido.estadio|default:"Sin asignar" }}
+                            </td>
+                            <td class="small">
+                                <div class="text-truncate" style="max-width: 150px;">
+                                    <i class="bi bi-person-badge text-muted me-1"></i> Árb: {{ item.partido.arbitro.get_full_name|default:"Sin asignación" }}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge {% if item.partido.estado == 'finalizado' %}bg-success{% elif item.partido.estado == 'programado' %}bg-warning text-dark{% else %}bg-secondary{% endif %} rounded-pill">
+                                    {{ item.partido.get_estado_display }}
+                                </span>
+                            </td>
+                            <td class="pe-4 text-end">
+                                <a href="{% url 'detalle_partido' item.partido.id %}" class="btn btn-outline-secondary btn-sm rounded-circle shadow-sm" title="Ver Detalle">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-4 text-muted small">No hay partidos en la agenda con los filtros seleccionados.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones Rápidas & WhatsApp -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-light">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <h5 class="fw-bold text-dark mb-1"><i class="bi bi-share me-2 text-success"></i> Compartir Torneo por WhatsApp</h5>
+                <p class="small text-muted mb-0">Envía información pública actualizada a dirigentes, delegados y afición.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ whatsapp_link }}" target="_blank" class="btn btn-success rounded-pill px-4 fw-semibold shadow-sm">
+                    <i class="bi bi-whatsapp me-2"></i> Compartir por WhatsApp
+                </a>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

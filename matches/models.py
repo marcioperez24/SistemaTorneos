@@ -1,8 +1,11 @@
+import uuid
 from django.db import models
 from django.conf import settings
 from teams.models import Equipo, Categoria
 
 class Torneo(models.Model):
+    public_uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, verbose_name="Identificador Público UUID")
+    es_publico = models.BooleanField(default=True, verbose_name="Torneo Publicado / Vista Pública Activa")
     organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")
     TIPO_CHOICES = (
         ('liga', 'Liga (Todos contra todos por fechas)'),
@@ -37,6 +40,10 @@ class Torneo(models.Model):
     puntos_victoria = models.IntegerField(default=3, verbose_name="Puntos por Victoria")
     puntos_empate = models.IntegerField(default=1, verbose_name="Puntos por Empate")
     puntos_derrota = models.IntegerField(default=0, verbose_name="Puntos por Derrota")
+
+    # Configuración Eliminatorias Avanzadas
+    usar_gol_visitante = models.BooleanField(default=False, verbose_name="Usar Regla de Gol de Visitante")
+    disputar_tercer_lugar = models.BooleanField(default=True, verbose_name="Disputar Partido por el Tercer Lugar")
 
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
@@ -161,6 +168,7 @@ class Partido(models.Model):
         ('octavos', 'Octavos de Final'),
         ('cuartos', 'Cuartos de Final'),
         ('semifinal', 'Semifinales'),
+        ('tercer_lugar', 'Tercer Lugar'),
         ('final', 'Final'),
     )
 
@@ -362,12 +370,24 @@ class LlaveEliminatoria(models.Model):
         ('pendiente', 'Pendiente'),
         ('programada', 'Programada'),
         ('en_curso', 'En Curso'),
+        ('lista_para_confirmar', 'Lista para Confirmar'),
         ('finalizada', 'Finalizada'),
+        ('anulada', 'Anulada'),
     )
 
     FORMATOS = (
         ('partido_unico', 'Partido Único'),
         ('ida_vuelta', 'Ida y Vuelta'),
+    )
+
+    METODOS_CHOICES = (
+        ('marcador', 'Marcador Directo'),
+        ('marcador_global', 'Marcador Global'),
+        ('gol_visitante', 'Gol de Visitante'),
+        ('prorroga', 'Prórroga'),
+        ('penales', 'Penales'),
+        ('bye', 'Pase Directo (BYE)'),
+        ('decision_administrativa', 'Decisión Administrativa'),
     )
 
     organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")
@@ -384,8 +404,30 @@ class LlaveEliminatoria(models.Model):
     estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente', verbose_name="Estado de la Llave")
     ganador = models.ForeignKey(Equipo, on_delete=models.SET_NULL, null=True, blank=True, related_name='llaves_ganadas', verbose_name="Ganador de la Llave")
     siguiente_llave = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='llaves_previas', verbose_name="Siguiente Llave (Ronda Posterior)")
+    posicion_siguiente_llave = models.CharField(
+        max_length=10,
+        choices=(('local', 'Local'), ('visitante', 'Visitante')),
+        default='local',
+        verbose_name="Posición en Siguiente Llave"
+    )
     orden_visual = models.IntegerField(default=1, verbose_name="Orden de Presentación Visual")
     es_bye = models.BooleanField(default=False, verbose_name="Es Pase Directo / BYE")
+    
+    # Métricas de Resultados y Desempates
+    marcador_global_local = models.IntegerField(default=0, verbose_name="Marcador Global Local")
+    marcador_global_visitante = models.IntegerField(default=0, verbose_name="Marcador Global Visitante")
+    goles_visitante_local = models.IntegerField(default=0, verbose_name="Goles de Visitante del Equipo Local")
+    goles_visitante_visitante = models.IntegerField(default=0, verbose_name="Goles de Visitante del Equipo Visitante")
+    definido_por_penales = models.BooleanField(default=False, verbose_name="Definido por Penales")
+    penales_local = models.IntegerField(null=True, blank=True, verbose_name="Penales Local")
+    penales_visitante = models.IntegerField(null=True, blank=True, verbose_name="Penales Visitante")
+    hubo_prorroga = models.BooleanField(default=False, verbose_name="Hubo Prórroga")
+    goles_prorroga_local = models.IntegerField(default=0, verbose_name="Goles Prórroga Local")
+    goles_prorroga_visitante = models.IntegerField(default=0, verbose_name="Goles Prórroga Visitante")
+    metodo_definicion = models.CharField(max_length=30, choices=METODOS_CHOICES, blank=True, null=True, verbose_name="Método de Definición")
+    confirmado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Confirmado Por")
+    fecha_confirmacion = models.DateTimeField(null=True, blank=True, verbose_name="Fecha de Confirmación")
+
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -400,3 +442,20 @@ class LlaveEliminatoria(models.Model):
         return f"{self.get_fase_display()} Llave #{self.numero_llave}: {local_str} vs {visit_str} ({self.torneo.nombre})"
 
 
+class ResultadoFinalTorneo(models.Model):
+    organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")
+    torneo = models.OneToOneField(Torneo, on_delete=models.CASCADE, related_name='resultado_final', verbose_name="Torneo")
+    campeon = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='campeonatos_ganados', verbose_name="Campeón")
+    subcampeon = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='subcampeonatos', verbose_name="Subcampeón")
+    tercer_lugar = models.ForeignKey(Equipo, on_delete=models.SET_NULL, null=True, blank=True, related_name='terceros_lugares', verbose_name="Tercer Lugar")
+    cuarto_lugar = models.ForeignKey(Equipo, on_delete=models.SET_NULL, null=True, blank=True, related_name='cuartos_lugares', verbose_name="Cuarto Lugar")
+    fecha_confirmacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Confirmación")
+    confirmado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Confirmado Por")
+    observaciones = models.TextField(blank=True, null=True, verbose_name="Observaciones / Acta de Premiación")
+
+    class Meta:
+        verbose_name = "Resultado Final y Cuadro de Honor"
+        verbose_name_plural = "Resultados Finales y Cuadros de Honor"
+
+    def __str__(self):
+        return f"Campeón: {self.campeon.nombre} - Subcampeón: {self.subcampeon.nombre} ({self.torneo.nombre})"

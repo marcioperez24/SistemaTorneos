@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Impresión Consolidada - {{ torneo.nombre }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #fff; color: #000; }
+        .page-break { page-break-after: always; }
+        @media print {
+            .no-print { display: none !important; }
+            .card { border: none !important; box-shadow: none !important; }
+            body { padding: 0; margin: 0; }
+        }
+    </style>
+</head>
+<body class="p-4">
+
+    <!-- Toolbar Interactivo (No se imprime) -->
+    <div class="card bg-light border p-3 mb-4 no-print shadow-sm rounded-3">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h5 class="fw-bold mb-1"><i class="bi bi-printer me-2 text-primary"></i> Reporte Consolidado para Impresión</h5>
+                <p class="small text-muted mb-0">Selecciona las secciones que deseas incluir y presiona Imprimir.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button onclick="window.print()" class="btn btn-primary fw-semibold px-4 rounded-pill">
+                    <i class="bi bi-printer me-1"></i> Imprimir o Guardar PDF
+                </button>
+                <a href="{% url 'panel_torneo_personalizado' torneo.id %}" class="btn btn-outline-secondary rounded-pill">
+                    Volver
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ENCABEZADO Y PORTADA -->
+    <div class="text-center py-4 border-bottom mb-4">
+        <h4 class="text-uppercase fw-bold text-muted mb-1">{{ torneo.organizacion.nombre }}</h4>
+        <h1 class="display-5 fw-bold mb-1">{{ torneo.nombre }}</h1>
+        <p class="mb-1 fw-semibold">Categoría: {{ torneo.categoria.nombre|default:"General" }} &bull; Temporada {{ torneo.temporada }} &bull; {{ torneo.modalidad }}</p>
+        <small class="text-muted">Fecha de reporte: {{ fecha_impresion|date:"d/m/Y H:i" }}</small>
+    </div>
+
+    <!-- SECCIÓN 1: POSICIONES POR GRUPO -->
+    <div class="mb-5">
+        <h3 class="fw-bold border-bottom pb-2 mb-3"><i class="bi bi-grid-3x3-gap me-2"></i> Tablas de Posiciones por Grupo</h3>
+        <div class="row g-4">
+            {% for gdata in grupos_data %}
+            <div class="col-12 col-md-6 mb-3">
+                <h5 class="fw-bold mb-2">{{ gdata.grupo.nombre }}</h5>
+                <table class="table table-bordered table-sm text-center small align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-start ps-2">Equipo</th>
+                            <th>PJ</th>
+                            <th>PG</th>
+                            <th>PE</th>
+                            <th>PP</th>
+                            <th>GF</th>
+                            <th>GC</th>
+                            <th>DG</th>
+                            <th class="fw-bold">PTS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in gdata.posiciones %}
+                        <tr class="{% if row.posicion <= gdata.grupo.cupos_clasificacion %}table-active{% endif %}">
+                            <td class="text-start ps-2 fw-semibold">{{ row.posicion }}. {{ row.equipo.nombre }}</td>
+                            <td>{{ row.PJ }}</td>
+                            <td>{{ row.PG }}</td>
+                            <td>{{ row.PE }}</td>
+                            <td>{{ row.PP }}</td>
+                            <td>{{ row.GF }}</td>
+                            <td>{{ row.GC }}</td>
+                            <td>{{ row.DG }}</td>
+                            <td class="fw-bold">{{ row.PTS }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="page-break"></div>
+
+    <!-- SECCIÓN 2: FIXTURE COMPLETO -->
+    <div class="mb-5">
+        <h3 class="fw-bold border-bottom pb-2 mb-3"><i class="bi bi-calendar-check me-2"></i> Calendario de Encuentros y Resultados</h3>
+        {% for gdata in grupos_data %}
+        <h5 class="fw-bold mt-4 mb-2">{{ gdata.grupo.nombre }}</h5>
+        <table class="table table-bordered table-sm text-center small align-middle mb-4">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-2 text-start">Fecha / Hora</th>
+                    <th class="text-end">Equipo Local</th>
+                    <th>Resultado</th>
+                    <th class="text-start">Equipo Visitante</th>
+                    <th>Cancha / Estadio</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in gdata.partidos %}
+                <tr>
+                    <td class="ps-2 text-start">{{ p.fecha_hora|date:"d/m/Y H:i"|default:"Por definir" }}</td>
+                    <td class="text-end fw-semibold">{{ p.equipo_local.nombre }}</td>
+                    <td class="fw-bold">
+                        {% if p.estado == 'finalizado' %}
+                            {{ p.goles_local }} - {{ p.goles_visitante }}
+                        {% else %}
+                            vs
+                        {% endif %}
+                    </td>
+                    <td class="text-start fw-semibold">{{ p.equipo_visitante.nombre }}</td>
+                    <td>{{ p.estadio|default:"-" }}</td>
+                    <td>{{ p.get_estado_display }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-muted">Sin partidos en este grupo.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endfor %}
+    </div>
+
+    <!-- SECCIÓN 3: CLASIFICADOS Y CUADRO ELIMINATORIO -->
+    {% if llaves %}
+    <div class="page-break"></div>
+    <div class="mb-5">
+        <h3 class="fw-bold border-bottom pb-2 mb-3"><i class="bi bi-diagram-3 me-2"></i> Cuadro Eliminatorio</h3>
+        <table class="table table-bordered table-sm text-center small align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Fase</th>
+                    <th>Llave</th>
+                    <th class="text-end">Equipo Local</th>
+                    <th>Global</th>
+                    <th class="text-start">Equipo Visitante</th>
+                    <th>Penales</th>
+                    <th>Ganador</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ll in llaves %}
+                <tr>
+                    <td class="fw-semibold">{{ ll.get_fase_display }}</td>
+                    <td>#{{ ll.numero_llave }}</td>
+                    <td class="text-end">{{ ll.equipo_local.nombre|default:"Por definir" }}</td>
+                    <td class="fw-bold">{{ ll.marcador_global_local }} - {{ ll.marcador_global_visitante }}</td>
+                    <td class="text-start">{{ ll.equipo_visitante.nombre|default:"Por definir" }}</td>
+                    <td>{% if ll.definido_por_penales %}{{ ll.penales_local }}-{{ ll.penales_visitante }}{% else %}-{% endif %}</td>
+                    <td class="fw-bold text-success">{{ ll.ganador.nombre|default:ll.get_estado_display }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- SECCIÓN 4: PODIO FINAL Y CAMPEÓN -->
+    {% if resultado_final %}
+    <div class="mt-4 p-4 border rounded-3 text-center bg-light">
+        <h2 class="fw-bold mb-2">🏆 Cuadro de Honor Final</h2>
+        <h3 class="display-6 fw-bold text-uppercase mb-3">{{ resultado_final.campeon.nombre }} (CAMPEÓN)</h3>
+        <p class="mb-0"><strong>Subcampeón:</strong> {{ resultado_final.subcampeon.nombre }} | <strong>Tercer Lugar:</strong> {{ resultado_final.tercer_lugar.nombre|default:"N/A" }}</p>
+    </div>
+    {% endif %}
+
+</body>
+</html>

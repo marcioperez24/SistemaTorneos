@@ -1,0 +1,178 @@
+{% extends 'teams/base.html' %}
+{% load static %}
+
+{% block title %}Campeón - {{ torneo.nombre }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-lg-5">
+
+    <!-- Encabezado de Navegación -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 pb-3 border-bottom gap-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a href="{% url 'gestion_torneos' %}" class="text-decoration-none">Torneos</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'detalle_torneo' torneo.id %}" class="text-decoration-none">{{ torneo.nombre }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Cuadro de Honor</li>
+                </ol>
+            </nav>
+            <h1 class="h2 fw-bold text-navy mb-0">🏆 Cuadro de Honor y Campeón</h1>
+            <p class="text-muted small mb-0">{{ torneo.nombre }} - {{ torneo.categoria.nombre }} ({{ torneo.temporada }})</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'ver_cuadro_eliminatorio_view' torneo.id %}" class="btn btn-outline-secondary">
+                <i class="bi bi-diagram-3-fill me-1"></i> Ver Bracket
+            </a>
+            <a href="{% url 'imprimir_cuadro_eliminatorio_view' torneo.id %}" target="_blank" class="btn btn-outline-dark">
+                <i class="bi bi-printer me-1"></i> Imprimir
+            </a>
+            <a href="{% url 'exportar_excel_cuadro_eliminatorio_view' torneo.id %}" class="btn btn-success">
+                <i class="bi bi-file-earmark-excel me-1"></i> Excel
+            </a>
+        </div>
+    </div>
+
+    <!-- TARJETA PRINCIPAL DEL CAMPEÓN -->
+    <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-5 bg-gradient" style="background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); color: #ffffff;">
+        <div class="card-body p-4 p-md-5 text-center position-relative">
+            <div class="mb-3">
+                <span class="badge bg-warning text-dark fs-6 px-3 py-2 rounded-pill fw-bold text-uppercase shadow-sm">
+                    ⭐ CAMPEÓN OFICIAL ⭐
+                </span>
+            </div>
+
+            <!-- Escudo / Logo del Campeón -->
+            <div class="my-4">
+                {% if resultado_final.campeon.logo %}
+                    <img src="{{ resultado_final.campeon.logo.url }}" alt="{{ resultado_final.campeon.nombre }}" class="img-fluid rounded-circle shadow-lg border border-4 border-warning bg-white" style="width: 140px; height: 140px; object-fit: contain; padding: 10px;">
+                {% else %}
+                    <div class="d-inline-flex align-items-center justify-content-center bg-warning text-dark fw-bold rounded-circle shadow-lg border border-4 border-white" style="width: 140px; height: 140px; font-size: 3rem;">
+                        🏆
+                    </div>
+                {% endif %}
+            </div>
+
+            <h1 class="display-4 fw-black text-warning mb-2 text-uppercase letter-spacing-1">
+                {{ resultado_final.campeon.nombre }}
+            </h1>
+            <p class="fs-5 text-light opacity-90 mb-4 fw-medium">
+                ¡Campeón Invicto / Definitivo del Torneo {{ torneo.nombre }}!
+            </p>
+
+            <div class="d-inline-flex flex-wrap justify-content-center gap-3 px-4 py-3 rounded-3 bg-white bg-opacity-10 backdrop-blur border border-white border-opacity-20 text-start">
+                <div>
+                    <span class="d-block text-warning small text-uppercase fw-bold opacity-75">Organización</span>
+                    <span class="fw-semibold">{{ organizacion.nombre }}</span>
+                </div>
+                <div class="border-end border-white border-opacity-20 mx-2 d-none d-md-block"></div>
+                <div>
+                    <span class="d-block text-warning small text-uppercase fw-bold opacity-75">Categoría</span>
+                    <span class="fw-semibold">{{ torneo.categoria.nombre }}</span>
+                </div>
+                <div class="border-end border-white border-opacity-20 mx-2 d-none d-md-block"></div>
+                <div>
+                    <span class="d-block text-warning small text-uppercase fw-bold opacity-75">Fecha Coronación</span>
+                    <span class="fw-semibold">{{ resultado_final.fecha_confirmacion|date:"d/m/Y H:i" }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PODIO DE HONOR -->
+    <div class="row g-4 mb-5">
+        <!-- 2do Lugar (Subcampeón) -->
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm rounded-4 text-center p-4" style="background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);">
+                <div class="fs-1 text-secondary mb-2">🥈</div>
+                <h5 class="text-uppercase text-muted fw-bold mb-1">SUBCAMPEÓN</h5>
+                <h3 class="fw-bold text-dark mb-3">{{ resultado_final.subcampeon.nombre }}</h3>
+                {% if resultado_final.subcampeon.logo %}
+                    <img src="{{ resultado_final.subcampeon.logo.url }}" class="mx-auto rounded-circle border shadow-sm mb-3" style="width: 70px; height: 70px; object-fit: contain;">
+                {% endif %}
+                <span class="badge bg-secondary px-3 py-2 rounded-pill mt-auto">2do Lugar</span>
+            </div>
+        </div>
+
+        <!-- 3er Lugar -->
+        {% if resultado_final.tercer_lugar %}
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm rounded-4 text-center p-4" style="background: linear-gradient(180deg, #fefce8 0%, #fef08a 100%);">
+                <div class="fs-1 text-warning mb-2">🥉</div>
+                <h5 class="text-uppercase text-warning-emphasis fw-bold mb-1">TERCER LUGAR</h5>
+                <h3 class="fw-bold text-dark mb-3">{{ resultado_final.tercer_lugar.nombre }}</h3>
+                {% if resultado_final.tercer_lugar.logo %}
+                    <img src="{{ resultado_final.tercer_lugar.logo.url }}" class="mx-auto rounded-circle border shadow-sm mb-3" style="width: 70px; height: 70px; object-fit: contain;">
+                {% endif %}
+                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill mt-auto">3er Lugar</span>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 4to Lugar -->
+        {% if resultado_final.cuarto_lugar %}
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm rounded-4 text-center p-4 bg-light">
+                <div class="fs-1 text-muted mb-2">🏅</div>
+                <h5 class="text-uppercase text-muted fw-bold mb-1">CUARTO LUGAR</h5>
+                <h3 class="fw-bold text-dark mb-3">{{ resultado_final.cuarto_lugar.nombre }}</h3>
+                {% if resultado_final.cuarto_lugar.logo %}
+                    <img src="{{ resultado_final.cuarto_lugar.logo.url }}" class="mx-auto rounded-circle border shadow-sm mb-3" style="width: 70px; height: 70px; object-fit: contain;">
+                {% endif %}
+                <span class="badge bg-light text-dark border px-3 py-2 rounded-pill mt-auto">4to Lugar</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- DETALLES DE LA FINAL Y ACTA -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-white py-3 border-bottom">
+            <h5 class="mb-0 fw-bold text-navy"><i class="bi bi-journal-check me-2"></i> Detalles de la Gran Final</h5>
+        </div>
+        <div class="card-body p-4">
+            {% if partidos_final %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Fecha & Hora</th>
+                                <th>Estadio</th>
+                                <th class="text-end">Local</th>
+                                <th class="text-center">Resultado</th>
+                                <th>Visitante</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pf in partidos_final %}
+                            <tr>
+                                <td>{{ pf.fecha_hora|date:"d/m/Y H:i" }}</td>
+                                <td>{{ pf.estadio }}</td>
+                                <td class="text-end fw-bold {% if pf.equipo_local == resultado_final.campeon %}text-warning-emphasis{% endif %}">
+                                    {{ pf.equipo_local.nombre }}
+                                </td>
+                                <td class="text-center fw-bold fs-5 bg-light rounded px-3 py-1">
+                                    {{ pf.goles_local }} - {{ pf.goles_visitante }}
+                                </td>
+                                <td class="fw-bold {% if pf.equipo_visitante == resultado_final.campeon %}text-warning-emphasis{% endif %}">
+                                    {{ pf.equipo_visitante.nombre }}
+                                </td>
+                                <td><span class="badge bg-success">Finalizado</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+
+            {% if resultado_final.observaciones %}
+                <div class="mt-4 p-3 bg-light rounded-3 border">
+                    <h6 class="fw-bold text-secondary mb-1">Observaciones / Acta de Premiación:</h6>
+                    <p class="mb-0 text-muted small">{{ resultado_final.observaciones }}</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

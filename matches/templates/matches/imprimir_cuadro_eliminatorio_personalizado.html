@@ -110,6 +110,35 @@
             </div>
         </div>
 
+        <!-- Cuadro de Honor si el Torneo Finalizó -->
+        {% if resultado_final %}
+        <div class="mb-4 p-3 border border-warning rounded bg-light">
+            <h5 class="fw-bold text-dark mb-2">🏆 CUADRO DE HONOR Y RESULTADO FINAL</h5>
+            <div class="row text-center g-2">
+                <div class="col-3">
+                    <small class="text-uppercase text-muted d-block fw-bold">CAMPEÓN</small>
+                    <strong class="text-warning-emphasis fs-6">{{ resultado_final.campeon.nombre }}</strong>
+                </div>
+                <div class="col-3 border-start">
+                    <small class="text-uppercase text-muted d-block fw-bold">SUBCAMPEÓN</small>
+                    <strong class="text-dark">{{ resultado_final.subcampeon.nombre }}</strong>
+                </div>
+                {% if resultado_final.tercer_lugar %}
+                <div class="col-3 border-start">
+                    <small class="text-uppercase text-muted d-block fw-bold">TERCER LUGAR</small>
+                    <strong class="text-dark">{{ resultado_final.tercer_lugar.nombre }}</strong>
+                </div>
+                {% endif %}
+                {% if resultado_final.cuarto_lugar %}
+                <div class="col-3 border-start">
+                    <small class="text-uppercase text-muted d-block fw-bold">CUARTO LUGAR</small>
+                    <strong class="text-dark">{{ resultado_final.cuarto_lugar.nombre }}</strong>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Tabla de Clasificados y Bombos -->
         <h5 class="fw-bold text-dark mb-2">1. Clasificados Definitivos y Bombos</h5>
         <table class="table table-bordered table-print mb-4 text-center">
@@ -144,31 +173,35 @@
         </table>
 
         <!-- Tabla de Llaves Eliminatorias -->
-        <h5 class="fw-bold text-dark mb-2">2. Llaves Eliminatorias de Primera Ronda</h5>
+        <h5 class="fw-bold text-dark mb-2">2. Estructura y Resultados del Cuadro Eliminatorio</h5>
         <table class="table table-bordered table-print mb-4 text-center">
             <thead>
                 <tr>
-                    <th style="width: 50px;">LLAVE</th>
                     <th>FASE</th>
+                    <th style="width: 50px;">LLAVE</th>
                     <th class="text-start">EQUIPO LOCAL</th>
                     <th class="text-start">EQUIPO VISITANTE</th>
-                    <th>FORMATO</th>
+                    <th>GLOBAL</th>
+                    <th>PENALES</th>
+                    <th>GANADOR</th>
                     <th>ESTADO</th>
                 </tr>
             </thead>
             <tbody>
                 {% for ll in llaves %}
                 <tr>
-                    <td class="fw-bold"># {{ ll.numero_llave }}</td>
                     <td>{{ ll.get_fase_display }}</td>
+                    <td class="fw-bold"># {{ ll.numero_llave }}</td>
                     <td class="text-start fw-bold">{% if ll.equipo_local %}{{ ll.equipo_local.nombre }}{% else %}- BYE -{% endif %}</td>
                     <td class="text-start fw-bold">{% if ll.equipo_visitante %}{{ ll.equipo_visitante.nombre }}{% else %}- BYE -{% endif %}</td>
-                    <td>{{ ll.get_formato_display }}</td>
+                    <td>{% if ll.estado in 'lista_para_confirmar,finalizada' %}{{ ll.marcador_global_local }} - {{ ll.marcador_global_visitante }}{% else %}-{% endif %}</td>
+                    <td>{% if ll.definido_por_penales %}{{ ll.penales_local }} - {{ ll.penales_visitante }}{% else %}-{% endif %}</td>
+                    <td class="fw-bold text-success">{% if ll.ganador %}{{ ll.ganador.nombre }}{% elif ll.es_bye %}BYE{% else %}-{% endif %}</td>
                     <td>{{ ll.get_estado_display }}</td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-muted py-2">Sin llaves eliminatorias configuradas.</td>
+                    <td colspan="8" class="text-muted py-2">Sin llaves eliminatorias configuradas.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -177,7 +210,7 @@
         <!-- Pie de Página -->
         <div class="mt-4 pt-3 border-top d-flex justify-content-between text-muted fs-9">
             <div>SistemaTorneos - Reporte Oficial de Cuadro Eliminatorio</div>
-            <div>Página 1 de 1</div>
+            <div>Impreso por {{ request.user.get_full_name|default:request.user.username }}</div>
         </div>
 
     </div>

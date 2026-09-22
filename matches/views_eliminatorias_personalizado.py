@@ -6,7 +6,8 @@ from django.utils import timezone
 from django.utils.text import slugify
 
 from matches.models import (
-    Torneo, GrupoTorneo, ClasificadoTorneo, LlaveEliminatoria, Partido, EquipoGrupoTorneo
+    Torneo, GrupoTorneo, ClasificadoTorneo, LlaveEliminatoria, Partido, EquipoGrupoTorneo,
+    ResultadoFinalTorneo
 )
 from matches.services.sorteo_personalizado import (
     verificar_estado_clasificacion_grupos,
@@ -14,8 +15,15 @@ from matches.services.sorteo_personalizado import (
     resolver_empate_administrativo,
     reabrir_clasificacion_definitiva,
     generar_sorteo_eliminatorio,
-    confirmar_y_crear_cuadro_eliminatorio,
-    generar_excel_cuadro_eliminatorio
+    confirmar_y_crear_cuadro_eliminatorio
+)
+from matches.services.eliminatorias_personalizado import (
+    evaluar_estado_llave,
+    confirmar_ganador_llave,
+    procesar_bye_llave,
+    reabrir_llave_eliminatoria,
+    programar_partidos_ronda_siguiente,
+    generar_excel_cuadro_eliminatorio_completo
 )
 from teams.models import Equipo
 
@@ -253,40 +261,165 @@ def ver_cuadro_eliminatorio_view(request, torneo_id):
 
     llaves = list(
         LlaveEliminatoria.objects.filter(torneo=torneo)
-        .select_related('equipo_local', 'equipo_visitante', 'clasificado_local', 'clasificado_visitante')
+        .select_related('equipo_local', 'equipo_visitante', 'clasificado_local', 'clasificado_visitante', 'ganador')
         .order_by('fase', 'numero_llave')
     )
 
     partidos_eliminatorios = Partido.objects.filter(
         organizacion=request.organizacion,
         torneo=torneo,
-        fase__in=['dieciseisavos', 'octavos', 'cuartos', 'semifinal', 'final']
+        fase__in=['dieciseisavos', 'octavos', 'cuartos', 'semifinal', 'tercer_lugar', 'final']
     ).select_related('equipo_local', 'equipo_visitante').order_by('fecha_hora', 'id')
 
-    # Agrupar partidos por pareja de equipos o jornada para relacionar Ida/Vuelta
+    # Agrupar partidos por pareja de equipos
     partidos_map = {}
     for p in partidos_eliminatorios:
         key = tuple(sorted([p.equipo_local_id, p.equipo_visitante_id]))
         partidos_map.setdefault(key, []).append(p)
 
-    llaves_con_partidos = []
+    llaves_con_evaluacion = []
     for ll in llaves:
         pts_rel = []
         if ll.equipo_local_id and ll.equipo_visitante_id:
             key = tuple(sorted([ll.equipo_local_id, ll.equipo_visitante_id]))
             pts_rel = partidos_map.get(key, [])
 
-        llaves_con_partidos.append({
+        eval_data = evaluar_estado_llave(ll, request.organizacion)
+
+        llaves_con_evaluacion.append({
             'llave': ll,
             'partidos': pts_rel,
+            'evaluacion': eval_data,
         })
+
+    resultado_final = ResultadoFinalTorneo.objects.filter(torneo=torneo).select_related('campeon', 'subcampeon', 'tercer_lugar', 'cuarto_lugar').first()
 
     context = {
         'torneo': torneo,
-        'llaves_con_partidos': llaves_con_partidos,
+        'llaves_con_evaluacion': llaves_con_evaluacion,
         'hay_llaves': len(llaves) > 0,
+        'resultado_final': resultado_final,
     }
     return render(request, 'matches/ver_cuadro_eliminatorio_personalizado.html', context)
+
+
+@login_required
+def confirmar_ganador_llave_view(request, torneo_id, llave_id):
+    """
+    POST endpoint para confirmar el ganador de una llave eliminatoria.
+    """
+    torneo = get_object_or_404(Torneo, id=torneo_id, organizacion=request.organizacion, tipo='personalizado')
+    llave = get_object_or_404(LlaveEliminatoria, id=llave_id, torneo=torneo, organizacion=request.organizacion)
+
+    if request.method == 'POST':
+        ganador_id = request.POST.get('ganador_id')
+        datos_confirmacion = {
+            'penales_local': request.POST.get('penales_local'),
+            'penales_visitante': request.POST.get('penales_visitante'),
+            'hubo_prorroga': request.POST.get('hubo_prorroga') == '1',
+            'motivo_admin': request.POST.get('motivo_admin'),
+            'observaciones': request.POST.get('observaciones'),
+        }
+
+        try:
+            confirmar_ganador_llave(
+                llave=llave,
+                ganador_id=ganador_id,
+                usuario=request.user,
+                organizacion=request.organizacion,
+                datos_confirmacion=datos_confirmacion
+            )
+            messages.success(request, f"Ganador confirmado exitosamente en {llave.get_fase_display()} Llave #{llave.numero_llave}.")
+        except Exception as e:
+            messages.error(request, f"Error al confirmar ganador: {str(e)}")
+
+    return redirect('ver_cuadro_eliminatorio_view', torneo_id=torneo.id)
+
+
+@login_required
+def procesar_bye_view(request, torneo_id, llave_id):
+    """
+    POST endpoint para procesar el pase directo por BYE.
+    """
+    torneo = get_object_or_404(Torneo, id=torneo_id, organizacion=request.organizacion, tipo='personalizado')
+    llave = get_object_or_404(LlaveEliminatoria, id=llave_id, torneo=torneo, organizacion=request.organizacion)
+
+    if request.method == 'POST':
+        try:
+            procesar_bye_llave(llave, request.user, request.organizacion)
+            messages.success(request, f"Pase directo BYE procesado correctamente para la llave #{llave.numero_llave}.")
+        except Exception as e:
+            messages.error(request, f"Error al procesar BYE: {str(e)}")
+
+    return redirect('ver_cuadro_eliminatorio_view', torneo_id=torneo.id)
+
+
+@login_required
+def reabrir_llave_view(request, torneo_id, llave_id):
+    """
+    POST endpoint para que superadmin reabra una llave eliminatoria finalizada.
+    """
+    torneo = get_object_or_404(Torneo, id=torneo_id, organizacion=request.organizacion, tipo='personalizado')
+    llave = get_object_or_404(LlaveEliminatoria, id=llave_id, torneo=torneo, organizacion=request.organizacion)
+
+    if request.method == 'POST':
+        motivo = request.POST.get('motivo_reapertura', '')
+        try:
+            reabrir_llave_eliminatoria(llave, request.user, request.organizacion, motivo)
+            messages.success(request, f"Llave {llave.get_fase_display()} #{llave.numero_llave} reabierta exitosamente.")
+        except Exception as e:
+            messages.error(request, f"Error al reabrir llave: {str(e)}")
+
+    return redirect('ver_cuadro_eliminatorio_view', torneo_id=torneo.id)
+
+
+@login_required
+def programar_partidos_ronda_view(request, torneo_id):
+    """
+    POST endpoint para programar partidos de llaves preparadas en la siguiente ronda.
+    """
+    torneo = get_object_or_404(Torneo, id=torneo_id, organizacion=request.organizacion, tipo='personalizado')
+
+    if request.method == 'POST':
+        datos = {
+            'fase': request.POST.get('fase'),
+            'fecha_inicial': request.POST.get('fecha_inicial', timezone.now().strftime('%Y-%m-%d')),
+            'hora_inicial': request.POST.get('hora_inicial', '14:00'),
+            'intervalo_dias': int(request.POST.get('intervalo_dias', 7)),
+            'estadio': request.POST.get('estadio', 'Estadio Principal'),
+            'formato': request.POST.get('formato', 'partido_unico'),
+        }
+        try:
+            partidos = programar_partidos_ronda_siguiente(torneo, request.organizacion, request.user, datos)
+            messages.success(request, f"Programados {len(partidos)} partidos para la fase {datos['fase']}.")
+        except Exception as e:
+            messages.error(request, f"Error al programar ronda: {str(e)}")
+
+    return redirect('ver_cuadro_eliminatorio_view', torneo_id=torneo.id)
+
+
+@login_required
+def pantalla_campeon_view(request, torneo_id):
+    """
+    Vista de celebración pública/administrativa del campeón y cuadro de honor del torneo.
+    """
+    torneo = get_object_or_404(Torneo, id=torneo_id, organizacion=request.organizacion, tipo='personalizado')
+    resultado_final = get_object_or_404(ResultadoFinalTorneo, torneo=torneo, organizacion=request.organizacion)
+
+    partidos_final = Partido.objects.filter(
+        organizacion=request.organizacion,
+        torneo=torneo,
+        fase='final',
+        estado='finalizado'
+    )
+
+    context = {
+        'torneo': torneo,
+        'organizacion': request.organizacion,
+        'resultado_final': resultado_final,
+        'partidos_final': partidos_final,
+    }
+    return render(request, 'matches/pantalla_campeon.html', context)
 
 
 @login_required
@@ -295,14 +428,16 @@ def imprimir_cuadro_eliminatorio_view(request, torneo_id):
     Vista de impresión oficial (@media print) del cuadro eliminatorio.
     """
     torneo = get_object_or_404(Torneo, id=torneo_id, organizacion=request.organizacion, tipo='personalizado')
-    llaves = list(LlaveEliminatoria.objects.filter(torneo=torneo).select_related('equipo_local', 'equipo_visitante'))
+    llaves = list(LlaveEliminatoria.objects.filter(torneo=torneo).select_related('equipo_local', 'equipo_visitante', 'ganador'))
     clasificados = list(ClasificadoTorneo.objects.filter(torneo=torneo, activo=True).select_related('equipo', 'grupo'))
+    resultado_final = ResultadoFinalTorneo.objects.filter(torneo=torneo).select_related('campeon', 'subcampeon', 'tercer_lugar', 'cuarto_lugar').first()
 
     context = {
         'torneo': torneo,
         'organizacion': request.organizacion,
         'llaves': llaves,
         'clasificados': clasificados,
+        'resultado_final': resultado_final,
         'fecha_impresion': timezone.now(),
     }
     return render(request, 'matches/imprimir_cuadro_eliminatorio_personalizado.html', context)
@@ -311,10 +446,10 @@ def imprimir_cuadro_eliminatorio_view(request, torneo_id):
 @login_required
 def exportar_excel_cuadro_eliminatorio_view(request, torneo_id):
     """
-    Descarga del libro de Excel con la estructura del cuadro eliminatorio.
+    Descarga del libro de Excel con la estructura completa del cuadro eliminatorio, campeón y auditoría.
     """
     torneo = get_object_or_404(Torneo, id=torneo_id, organizacion=request.organizacion, tipo='personalizado')
-    excel_bytes = generar_excel_cuadro_eliminatorio(torneo, request.organizacion)
+    excel_bytes = generar_excel_cuadro_eliminatorio_completo(torneo, request.organizacion)
 
     nombre_clean = slugify(torneo.nombre)
     fecha_str = timezone.now().strftime('%Y%m%d')
@@ -326,3 +461,4 @@ def exportar_excel_cuadro_eliminatorio_view(request, torneo_id):
     )
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
+

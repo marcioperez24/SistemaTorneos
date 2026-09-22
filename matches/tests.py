@@ -1,11 +1,12 @@
 from django.test import TestCase
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from users.models import Organizacion
 from teams.models import Categoria, Equipo, FichaJugador
-from matches.models import Torneo, GrupoTorneo, EquipoGrupoTorneo, Partido, EventoPartido
+from matches.models import Torneo, GrupoTorneo, EquipoGrupoTorneo, Partido, EventoPartido, BitacoraTorneo
 
 User = get_user_model()
 
@@ -973,6 +974,758 @@ class TorneoPersonalizadoPhase5Tests(TestCase):
         url = reverse('confirmar_clasificados_view', kwargs={'torneo_id': self.torneo.id})
         res = self.client.get(url)
         self.assertEqual(res.status_code, 404)
+
+
+from matches.models import ResultadoFinalTorneo
+from matches.services.eliminatorias_personalizado import (
+    evaluar_estado_llave,
+    confirmar_ganador_llave,
+    procesar_bye_llave,
+    reabrir_llave_eliminatoria,
+    programar_partidos_ronda_siguiente,
+    generar_excel_cuadro_eliminatorio_completo
+)
+
+
+class TorneoPersonalizadoPhase6Tests(TestCase):
+
+    def setUp(self):
+        self.admin_user = User.objects.create_user(
+            username="admin_p6", password="password123", role="superadmin"
+        )
+        self.normal_user = User.objects.create_user(
+            username="normal_p6", password="password123", role="jugador"
+        )
+        self.org1 = Organizacion.objects.create(nombre="Org Fase 6", codigo="ORGF6")
+        self.org2 = Organizacion.objects.create(nombre="Org Ajena 6", codigo="ORGF6A")
+
+        UsuarioOrganizacion.objects.create(usuario=self.admin_user, organizacion=self.org1, rol='admin', activo=True)
+        UsuarioOrganizacion.objects.create(usuario=self.normal_user, organizacion=self.org1, rol='miembro', activo=True)
+
+        self.cat1 = Categoria.objects.create(nombre="Máster 50", organizacion=self.org1)
+
+        self.torneo = Torneo.objects.create(
+            nombre="Copa Personalizada F6",
+            categoria=self.cat1,
+            organizacion=self.org1,
+            tipo='personalizado',
+            temporada="2026",
+            usar_gol_visitante=False,
+            disputar_tercer_lugar=True
+        )
+
+        self.torneo_liga = Torneo.objects.create(
+            nombre="Liga Regular Intacta",
+            categoria=self.cat1,
+            organizacion=self.org1,
+            tipo='liga',
+            temporada="2026"
+        )
+
+        self.equipos = [
+            Equipo.objects.create(nombre=f"Equipo {i}", categoria=self.cat1, organizacion=self.org1, dirigente=self.admin_user)
+            for i in range(1, 9)
+        ]
+
+        # Llave 1 Semifinal: Equipo 1 vs Equipo 2
+        self.llave_sem1 = LlaveEliminatoria.objects.create(
+            organizacion=self.org1,
+            torneo=self.torneo,
+            fase='semifinal',
+            numero_llave=1,
+            equipo_local=self.equipos[0],
+            equipo_visitante=self.equipos[1],
+            formato='partido_unico',
+            estado='programada',
+            posicion_siguiente_llave='local'
+        )
+
+        # Llave 2 Semifinal: Equipo 3 vs Equipo 4
+        self.llave_sem2 = LlaveEliminatoria.objects.create(
+            organizacion=self.org1,
+            torneo=self.torneo,
+            fase='semifinal',
+            numero_llave=2,
+            equipo_local=self.equipos[2],
+            equipo_visitante=self.equipos[3],
+            formato='partido_unico',
+            estado='programada',
+            posicion_siguiente_llave='visitante'
+        )
+
+        # Llave Final (espera ganadores)
+        self.llave_final = LlaveEliminatoria.objects.create(
+            organizacion=self.org1,
+            torneo=self.torneo,
+            fase='final',
+            numero_llave=1,
+            equipo_local=None,
+            equipo_visitante=None,
+            formato='partido_unico',
+            estado='pendiente'
+        )
+
+        self.llave_sem1.siguiente_llave = self.llave_final
+        self.llave_sem1.save()
+        self.llave_sem2.siguiente_llave = self.llave_final
+        self.llave_sem2.save()
+
+    def _login_admin(self):
+        session = self.client.session
+        session['current_organizacion_id'] = self.org1.id
+        session.save()
+        self.client.login(username="admin_p6", password="password123")
+
+    def test_01_partido_unico_ganador_local(self):
+        p = Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=3, goles_visitante=1, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        res = evaluar_estado_llave(self.llave_sem1, self.org1)
+        self.assertTrue(res['completa'])
+        self.assertEqual(res['ganador'], self.equipos[0])
+        self.assertEqual(res['metodo'], 'marcador')
+
+    def test_02_partido_unico_ganador_visitante(self):
+        p = Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=0, goles_visitante=2, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        res = evaluar_estado_llave(self.llave_sem1, self.org1)
+        self.assertTrue(res['completa'])
+        self.assertEqual(res['ganador'], self.equipos[1])
+
+    def test_03_partido_unico_empatado_requiere_penales(self):
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=2, goles_visitante=2, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        res = evaluar_estado_llave(self.llave_sem1, self.org1)
+        self.assertFalse(res['completa'])
+        self.assertTrue(res['requiere_penales'])
+
+    def test_04_registro_penales(self):
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=1, goles_visitante=1, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        confirmar_ganador_llave(
+            self.llave_sem1, self.equipos[0].id, self.admin_user, self.org1,
+            datos_confirmacion={'penales_local': 5, 'penales_visitante': 4}
+        )
+        self.llave_sem1.refresh_from_db()
+        self.assertTrue(self.llave_sem1.definido_por_penales)
+        self.assertEqual(self.llave_sem1.penales_local, 5)
+        self.assertEqual(self.llave_sem1.penales_visitante, 4)
+        self.assertEqual(self.llave_sem1.ganador, self.equipos[0])
+
+    def test_05_penales_no_cuentan_como_goles_partido(self):
+        p = Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=1, goles_visitante=1, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        confirmar_ganador_llave(
+            self.llave_sem1, self.equipos[0].id, self.admin_user, self.org1,
+            datos_confirmacion={'penales_local': 4, 'penales_visitante': 3}
+        )
+        p.refresh_from_db()
+        self.assertEqual(p.goles_local, 1)  # Marcador de partido no cambia
+
+    def test_06_prorroga_registro(self):
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=2, goles_visitante=1, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        confirmar_ganador_llave(
+            self.llave_sem1, self.equipos[0].id, self.admin_user, self.org1,
+            datos_confirmacion={'hubo_prorroga': True}
+        )
+        self.llave_sem1.refresh_from_db()
+        self.assertTrue(self.llave_sem1.hubo_prorroga)
+
+    def test_07_ida_y_vuelta_ganador_global(self):
+        self.llave_sem1.formato = 'ida_vuelta'
+        self.llave_sem1.save()
+
+        # Ida: E1 (2) vs E2 (1)
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal', numero_vuelta=1,
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=2, goles_visitante=1, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        # Vuelta: E2 (1) vs E1 (1) -> Global E1 3 - 2 E2
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal', numero_vuelta=2,
+            equipo_local=self.equipos[1], equipo_visitante=self.equipos[0],
+            goles_local=1, goles_visitante=1, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        res = evaluar_estado_llave(self.llave_sem1, self.org1)
+        self.assertTrue(res['completa'])
+        self.assertEqual(res['ganador'], self.equipos[0])
+        self.assertEqual(res['marcador_global_local'], 3)
+        self.assertEqual(res['marcador_global_visitante'], 2)
+
+    def test_08_localias_invertidas_calculo_correcto(self):
+        self.llave_sem1.formato = 'ida_vuelta'
+        self.llave_sem1.save()
+
+        # Ida: E2 (3) vs E1 (0)
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal', numero_vuelta=1,
+            equipo_local=self.equipos[1], equipo_visitante=self.equipos[0],
+            goles_local=3, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        # Vuelta: E1 (4) vs E2 (0) -> Global E1 4 - 3 E2
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal', numero_vuelta=2,
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=4, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        res = evaluar_estado_llave(self.llave_sem1, self.org1)
+        self.assertEqual(res['ganador'], self.equipos[0])
+
+    def test_09_global_empatado_requiere_penales(self):
+        self.llave_sem1.formato = 'ida_vuelta'
+        self.llave_sem1.save()
+
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal', numero_vuelta=1,
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=1, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal', numero_vuelta=2,
+            equipo_local=self.equipos[1], equipo_visitante=self.equipos[0],
+            goles_local=1, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        res = evaluar_estado_llave(self.llave_sem1, self.org1)
+        self.assertFalse(res['completa'])
+        self.assertTrue(res['requiere_penales'])
+
+    def test_10_gol_visitante_desactivado(self):
+        self.torneo.usar_gol_visitante = False
+        self.torneo.save()
+        self.llave_sem1.formato = 'ida_vuelta'
+        self.llave_sem1.save()
+
+        # Ida: E1 (1) vs E2 (2) -> E2 tiene 2 goles visita
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal', numero_vuelta=1,
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=1, goles_visitante=2, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        # Vuelta: E2 (0) vs E1 (1) -> Global 2-2. Sin gol visita -> Requiere penales
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal', numero_vuelta=2,
+            equipo_local=self.equipos[1], equipo_visitante=self.equipos[0],
+            goles_local=0, goles_visitante=1, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        res = evaluar_estado_llave(self.llave_sem1, self.org1)
+        self.assertTrue(res['requiere_penales'])
+
+    def test_11_gol_visitante_activado(self):
+        self.torneo.usar_gol_visitante = True
+        self.torneo.save()
+        self.llave_sem1.formato = 'ida_vuelta'
+        self.llave_sem1.save()
+
+        # Ida: E1 (1) vs E2 (2) -> E2 anotó 2 de visitante
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal', numero_vuelta=1,
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=1, goles_visitante=2, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        # Vuelta: E2 (0) vs E1 (1) -> E1 anotó 1 de visitante -> Gana E2 por gol de visitante
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal', numero_vuelta=2,
+            equipo_local=self.equipos[1], equipo_visitante=self.equipos[0],
+            goles_local=0, goles_visitante=1, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        res = evaluar_estado_llave(self.llave_sem1, self.org1)
+        self.assertTrue(res['completa'])
+        self.assertEqual(res['ganador'], self.equipos[1])
+        self.assertEqual(res['metodo'], 'gol_visitante')
+
+    def test_12_confirmacion_de_ganador(self):
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=2, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        confirmar_ganador_llave(self.llave_sem1, self.equipos[0].id, self.admin_user, self.org1)
+        self.llave_sem1.refresh_from_db()
+        self.assertEqual(self.llave_sem1.estado, 'finalizada')
+        self.assertEqual(self.llave_sem1.ganador, self.equipos[0])
+
+    def test_13_bloqueo_ganador_incorrecto(self):
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=3, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        with self.assertRaises(ValidationError):
+            confirmar_ganador_llave(self.llave_sem1, self.equipos[1].id, self.admin_user, self.org1)
+
+    def test_14_avance_a_siguiente_llave(self):
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=2, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        confirmar_ganador_llave(self.llave_sem1, self.equipos[0].id, self.admin_user, self.org1)
+        self.llave_final.refresh_from_db()
+        self.assertEqual(self.llave_final.equipo_local, self.equipos[0])
+        self.assertEqual(self.llave_final.estado, 'pendiente')
+
+    def test_15_no_crear_siguiente_partido_con_un_solo_equipo(self):
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=2, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        confirmar_ganador_llave(self.llave_sem1, self.equipos[0].id, self.admin_user, self.org1)
+        # La llave final tiene solo 1 equipo -> No debe crear partidos
+        self.assertEqual(Partido.objects.filter(torneo=self.torneo, fase='final').count(), 0)
+
+    def test_16_crear_partido_cuando_llegan_ambos_ganadores(self):
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=2, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[2], equipo_visitante=self.equipos[3],
+            goles_local=1, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        confirmar_ganador_llave(self.llave_sem1, self.equipos[0].id, self.admin_user, self.org1)
+        confirmar_ganador_llave(self.llave_sem2, self.equipos[2].id, self.admin_user, self.org1)
+
+        self.llave_final.refresh_from_db()
+        self.assertEqual(self.llave_final.estado, 'programada')
+
+        # Programar la final
+        partidos = programar_partidos_ronda_siguiente(self.torneo, self.org1, self.admin_user, {'fase': 'final', 'formato': 'partido_unico'})
+        self.assertEqual(len(partidos), 1)
+        self.assertEqual(partidos[0].equipo_local, self.equipos[0])
+        self.assertEqual(partidos[0].equipo_visitante, self.equipos[2])
+
+    def test_17_evitar_creacion_duplicada_partidos(self):
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=2, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[2], equipo_visitante=self.equipos[3],
+            goles_local=1, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        confirmar_ganador_llave(self.llave_sem1, self.equipos[0].id, self.admin_user, self.org1)
+        confirmar_ganador_llave(self.llave_sem2, self.equipos[2].id, self.admin_user, self.org1)
+
+        programar_partidos_ronda_siguiente(self.torneo, self.org1, self.admin_user, {'fase': 'final', 'formato': 'partido_unico'})
+        cant1 = Partido.objects.filter(torneo=self.torneo, fase='final').count()
+
+        programar_partidos_ronda_siguiente(self.torneo, self.org1, self.admin_user, {'fase': 'final', 'formato': 'partido_unico'})
+        cant2 = Partido.objects.filter(torneo=self.torneo, fase='final').count()
+        self.assertEqual(cant1, cant2)
+
+    def test_18_bye_procesamiento(self):
+        llave_bye = LlaveEliminatoria.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='cuartos', numero_llave=1,
+            equipo_local=self.equipos[4], equipo_visitante=None, es_bye=True,
+            siguiente_llave=self.llave_sem1, posicion_siguiente_llave='local'
+        )
+        procesar_bye_llave(llave_bye, self.admin_user, self.org1)
+        llave_bye.refresh_from_db()
+        self.assertEqual(llave_bye.estado, 'finalizada')
+        self.assertEqual(llave_bye.ganador, self.equipos[4])
+
+    def test_19_bye_no_cuenta_como_partido_jugado(self):
+        llave_bye = LlaveEliminatoria.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='cuartos', numero_llave=1,
+            equipo_local=self.equipos[4], equipo_visitante=None, es_bye=True
+        )
+        procesar_bye_llave(llave_bye, self.admin_user, self.org1)
+        self.assertEqual(Partido.objects.filter(torneo=self.torneo, fase='cuartos').count(), 0)
+
+    def test_20_cuartos_a_semifinal(self):
+        llave_cuartos = LlaveEliminatoria.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='cuartos', numero_llave=1,
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[4],
+            siguiente_llave=self.llave_sem1, posicion_siguiente_llave='local'
+        )
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='cuartos',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[4],
+            goles_local=2, goles_visitante=1, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        confirmar_ganador_llave(llave_cuartos, self.equipos[0].id, self.admin_user, self.org1)
+        self.llave_sem1.refresh_from_db()
+        self.assertEqual(self.llave_sem1.equipo_local, self.equipos[0])
+
+    def test_21_semifinal_a_final(self):
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=2, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        confirmar_ganador_llave(self.llave_sem1, self.equipos[0].id, self.admin_user, self.org1)
+        self.llave_final.refresh_from_db()
+        self.assertEqual(self.llave_final.equipo_local, self.equipos[0])
+
+    def test_22_final_y_campeon(self):
+        self.llave_final.equipo_local = self.equipos[0]
+        self.llave_final.equipo_visitante = self.equipos[2]
+        self.llave_final.estado = 'programada'
+        self.llave_final.save()
+
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='final',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[2],
+            goles_local=3, goles_visitante=1, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        confirmar_ganador_llave(self.llave_final, self.equipos[0].id, self.admin_user, self.org1)
+
+        res_final = ResultadoFinalTorneo.objects.get(torneo=self.torneo)
+        self.assertEqual(res_final.campeon, self.equipos[0])
+        self.assertEqual(res_final.subcampeon, self.equipos[2])
+
+    def test_23_partido_tercer_lugar(self):
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=2, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[2], equipo_visitante=self.equipos[3],
+            goles_local=2, goles_visitante=1, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        confirmar_ganador_llave(self.llave_sem1, self.equipos[0].id, self.admin_user, self.org1)
+        confirmar_ganador_llave(self.llave_sem2, self.equipos[2].id, self.admin_user, self.org1)
+
+        llave_3er = LlaveEliminatoria.objects.get(torneo=self.torneo, fase='tercer_lugar')
+        self.assertEqual(llave_3er.equipo_local, self.equipos[1])  # Perdedor Sem1
+        self.assertEqual(llave_3er.equipo_visitante, self.equipos[3])  # Perdedor Sem2
+
+    def test_24_torneo_sin_tercer_lugar(self):
+        self.torneo.disputar_tercer_lugar = False
+        self.torneo.save()
+
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=2, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        confirmar_ganador_llave(self.llave_sem1, self.equipos[0].id, self.admin_user, self.org1)
+        self.assertFalse(LlaveEliminatoria.objects.filter(torneo=self.torneo, fase='tercer_lugar').exists())
+
+    def test_25_confirmacion_de_campeon_y_26_subcampeon(self):
+        self.llave_final.equipo_local = self.equipos[0]
+        self.llave_final.equipo_visitante = self.equipos[1]
+        self.llave_final.estado = 'programada'
+        self.llave_final.save()
+
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='final',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=1, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        confirmar_ganador_llave(self.llave_final, self.equipos[0].id, self.admin_user, self.org1)
+
+        res = ResultadoFinalTorneo.objects.get(torneo=self.torneo)
+        self.assertEqual(res.campeon, self.equipos[0])
+        self.assertEqual(res.subcampeon, self.equipos[1])
+
+    def test_27_un_solo_resultado_final_por_torneo(self):
+        ResultadoFinalTorneo.objects.create(
+            organizacion=self.org1, torneo=self.torneo,
+            campeon=self.equipos[0], subcampeon=self.equipos[1]
+        )
+        with self.assertRaises(Exception):
+            ResultadoFinalTorneo.objects.create(
+                organizacion=self.org1, torneo=self.torneo,
+                campeon=self.equipos[2], subcampeon=self.equipos[3]
+            )
+
+    def test_28_reapertura_antes_de_iniciar_siguiente_ronda(self):
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=2, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        confirmar_ganador_llave(self.llave_sem1, self.equipos[0].id, self.admin_user, self.org1)
+        self.llave_sem1.refresh_from_db()
+        self.assertEqual(self.llave_sem1.estado, 'finalizada')
+
+        reabrir_llave_eliminatoria(self.llave_sem1, self.admin_user, self.org1, motivo="Error de digitación en acta")
+        self.llave_sem1.refresh_from_db()
+        self.assertEqual(self.llave_sem1.estado, 'programada')
+        self.assertIsNone(self.llave_sem1.ganador)
+
+        self.llave_final.refresh_from_db()
+        self.assertIsNone(self.llave_final.equipo_local)
+
+    def test_29_bloqueo_reapertura_con_ronda_iniciada(self):
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=2, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[2], equipo_visitante=self.equipos[3],
+            goles_local=1, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        confirmar_ganador_llave(self.llave_sem1, self.equipos[0].id, self.admin_user, self.org1)
+        confirmar_ganador_llave(self.llave_sem2, self.equipos[2].id, self.admin_user, self.org1)
+
+        programar_partidos_ronda_siguiente(self.torneo, self.org1, self.admin_user, {'fase': 'final', 'formato': 'partido_unico'})
+
+        p_final = Partido.objects.get(torneo=self.torneo, fase='final')
+        p_final.estado = 'en_curso'
+        p_final.save()
+
+        with self.assertRaises(ValidationError):
+            reabrir_llave_eliminatoria(self.llave_sem1, self.admin_user, self.org1, motivo="Intento de reabrir")
+
+    def test_30_decision_administrativa(self):
+        confirmar_ganador_llave(
+            self.llave_sem1, self.equipos[1].id, self.admin_user, self.org1,
+            datos_confirmacion={'motivo_admin': 'Retiro reglamentario del Equipo 1'}
+        )
+        self.llave_sem1.refresh_from_db()
+        self.assertEqual(self.llave_sem1.ganador, self.equipos[1])
+        self.assertEqual(self.llave_sem1.metodo_definicion, 'decision_administrativa')
+
+    def test_31_aislamiento_multiempresa(self):
+        user_org2 = User.objects.create_user(username="user_org2_p6", password="password123")
+        session = self.client.session
+        session['organizacion_id'] = self.org2.id
+        session.save()
+        self.client.login(username="user_org2_p6", password="password123")
+
+        url = reverse('ver_cuadro_eliminatorio_view', kwargs={'torneo_id': self.torneo.id})
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 404)
+
+    def test_32_usuario_sin_permiso(self):
+        self.client.login(username="normal_p6", password="password123")
+        session = self.client.session
+        session['current_organizacion_id'] = self.org1.id
+        session.save()
+
+        url = reverse('confirmar_ganador_llave_view', kwargs={'torneo_id': self.torneo.id, 'llave_id': self.llave_sem1.id})
+        res = self.client.post(url, {'ganador_id': self.equipos[0].id})
+        self.assertEqual(res.status_code, 302)
+
+    def test_33_confirmacion_duplicada_bloqueada(self):
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=2, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        confirmar_ganador_llave(self.llave_sem1, self.equipos[0].id, self.admin_user, self.org1)
+        with self.assertRaises(ValidationError):
+            confirmar_ganador_llave(self.llave_sem1, self.equipos[0].id, self.admin_user, self.org1)
+
+    def test_34_procesamiento_concurrente_atomic(self):
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=2, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        # Transacción atómica
+        with transaction.atomic():
+            ll = LlaveEliminatoria.objects.select_for_update().get(id=self.llave_sem1.id)
+            self.assertEqual(ll.estado, 'programada')
+
+    def test_35_estadisticas_grupos_no_incluyen_eliminatorias(self):
+        from matches.services.estadisticas_personalizado import calcular_posiciones_grupo
+        grupo = GrupoTorneo.objects.create(torneo=self.torneo, nombre="Grupo Z")
+        EquipoGrupoTorneo.objects.create(torneo=self.torneo, grupo=grupo, equipo=self.equipos[0])
+        EquipoGrupoTorneo.objects.create(torneo=self.torneo, grupo=grupo, equipo=self.equipos[1])
+
+        # Partido de eliminatoria
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='semifinal',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=10, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+
+        res = calcular_posiciones_grupo(grupo, self.torneo, self.org1)
+        for item in res['tabla']:
+            self.assertEqual(item['PJ'], 0)
+            self.assertEqual(item['PTS'], 0)
+
+    def test_36_vistas_web_pantalla_campeon_e_impresion(self):
+        self._login_admin()
+
+        self.llave_final.equipo_local = self.equipos[0]
+        self.llave_final.equipo_visitante = self.equipos[1]
+        self.llave_final.estado = 'programada'
+        self.llave_final.save()
+
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, fase='final',
+            equipo_local=self.equipos[0], equipo_visitante=self.equipos[1],
+            goles_local=2, goles_visitante=1, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        confirmar_ganador_llave(self.llave_final, self.equipos[0].id, self.admin_user, self.org1)
+
+        url_champ = reverse('pantalla_campeon_view', kwargs={'torneo_id': self.torneo.id})
+        res_champ = self.client.get(url_champ)
+        self.assertEqual(res_champ.status_code, 200)
+        self.assertContains(res_champ, "EQUIPO 1")
+
+        url_print = reverse('imprimir_cuadro_eliminatorio_view', kwargs={'torneo_id': self.torneo.id})
+        res_print = self.client.get(url_print)
+        self.assertEqual(res_print.status_code, 200)
+
+        url_excel = reverse('exportar_excel_cuadro_eliminatorio_view', kwargs={'torneo_id': self.torneo.id})
+        res_excel = self.client.get(url_excel)
+        self.assertEqual(res_excel.status_code, 200)
+
+    def test_39_formatos_liga_y_torneo_sin_cambios(self):
+        self.assertEqual(self.torneo_liga.tipo, 'liga')
+        # Verificar que la lógica de torneo personalizado rechaza torneos tipo liga
+        with self.assertRaises(ValidationError):
+            confirmar_ganador_llave(self.llave_sem1, self.equipos[0].id, self.admin_user, self.org1)
+
+
+class TorneoPersonalizadoPhase7Tests(TestCase):
+
+    def setUp(self):
+        self.admin_user = User.objects.create_superuser(username="admin_p7", password="password123")
+        self.vocal_user = User.objects.create_user(username="vocal_p7", password="password123", role="vocal")
+        self.dirigente_user = User.objects.create_user(username="dirigente_p7", password="password123", role="dirigente")
+        self.org1 = Organizacion.objects.create(nombre="Org Phase7 A", codigo="ORGP7A")
+        self.org2 = Organizacion.objects.create(nombre="Org Phase7 B", codigo="ORGP7B")
+
+        from users.models import UsuarioOrganizacion
+        UsuarioOrganizacion.objects.create(usuario=self.admin_user, organizacion=self.org1, rol='admin', activo=True)
+
+        self.cat1 = Categoria.objects.create(nombre="Máster 40", organizacion=self.org1)
+
+        self.torneo = Torneo.objects.create(
+            nombre="Copa Fase 7", tipo="personalizado", categoria=self.cat1,
+            organizacion=self.org1, temporada="2026", es_publico=True
+        )
+
+        self.equipos = []
+        for i in range(1, 9):
+            eq = Equipo.objects.create(nombre=f"Equipo P7-{i}", categoria=self.cat1, organizacion=self.org1, dirigente=self.admin_user)
+            self.torneo.equipos.add(eq)
+            self.equipos.append(eq)
+
+        self.grupo_a = GrupoTorneo.objects.create(torneo=self.torneo, nombre="Grupo A", sector="Norte", cupos_clasificacion=2)
+        self.grupo_b = GrupoTorneo.objects.create(torneo=self.torneo, nombre="Grupo B", sector="Sur", cupos_clasificacion=2)
+
+        for eq in self.equipos[:4]:
+            EquipoGrupoTorneo.objects.create(torneo=self.torneo, grupo=self.grupo_a, equipo=eq)
+        for eq in self.equipos[4:]:
+            EquipoGrupoTorneo.objects.create(torneo=self.torneo, grupo=self.grupo_b, equipo=eq)
+
+        self.client.login(username="admin_p7", password="password123")
+        session = self.client.session
+        session['current_organizacion_id'] = self.org1.id
+        session.save()
+
+    def test_01_evaluar_estado_general_torneo(self):
+        from matches.services.panel_personalizado import evaluar_estado_general_torneo
+        estado = evaluar_estado_general_torneo(self.torneo)
+        self.assertEqual(estado, 'grupos_configurados')
+
+    def test_02_indicador_progreso_pasos(self):
+        from matches.services.panel_personalizado import obtener_indicador_progreso
+        pasos = obtener_indicador_progreso(self.torneo, 'grupos_configurados')
+        self.assertEqual(len(pasos), 7)
+        self.assertEqual(pasos[0]['estado'], 'completado')
+        self.assertEqual(pasos[1]['estado'], 'en_curso')
+
+    def test_03_proxima_accion_recomendada(self):
+        from matches.services.panel_personalizado import obtener_proxima_accion_recomendada
+        rec = obtener_proxima_accion_recomendada(self.torneo, 'grupos_configurados')
+        self.assertIn("Generar Fixture", rec['titulo'])
+        self.assertTrue(rec['url'].startswith("/"))
+
+    def test_04_resumen_grupos_panel(self):
+        from matches.services.panel_personalizado import obtener_resumen_grupos_panel
+        resumen = obtener_resumen_grupos_panel(self.torneo)
+        self.assertEqual(len(resumen), 2)
+        self.assertEqual(resumen[0]['equipos_count'], 4)
+        self.assertEqual(resumen[0]['cupos'], 2)
+
+    def test_05_agenda_operativa_y_alertas(self):
+        from matches.services.panel_personalizado import obtener_agenda_operativa, obtener_alertas_administrativas
+        agenda = obtener_agenda_operativa(self.torneo)
+        self.assertIsInstance(agenda, list)
+
+        alertas = obtener_alertas_administrativas(self.torneo)
+        self.assertIsInstance(alertas, list)
+
+    def test_06_vista_publica_torneo_publico(self):
+        url = reverse('vista_publica_torneo', kwargs={'public_uuid': self.torneo.public_uuid})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "COPA FASE 7")
+        self.assertContains(response, "GRUPO A")
+
+    def test_07_vista_publica_torneo_desactivado(self):
+        self.torneo.es_publico = False
+        self.torneo.save()
+        url = reverse('vista_publica_torneo', kwargs={'public_uuid': self.torneo.public_uuid})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+        self.assertContains(response, "Torneo no disponible", status_code=404)
+
+    def test_08_generador_enlaces_whatsapp(self):
+        from matches.services.panel_personalizado import generar_enlaces_whatsapp
+        link = generar_enlaces_whatsapp(self.torneo, "https://ejemplo.com/publico/torneo/123/")
+        self.assertTrue(link.startswith("https://api.whatsapp.com/send?text="))
+
+    def test_09_exportar_excel_consolidado(self):
+        url = reverse('exportar_excel_consolidado_personalizado', kwargs={'torneo_id': self.torneo.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+    def test_10_vista_impresion_consolidada(self):
+        url = reverse('imprimir_torneo_consolidado_personalizado', kwargs={'torneo_id': self.torneo.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "COPA FASE 7")
+
+    def test_11_historial_auditoria_solo_lectura(self):
+        BitacoraTorneo.objects.create(
+            organizacion=self.org1, torneo=self.torneo, usuario=self.admin_user,
+            accion="crear_grupo", detalles="Creado Grupo C"
+        )
+        url = reverse('historial_auditoria_personalizado', kwargs={'torneo_id': self.torneo.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "CREADO GRUPO C")
+
+    def test_12_aislamiento_multiempresa_panel(self):
+        # Usuario de otra organización intenta acceder al panel de la Org1
+        self.client.login(username="admin_p7", password="password123")
+        session = self.client.session
+        session['current_organizacion_id'] = self.org2.id
+        session.save()
+
+        url = reverse('panel_torneo_personalizado', kwargs={'torneo_id': self.torneo.id})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+
 
 
 

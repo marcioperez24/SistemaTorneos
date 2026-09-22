@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, views_grupos, views_fixture_personalizado, views_estadisticas_personalizado, views_eliminatorias_personalizado
+from . import views, views_grupos, views_fixture_personalizado, views_estadisticas_personalizado, views_eliminatorias_personalizado, views_panel_personalizado, views_publica_personalizado
 
 urlpatterns = [
     # Cartelera Pública de Partidos (Calendario)
@@ -53,7 +53,9 @@ urlpatterns = [
 
     # Torneo Personalizado por Grupos - Fase 3 (Fixture & Calendario)
     path('torneos/<int:torneo_id>/fixture/configurar/', views_fixture_personalizado.configurar_generar_fixture, name='configurar_generar_fixture'),
+    path('torneos/<int:torneo_id>/fixture/configurar-alias/', views_fixture_personalizado.configurar_generar_fixture, name='configurar_generar_fixture_personalizado'),
     path('torneos/<int:torneo_id>/fixture/personalizado/', views_fixture_personalizado.ver_fixture_personalizado, name='ver_fixture_personalizado'),
+    path('torneos/<int:torneo_id>/fixture/personalizado-alias/', views_fixture_personalizado.ver_fixture_personalizado, name='fixture_personalizado'),
     path('torneos/<int:torneo_id>/fixture/reprogramar/<int:partido_id>/', views_fixture_personalizado.reprogramar_partido_personalizado, name='reprogramar_partido_personalizado'),
     path('torneos/<int:torneo_id>/fixture/imprimir-personalizado/', views_fixture_personalizado.imprimir_fixture_personalizado, name='imprimir_fixture_personalizado'),
 
@@ -62,17 +64,34 @@ urlpatterns = [
     path('torneos/<int:torneo_id>/personalizado/estadisticas/imprimir/', views_estadisticas_personalizado.imprimir_estadisticas_personalizado, name='imprimir_estadisticas_personalizado'),
     path('torneos/<int:torneo_id>/personalizado/estadisticas/excel/', views_estadisticas_personalizado.exportar_excel_estadisticas_personalizado, name='exportar_excel_estadisticas_personalizado'),
 
-    # Torneo Personalizado por Grupos - Fase 5 (Clasificación Definitiva, Sorteo de Bombos & Cuadro Eliminatorio)
+    # Torneo Personalizado por Grupos - Fase 5 y 6 (Eliminatorias, Avance de Ganadores & Campeón)
     path('torneos/<int:torneo_id>/personalizado/clasificados/confirmar/', views_eliminatorias_personalizado.confirmar_clasificados_view, name='confirmar_clasificados_view'),
+    path('torneos/<int:torneo_id>/personalizado/clasificados/confirmar-alias/', views_eliminatorias_personalizado.confirmar_clasificados_view, name='confirmar_clasificados_personalizado'),
     path('torneos/<int:torneo_id>/personalizado/clasificados/reabrir/', views_eliminatorias_personalizado.reabrir_clasificacion_view, name='reabrir_clasificacion_view'),
     path('torneos/<int:torneo_id>/personalizado/empate/<int:grupo_id>/resolver/', views_eliminatorias_personalizado.resolver_empate_view, name='resolver_empate_view'),
     path('torneos/<int:torneo_id>/personalizado/eliminatorias/configurar/', views_eliminatorias_personalizado.configurar_sorteo_eliminatorio_view, name='configurar_sorteo_eliminatorio_view'),
+    path('torneos/<int:torneo_id>/personalizado/eliminatorias/configurar-alias/', views_eliminatorias_personalizado.configurar_sorteo_eliminatorio_view, name='configurar_sorteo_eliminatorio_personalizado'),
     path('torneos/<int:torneo_id>/personalizado/eliminatorias/vista-previa/', views_eliminatorias_personalizado.vista_previa_sorteo_view, name='vista_previa_sorteo_view'),
     path('torneos/<int:torneo_id>/personalizado/eliminatorias/confirmar-cuadro/', views_eliminatorias_personalizado.confirmar_cuadro_view, name='confirmar_cuadro_view'),
     path('torneos/<int:torneo_id>/personalizado/eliminatorias/cuadro/', views_eliminatorias_personalizado.ver_cuadro_eliminatorio_view, name='ver_cuadro_eliminatorio_view'),
+    path('torneos/<int:torneo_id>/personalizado/eliminatorias/cuadro-alias/', views_eliminatorias_personalizado.ver_cuadro_eliminatorio_view, name='ver_cuadro_eliminatorio_personalizado'),
+    path('torneos/<int:torneo_id>/personalizado/eliminatorias/llave/<int:llave_id>/confirmar-ganador/', views_eliminatorias_personalizado.confirmar_ganador_llave_view, name='confirmar_ganador_llave_view'),
+    path('torneos/<int:torneo_id>/personalizado/eliminatorias/llave/<int:llave_id>/bye/', views_eliminatorias_personalizado.procesar_bye_view, name='procesar_bye_view'),
+    path('torneos/<int:torneo_id>/personalizado/eliminatorias/llave/<int:llave_id>/reabrir/', views_eliminatorias_personalizado.reabrir_llave_view, name='reabrir_llave_view'),
+    path('torneos/<int:torneo_id>/personalizado/eliminatorias/programar-ronda/', views_eliminatorias_personalizado.programar_partidos_ronda_view, name='programar_partidos_ronda_view'),
+    path('torneos/<int:torneo_id>/personalizado/campeon/', views_eliminatorias_personalizado.pantalla_campeon_view, name='pantalla_campeon_view'),
+    path('torneos/<int:torneo_id>/personalizado/campeon-alias/', views_eliminatorias_personalizado.pantalla_campeon_view, name='pantalla_campeon_personalizado'),
     path('torneos/<int:torneo_id>/personalizado/eliminatorias/imprimir/', views_eliminatorias_personalizado.imprimir_cuadro_eliminatorio_view, name='imprimir_cuadro_eliminatorio_view'),
     path('torneos/<int:torneo_id>/personalizado/eliminatorias/excel/', views_eliminatorias_personalizado.exportar_excel_cuadro_eliminatorio_view, name='exportar_excel_cuadro_eliminatorio_view'),
+
+    # Torneo Personalizado por Grupos - Fase 7 (Centro de Control, Auditoría, Impresión/Excel Consolidado y Vista Pública)
+    path('torneos/<int:torneo_id>/panel/', views_panel_personalizado.centro_control_torneo_view, name='panel_torneo_personalizado'),
+    path('torneos/<int:torneo_id>/auditoria/', views_panel_personalizado.historial_auditoria_view, name='historial_auditoria_personalizado'),
+    path('torneos/<int:torneo_id>/exportar-excel-consolidado/', views_panel_personalizado.exportar_excel_consolidado_view, name='exportar_excel_consolidado_personalizado'),
+    path('torneos/<int:torneo_id>/imprimir-consolidado/', views_panel_personalizado.imprimir_torneo_consolidado_view, name='imprimir_torneo_consolidado_personalizado'),
+    path('publico/torneo/<uuid:public_uuid>/', views_publica_personalizado.vista_publica_torneo_view, name='vista_publica_torneo'),
 ]
+
 
 
 

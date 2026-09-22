@@ -781,6 +781,8 @@ def detalle_torneo(request, torneo_id):
         return redirect('partidos_lista')
         
     torneo = get_object_or_404(Torneo, id=torneo_id)
+    if torneo.tipo == 'personalizado':
+        return redirect('panel_torneo_personalizado', torneo_id=torneo.id)
     equipos = torneo.equipos.all()
     partidos = Partido.objects.filter(torneo=torneo).select_related('equipo_local', 'equipo_visitante', 'vocal', 'arbitro').order_by('jornada', 'fecha_hora')
     
