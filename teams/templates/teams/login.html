@@ -194,17 +194,8 @@
         .login-header h2 {
             color: #0f172a;
         }
-    }
-
-    .login-header p {
-        color: #64748b;
-        font-size: 1rem;
-        line-height: 1.5;
-    }
-
-    @media (max-width: 991px) {
         .login-header p {
-            color: #94a3b8;
+            color: #475569;
         }
     }
 
@@ -218,13 +209,13 @@
         display: block;
         font-weight: 600;
         font-size: 0.875rem;
-        color: #475569;
+        color: #334155;
         margin-bottom: 0.5rem;
     }
 
     @media (max-width: 991px) {
         .form-label-custom {
-            color: #cbd5e1;
+            color: #334155;
         }
     }
 
@@ -237,7 +228,7 @@
         left: 18px;
         top: 50%;
         transform: translateY(-50%);
-        color: #94a3b8;
+        color: #64748b;
         transition: color 0.3s ease;
         z-index: 10;
     }
@@ -252,7 +243,8 @@
         background-color: #f8fafc;
         transition: all 0.3s ease;
         outline: none;
-        color: #0f172a;
+        color: #0f172a !important;
+        -webkit-text-fill-color: #0f172a !important;
     }
 
     .password-toggle {
@@ -262,7 +254,7 @@
         transform: translateY(-50%);
         background: none;
         border: none;
-        color: #94a3b8;
+        color: #64748b;
         cursor: pointer;
         padding: 0;
         z-index: 10;
@@ -270,23 +262,21 @@
     }
 
     .password-toggle:hover {
-        color: #475569;
+        color: #0f172a;
     }
 
     @media (max-width: 991px) {
         .password-toggle {
-            color: rgba(255, 255, 255, 0.4);
+            color: #64748b;
         }
         .password-toggle:hover {
-            color: rgba(255, 255, 255, 0.7);
+            color: #0f172a;
         }
-    }
-
-    @media (max-width: 991px) {
         .input-group-custom input {
-            background-color: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.15);
-            color: white;
+            background-color: #ffffff;
+            border-color: #cbd5e1;
+            color: #0f172a !important;
+            -webkit-text-fill-color: #0f172a !important;
         }
     }
 
@@ -294,13 +284,15 @@
         border-color: #1e3c72;
         background-color: #ffffff;
         box-shadow: 0 0 0 4px rgba(30, 60, 114, 0.12);
+        color: #0f172a !important;
+        -webkit-text-fill-color: #0f172a !important;
     }
 
     @media (max-width: 991px) {
         .input-group-custom input:focus {
-            border-color: #f39c12;
-            background-color: rgba(255, 255, 255, 0.08);
-            box-shadow: 0 0 0 4px rgba(243, 156, 18, 0.2);
+            border-color: #1e3c72;
+            background-color: #ffffff;
+            box-shadow: 0 0 0 4px rgba(30, 60, 114, 0.15);
         }
     }
 
@@ -310,8 +302,17 @@
 
     @media (max-width: 991px) {
         .input-group-custom input:focus + .input-icon {
-            color: #f39c12;
+            color: #1e3c72;
         }
+    }
+
+    /* Autofill fix for Chrome/Safari mobile */
+    .input-group-custom input:-webkit-autofill,
+    .input-group-custom input:-webkit-autofill:hover, 
+    .input-group-custom input:-webkit-autofill:focus {
+        -webkit-text-fill-color: #0f172a !important;
+        -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+        transition: background-color 5000s ease-in-out 0s;
     }
 
     .error-msg {
