@@ -1,0 +1,247 @@
+{% extends 'teams/base.html' %}
+{% block title %}Generar Fixture - {{ torneo.nombre }} - Sistema Deportivo{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-5 my-4">
+    <!-- Header & Navigation -->
+    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between pb-3 border-bottom mb-4 gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <a href="{% url 'configurar_grupos_torneo' torneo.id %}" class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 42px; height: 42px;" title="Volver a Grupos">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <h2 class="fw-bold text-dark mb-0">{{ torneo.nombre|upper }}</h2>
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill fs-9 fw-bold px-3">
+                        <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Generador de Fixture por Grupos
+                    </span>
+                </div>
+                <p class="text-muted small mb-0 mt-1">
+                    Configuración de fechas, horas, descansos y vista previa antes de guardar.
+                </p>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% url 'ver_fixture_personalizado' torneo.id %}" class="btn btn-outline-primary px-3 py-2 fw-bold text-uppercase fs-8">
+                <i class="fa-solid fa-calendar-days me-1.5"></i>Ver Fixture Existente
+            </a>
+        </div>
+    </div>
+
+    <!-- Advertencias / Conflictos Detectados -->
+    {% if vista_previa.conflictos %}
+        <div class="alert alert-danger shadow-sm border-0 rounded-4 mb-4 p-3">
+            <h6 class="fw-bold mb-2 text-danger d-flex align-items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation"></i> Conflictos de Horario Detectados
+            </h6>
+            <ul class="mb-0 fs-8">
+                {% for conf in vista_previa.conflictos %}
+                    <li>{{ conf }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    {% if vista_previa.advertencias %}
+        <div class="alert alert-warning shadow-sm border-0 rounded-4 mb-4 p-3">
+            <h6 class="fw-bold mb-2 text-warning-emphasis d-flex align-items-center gap-2">
+                <i class="fa-solid fa-circle-info"></i> Advertencias del Generador
+            </h6>
+            <ul class="mb-0 fs-8">
+                {% for adv in vista_previa.advertencias %}
+                    <li>{{ adv }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    {% if vista_previa.partidos_existentes_afectados > 0 %}
+        <div class="alert alert-info shadow-sm border-0 rounded-4 mb-4 p-3">
+            <h6 class="fw-bold mb-1 text-info-emphasis d-flex align-items-center gap-2">
+                <i class="fa-solid fa-arrows-rotate"></i> Reemplazo de Fixture Programado
+            </h6>
+            <p class="mb-0 fs-8">
+                Existen <strong class="text-dark">{{ vista_previa.partidos_existentes_afectados }} partidos programados</strong> que serán reemplazados al guardar esta nueva configuración. Los partidos finalizados no sufrirán cambios.
+            </p>
+        </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <!-- FORMULARIO DE PARÁMETROS -->
+        <div class="col-12 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-white">
+                <div class="card-header bg-white border-bottom p-3.5">
+                    <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-sliders text-primary"></i> Parámetros del Calendario
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="GET" action="{% url 'configurar_generar_fixture' torneo.id %}">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary fs-8">Fecha de Inicio</label>
+                            <input type="date" name="fecha_inicio" value="{{ fecha_inicio }}" class="form-control fs-8" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary fs-8">Días de la Semana Permitidos</label>
+                            <div class="d-flex flex-wrap gap-2 fs-8">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="dias_semana" value="5" id="diaSab" {% if 5 in dias_semana %}checked{% endif %}>
+                                    <label class="form-check-label" for="diaSab">Sábado</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="dias_semana" value="6" id="diaDom" {% if 6 in dias_semana %}checked{% endif %}>
+                                    <label class="form-check-label" for="diaDom">Domingo</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="dias_semana" value="4" id="diaVie" {% if 4 in dias_semana %}checked{% endif %}>
+                                    <label class="form-check-label" for="diaVie">Viernes</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary fs-8">Horarios de Partido (Separados por coma)</label>
+                            <input type="text" name="horas" value="{{ horas_str }}" class="form-control fs-8" placeholder="Ej. 08:00, 10:00, 12:00, 14:00">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary fs-8">Estadio / Cancha Principal</label>
+                            <input type="text" name="estadio" value="{{ estadio }}" class="form-control fs-8">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary fs-8">Grupo Específico (Opcional)</label>
+                            <select name="grupo_id" class="form-select fs-8">
+                                <option value="">-- Todos los Grupos Activos --</option>
+                                {% for g in grupos_activos %}
+                                    <option value="{{ g.id }}" {% if grupo_sel_id == g.id %}selected{% endif %}>{{ g.nombre }}{% if g.sector %} ({{ g.sector }}){% endif %}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="asignar_arbitro" id="checkArb" {% if asignar_arbitro %}checked{% endif %}>
+                                <label class="form-check-label fs-8 text-dark fw-semibold" for="checkArb">Asignar Árbitros Automáticamente</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="asignar_vocal" id="checkVoc" {% if asignar_vocal %}checked{% endif %}>
+                                <label class="form-check-label fs-8 text-dark fw-semibold" for="checkVoc">Asignar Vocales Automáticamente</label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-outline-primary w-100 py-2 fw-bold text-uppercase fs-8">
+                            <i class="fa-solid fa-arrows-rotate me-1.5"></i>Recalcular Vista Previa
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA PREVIA Y CONFIRMACIÓN -->
+        <div class="col-12 col-xl-8">
+            <div class="card border-0 shadow-sm rounded-4 bg-white mb-4">
+                <div class="card-header bg-white border-bottom p-3.5 d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                            <i class="fa-solid fa-eye text-success"></i> Vista Previa del Fixture
+                        </h5>
+                        <div class="text-muted fs-9">Total: <strong>{{ vista_previa.total_partidos }} partidos</strong> | <strong>{{ vista_previa.total_descansos }} descansos</strong></div>
+                    </div>
+
+                    <form method="POST" action="{% url 'configurar_generar_fixture' torneo.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="fecha_inicio" value="{{ fecha_inicio }}">
+                        {% for d in dias_semana %}
+                            <input type="hidden" name="dias_semana" value="{{ d }}">
+                        {% endfor %}
+                        <input type="hidden" name="horas" value="{{ horas_str }}">
+                        <input type="hidden" name="estadio" value="{{ estadio }}">
+                        {% if grupo_sel_id %}
+                            <input type="hidden" name="grupo_id" value="{{ grupo_sel_id }}">
+                        {% endif %}
+                        {% if asignar_arbitro %}<input type="hidden" name="asignar_arbitro" value="on">{% endif %}
+                        {% if asignar_vocal %}<input type="hidden" name="asignar_vocal" value="on">{% endif %}
+                        <input type="hidden" name="confirmar_guardar" value="1">
+
+                        <button type="submit" class="btn btn-success px-4 py-2.5 fw-bold text-uppercase fs-8 shadow-sm" {% if vista_previa.conflictos %}disabled title="Resuelve los conflictos antes de guardar"{% endif %}>
+                            <i class="fa-solid fa-check-circle me-1.5"></i>Confirmar y Guardar Fixture
+                        </button>
+                    </form>
+                </div>
+
+                <div class="card-body p-4">
+                    {% if not vista_previa.grupos_vista_previa %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="fa-solid fa-calendar-xmark fa-3x text-secondary opacity-50 mb-3"></i>
+                            <h5 class="fw-bold text-dark">No hay partidos calculados</h5>
+                            <p class="fs-8">Verifica que los grupos tengan al menos 2 equipos asignados.</p>
+                        </div>
+                    {% else %}
+                        <div class="accordion accordion-flush" id="accordionFixturePreview">
+                            {% for g_data in vista_previa.grupos_vista_previa %}
+                                <div class="accordion-item border rounded-3 mb-3 overflow-hidden">
+                                    <h2 class="accordion-header" id="headingG{{ g_data.grupo.id }}">
+                                        <button class="accordion-button bg-light fw-bold text-dark py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseG{{ g_data.grupo.id }}" aria-expanded="true">
+                                            <div class="d-flex align-items-center justify-content-between w-100 me-3">
+                                                <div>
+                                                    <i class="fa-solid fa-folder me-2 text-primary"></i>{{ g_data.grupo.nombre }}
+                                                    {% if g_data.grupo.sector %}<span class="text-muted fs-9">({{ g_data.grupo.sector }})</span>{% endif %}
+                                                </div>
+                                                <div>
+                                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill fs-9 me-2">
+                                                        {{ g_data.total_jornadas }} Jornadas
+                                                    </span>
+                                                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill fs-9">
+                                                        {{ g_data.total_partidos }} Partidos
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    </h2>
+                                    <div id="collapseG{{ g_data.grupo.id }}" class="accordion-collapse collapse show" aria-labelledby="headingG{{ g_data.grupo.id }}">
+                                        <div class="accordion-body p-3">
+                                            {% for j in g_data.jornadas %}
+                                                <div class="border rounded-3 p-3 mb-3 bg-white">
+                                                    <div class="d-flex align-items-center justify-content-between pb-2 mb-2 border-bottom">
+                                                        <h6 class="fw-bold text-primary mb-0 fs-8">
+                                                            <i class="fa-solid fa-calendar-day me-1.5"></i>Jornada {{ j.numero_jornada }} - {{ j.fecha|date:"D d M Y" }}
+                                                        </h6>
+                                                        {% if j.descanso %}
+                                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle fs-9">
+                                                                <i class="fa-solid fa-mug-hot me-1"></i>Descansa: {{ j.descanso.nombre }}
+                                                            </span>
+                                                        {% endif %}
+                                                    </div>
+
+                                                    <div class="list-group list-group-flush fs-8">
+                                                        {% for p in j.partidos %}
+                                                            <div class="list-group-item d-flex align-items-center justify-content-between py-2 px-0 bg-transparent">
+                                                                <div class="d-flex align-items-center gap-2 flex-grow-1">
+                                                                    <span class="fw-bold text-dark text-end flex-grow-1" style="width: 40%;">{{ p.equipo_local.nombre }}</span>
+                                                                    <span class="badge bg-secondary-subtle text-secondary px-2">VS</span>
+                                                                    <span class="fw-bold text-dark text-start flex-grow-1" style="width: 40%;">{{ p.equipo_visitante.nombre }}</span>
+                                                                </div>
+
+                                                                <div class="text-end text-muted fs-9 ms-3">
+                                                                    <div><i class="fa-solid fa-clock me-1"></i>{{ p.fecha_hora|date:"H:i" }} | {{ p.estadio }}</div>
+                                                                    {% if p.arbitro %}<div><i class="fa-solid fa-whistle me-1 text-primary"></i>Árb: {{ p.arbitro.first_name }} {{ p.arbitro.last_name }}</div>{% endif %}
+                                                                </div>
+                                                            </div>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

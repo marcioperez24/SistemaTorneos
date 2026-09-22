@@ -154,3 +154,40 @@ class TorneoForm(forms.ModelForm):
             self.fields['equipos'].queryset = self.fields['equipos'].queryset.filter(organizacion=organizacion)
             self.fields['categoria'].queryset = self.fields['categoria'].queryset.filter(organizacion=organizacion)
 
+
+from .models import GrupoTorneo, EquipoGrupoTorneo, Equipo
+
+class GrupoTorneoForm(forms.ModelForm):
+    class Meta:
+        model = GrupoTorneo
+        fields = ['nombre', 'sector', 'orden', 'cupos_clasificacion', 'formato_enfrentamientos', 'activo']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Grupo A'}),
+            'sector': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Servicios, Comercio, Transporte'}),
+            'orden': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'value': '1'}),
+            'cupos_clasificacion': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'value': '4'}),
+            'formato_enfrentamientos': forms.Select(attrs={'class': 'form-select'}),
+            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        labels = {
+            'nombre': 'Nombre del Grupo',
+            'sector': 'Sector / Descripción',
+            'orden': 'Orden de Presentación',
+            'cupos_clasificacion': 'Cupos de Clasificación',
+            'formato_enfrentamientos': 'Modalidad de Enfrentamientos',
+            'activo': 'Grupo Activo',
+        }
+
+    def clean_cupos_clasificacion(self):
+        cupos = self.cleaned_data.get('cupos_clasificacion')
+        if cupos is not None and cupos < 1:
+            raise forms.ValidationError("La cantidad de cupos de clasificación debe ser al menos 1.")
+        return cupos
+
+    def clean_orden(self):
+        orden = self.cleaned_data.get('orden')
+        if orden is not None and orden < 1:
+            raise forms.ValidationError("El orden debe ser un número entero positivo mayor a 0.")
+        return orden
+
+

@@ -7,6 +7,7 @@ class Torneo(models.Model):
     TIPO_CHOICES = (
         ('liga', 'Liga (Todos contra todos por fechas)'),
         ('torneo', 'Torneo (Fase de Grupos + Eliminatorias)'),
+        ('personalizado', 'Torneo Personalizado por Grupos (Sectores)'),
     )
     FASE_ELIMINATORIA_CHOICES = (
         ('dieciseisavos', '16vos de Final'),
@@ -32,6 +33,11 @@ class Torneo(models.Model):
     fase_eliminatoria_inicial = models.CharField(max_length=20, choices=FASE_ELIMINATORIA_CHOICES, default='octavos', verbose_name="Fase Eliminatoria Inicial")
     distribucion_grupos = models.JSONField(default=dict, blank=True, null=True, verbose_name="Distribución de Equipos en Grupos")
 
+    # Configuración de Puntuación
+    puntos_victoria = models.IntegerField(default=3, verbose_name="Puntos por Victoria")
+    puntos_empate = models.IntegerField(default=1, verbose_name="Puntos por Empate")
+    puntos_derrota = models.IntegerField(default=0, verbose_name="Puntos por Derrota")
+
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -39,11 +45,106 @@ class Torneo(models.Model):
         verbose_name_plural = "Torneos y Ligas"
         unique_together = ('organizacion', 'nombre')
 
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.puntos_victoria is not None and self.puntos_victoria < 0:
+            raise ValidationError({'puntos_victoria': "Los puntos por victoria no pueden ser negativos."})
+        if self.puntos_empate is not None and self.puntos_empate < 0:
+            raise ValidationError({'puntos_empate': "Los puntos por empate no pueden ser negativos."})
+        if self.puntos_derrota is not None and self.puntos_derrota < 0:
+            raise ValidationError({'puntos_derrota': "Los puntos por derrota no pueden ser negativos."})
+        if self.puntos_victoria is not None and self.puntos_empate is not None:
+            if self.puntos_victoria < self.puntos_empate:
+                raise ValidationError({'puntos_victoria': "Los puntos por victoria deben ser mayores o iguales a los puntos por empate."})
+
     def __str__(self):
         return f"{self.nombre} - {self.get_tipo_display()} ({self.temporada})"
 
     def get_categoria_display(self):
         return self.categoria.nombre if self.categoria else ""
+
+
+class GrupoTorneo(models.Model):
+    FORMATO_ENFRENTAMIENTOS_CHOICES = (
+        ('una_vuelta', 'Una Vuelta (Solo Ida)'),
+        ('ida_vuelta', 'Ida y Vuelta'),
+    )
+
+    torneo = models.ForeignKey(Torneo, on_delete=models.CASCADE, related_name='grupos_personalizados', verbose_name="Torneo")
+    nombre = models.CharField(max_length=100, verbose_name="Nombre del Grupo")
+    sector = models.CharField(max_length=100, blank=True, null=True, verbose_name="Sector / Descripción")
+    orden = models.IntegerField(default=1, verbose_name="Orden de Presentación")
+    cupos_clasificacion = models.IntegerField(default=4, verbose_name="Cupos de Clasificación")
+    formato_enfrentamientos = models.CharField(
+        max_length=20, 
+        choices=FORMATO_ENFRENTAMIENTOS_CHOICES, 
+        default='una_vuelta', 
+        verbose_name="Formato de Enfrentamientos"
+    )
+    activo = models.BooleanField(default=True, verbose_name="Grupo Activo")
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Grupo de Torneo Personalizado"
+        verbose_name_plural = "Grupos de Torneo Personalizado"
+        unique_together = ('torneo', 'nombre')
+        ordering = ['orden', 'id']
+
+    def __str__(self):
+        sector_str = f" ({self.sector})" if self.sector else ""
+        return f"{self.nombre}{sector_str} - {self.torneo.nombre}"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        try:
+            if self.torneo and self.torneo.tipo != 'personalizado':
+                raise ValidationError({'torneo': "Los grupos personalizados solo se pueden crear en torneos de tipo 'personalizado'."})
+        except Torneo.DoesNotExist:
+            pass
+        if self.cupos_clasificacion is not None and self.cupos_clasificacion < 1:
+            raise ValidationError({'cupos_clasificacion': "La cantidad de cupos de clasificación debe ser mayor a 0."})
+
+    def save(self, *args, **kwargs):
+        if self.nombre:
+            self.nombre = self.nombre.strip().upper()
+        if self.sector:
+            self.sector = self.sector.strip().upper()
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+class EquipoGrupoTorneo(models.Model):
+    torneo = models.ForeignKey(Torneo, on_delete=models.CASCADE, related_name='equipos_grupos_personalizados', verbose_name="Torneo")
+    grupo = models.ForeignKey(GrupoTorneo, on_delete=models.CASCADE, related_name='equipos_asignados', verbose_name="Grupo")
+    equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='grupos_torneo_personalizado', verbose_name="Equipo")
+    orden = models.IntegerField(default=0, verbose_name="Orden / Posición de Sorteo")
+    fecha_asignacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Asignación de Equipo a Grupo"
+        verbose_name_plural = "Asignaciones de Equipos a Grupos"
+        unique_together = (
+            ('torneo', 'equipo'), # Garantiza que un equipo sólo pertenece a un grupo por torneo
+            ('grupo', 'equipo'),  # Evita duplicar el mismo equipo en el mismo grupo
+        )
+        ordering = ['orden', 'id']
+
+    def __str__(self):
+        return f"{self.equipo.nombre} -> {self.grupo.nombre} ({self.torneo.nombre})"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.grupo and self.torneo and self.grupo.torneo != self.torneo:
+            raise ValidationError({'grupo': "El grupo seleccionado no pertenece al torneo especificado."})
+        if self.equipo and self.torneo:
+            if self.equipo.organizacion != self.torneo.organizacion:
+                raise ValidationError({'equipo': "El equipo y el torneo deben pertenecer a la misma organización."})
+            if self.torneo.categoria and not self.equipo.pertenece_a_categoria(self.torneo.categoria):
+                raise ValidationError({'equipo': f"El equipo '{self.equipo.nombre}' no pertenece a la categoría '{self.torneo.categoria.nombre}' del torneo."})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class Partido(models.Model):
@@ -67,6 +168,19 @@ class Partido(models.Model):
     torneo = models.ForeignKey(Torneo, on_delete=models.CASCADE, related_name='partidos', null=True, blank=True, verbose_name="Torneo / Competencia")
     fase = models.CharField(max_length=20, choices=FASE_CHOICES, default='regular', verbose_name="Fase del Torneo")
     grupo = models.CharField(max_length=50, blank=True, null=True, verbose_name="Grupo (Fase de Grupos)")
+    grupo_personalizado = models.ForeignKey(
+        'GrupoTorneo',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='partidos',
+        verbose_name="Grupo Personalizado"
+    )
+    numero_vuelta = models.PositiveSmallIntegerField(
+        default=1,
+        choices=((1, 'Primera Vuelta'), (2, 'Segunda Vuelta')),
+        verbose_name="Número de Vuelta"
+    )
 
     equipo_local = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='partidos_local', verbose_name="Equipo Local")
     equipo_visitante = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='partidos_visitante', verbose_name="Equipo Visitante")
@@ -161,3 +275,23 @@ class EventoPartido(models.Model):
     def __str__(self):
         jugador_str = self.jugador.get_full_name() if self.jugador else "N/A"
         return f"{self.partido} - Min {self.minuto}': {self.get_tipo_display()} ({jugador_str})"
+
+
+class BitacoraTorneo(models.Model):
+    organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")
+    torneo = models.ForeignKey(Torneo, on_delete=models.CASCADE, related_name='bitacora_logs', verbose_name="Torneo")
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Usuario Responsable")
+    accion = models.CharField(max_length=100, verbose_name="Acción Realizada")
+    detalles = models.TextField(blank=True, null=True, verbose_name="Detalles / Motivo")
+    valores_anteriores = models.JSONField(default=dict, blank=True, null=True, verbose_name="Valores Anteriores")
+    valores_nuevos = models.JSONField(default=dict, blank=True, null=True, verbose_name="Valores Nuevos")
+    fecha_hora = models.DateTimeField(auto_now_add=True, verbose_name="Fecha y Hora")
+
+    class Meta:
+        verbose_name = "Bitácora de Torneo"
+        verbose_name_plural = "Bitácoras de Torneos"
+        ordering = ['-fecha_hora']
+
+    def __str__(self):
+        return f"[{self.fecha_hora.strftime('%Y-%m-%d %H:%M')}] {self.accion} - {self.torneo.nombre}"
+

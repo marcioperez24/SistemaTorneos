@@ -1,0 +1,476 @@
+{% extends 'teams/base.html' %}
+{% block title %}Configurar Grupos - {{ torneo.nombre }} - Sistema Deportivo{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-5 my-4">
+    <!-- Breadcrumb & Header Navigation -->
+    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between pb-3 border-bottom mb-4 gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <a href="{% url 'detalle_torneo' torneo.id %}" class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 42px; height: 42px;" title="Volver al Torneo">
+                <i class="fa-solid fa-arrow-left"></i>
+            </a>
+            <div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <h2 class="fw-bold text-dark mb-0">{{ torneo.nombre|upper }}</h2>
+                    <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill fs-9 fw-bold px-3">
+                        <i class="fa-solid fa-layer-group me-1"></i>Torneo Personalizado
+                    </span>
+                </div>
+                <p class="text-muted small mb-0 mt-1">
+                    Categoría: <span class="fw-semibold text-dark">{{ torneo.categoria.nombre|default:"General" }}</span> | 
+                    Temporada: <span class="fw-semibold text-dark">{{ torneo.temporada }}</span>
+                </p>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-primary px-3 py-2 fw-bold text-uppercase fs-8 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCrearGrupo">
+                <i class="fa-solid fa-plus me-1.5"></i>Crear Nuevo Grupo
+            </button>
+            <a href="{% url 'detalle_torneo' torneo.id %}" class="btn btn-outline-secondary px-3 py-2 fw-bold text-uppercase fs-8">
+                <i class="fa-solid fa-trophy me-1.5"></i>Ver Torneo
+            </a>
+        </div>
+    </div>
+
+    <!-- Resumen Superior (Tarjetas Métricas) -->
+    <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-3 bg-white p-3 h-100 border-start border-4 border-primary">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-uppercase text-muted fs-9 fw-bold">Grupos Activos</div>
+                        <div class="fs-4 fw-bold text-dark mt-1">{{ grupos_activos_count }} / {{ grupos|length }}</div>
+                    </div>
+                    <div class="bg-primary-subtle text-primary rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="fa-solid fa-layer-group fs-5"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-3 bg-white p-3 h-100 border-start border-4 border-success">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-uppercase text-muted fs-9 fw-bold">Equipos Asignados</div>
+                        <div class="fs-4 fw-bold text-dark mt-1">{{ total_equipos_asignados }}</div>
+                    </div>
+                    <div class="bg-success-subtle text-success rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="fa-solid fa-people-group fs-5"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-3 bg-white p-3 h-100 border-start border-4 border-warning">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-uppercase text-muted fs-9 fw-bold">Equipos Disponibles</div>
+                        <div class="fs-4 fw-bold text-dark mt-1">{{ total_equipos_disponibles }}</div>
+                    </div>
+                    <div class="bg-warning-subtle text-warning-emphasis rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="fa-solid fa-shield-halved fs-5"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card border-0 shadow-sm rounded-3 bg-white p-3 h-100 border-start border-4 border-info">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <div class="text-uppercase text-muted fs-9 fw-bold">Cupos Clasificación</div>
+                        <div class="fs-4 fw-bold text-dark mt-1">{{ total_cupos_clasificacion }}</div>
+                    </div>
+                    <div class="bg-info-subtle text-info rounded-circle p-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                        <i class="fa-solid fa-ticket fs-5"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- ÁREA PRINCIPAL: GRUPOS CONFIGURADOS -->
+        <div class="col-12 col-xl-8">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h4 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-cubes text-primary"></i> Grupos Configurados
+                </h4>
+                <span class="text-muted fs-8">Visualización por Tarjetas</span>
+            </div>
+
+            {% if not grupos %}
+                <div class="card border-0 shadow-sm text-center p-5 rounded-4 bg-white">
+                    <div class="text-muted mb-3">
+                        <i class="fa-solid fa-folder-open fa-3x text-secondary opacity-50"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark">No hay grupos creados aún</h5>
+                    <p class="text-muted fs-8 max-w-md mx-auto">
+                        Empieza creando el primer grupo (ej. "Grupo A - Sector Servicios") para comenzar a distribuir tus equipos.
+                    </p>
+                    <div>
+                        <button type="button" class="btn btn-primary px-4 py-2 fw-bold fs-8 text-uppercase shadow-sm" data-bs-toggle="modal" data-bs-target="#modalCrearGrupo">
+                            <i class="fa-solid fa-plus me-1.5"></i>Crear Primer Grupo
+                        </button>
+                    </div>
+                </div>
+            {% else %}
+                <div class="row g-4">
+                    {% for grupo in grupos %}
+                        <div class="col-12 col-md-6">
+                            <div class="card border-0 shadow-sm rounded-4 bg-white h-100 overflow-hidden {% if not grupo.activo %}opacity-75 bg-light{% endif %}">
+                                <!-- Encabezado de la Tarjeta del Grupo -->
+                                <div class="card-header bg-white border-bottom p-3.5 d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="badge bg-secondary text-white rounded-circle px-2 py-1 fs-9">{{ grupo.orden }}</span>
+                                            <h5 class="fw-bold text-dark mb-0">{{ grupo.nombre }}</h5>
+                                            {% if not grupo.activo %}
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle fs-9">Inactivo</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if grupo.sector %}
+                                            <div class="text-muted fs-9 fw-semibold mt-1">
+                                                <i class="fa-solid fa-building me-1"></i>Sector: {{ grupo.sector }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-light border rounded-circle text-muted" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="fa-solid fa-ellipsis-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm fs-8">
+                                            <li>
+                                                <button type="button" class="dropdown-menu-item dropdown-item" data-bs-toggle="modal" data-bs-target="#modalEditarGrupo{{ grupo.id }}">
+                                                    <i class="fa-solid fa-pen-to-square me-2 text-primary"></i>Editar Grupo
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <form method="POST" action="{% url 'cambiar_estado_grupo_torneo' torneo.id grupo.id %}">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="dropdown-item">
+                                                        {% if grupo.activo %}
+                                                            <i class="fa-solid fa-eye-slash me-2 text-warning"></i>Desactivar Grupo
+                                                        {% else %}
+                                                            <i class="fa-solid fa-eye me-2 text-success"></i>Activar Grupo
+                                                        {% endif %}
+                                                    </button>
+                                                </form>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <form method="POST" action="{% url 'eliminar_grupo_torneo' torneo.id grupo.id %}" onsubmit="return confirm('¿Seguro que deseas eliminar este grupo?');">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="dropdown-item text-danger" {% if grupo.equipos_asignados.exists %}disabled title="Retira los equipos antes de eliminar"{% endif %}>
+                                                        <i class="fa-solid fa-trash me-2"></i>Eliminar Grupo
+                                                    </button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- Metadata del Grupo -->
+                                <div class="bg-light p-3 border-bottom d-flex align-items-center justify-content-between fs-8">
+                                    <div>
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill me-1">
+                                            <i class="fa-solid fa-ticket me-1"></i>{{ grupo.cupos_clasificacion }} Cupos
+                                        </span>
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill">
+                                            {{ grupo.get_formato_enfrentamientos_display }}
+                                        </span>
+                                    </div>
+                                    <div class="fw-bold text-dark">
+                                        <i class="fa-solid fa-shield-cat me-1 text-secondary"></i>{{ grupo.equipos_asignados.count }} Equipos
+                                    </div>
+                                </div>
+
+                                {% if grupo.cupos_clasificacion > grupo.equipos_asignados.count and grupo.equipos_asignados.count > 0 %}
+                                    <div class="px-3 py-2 bg-warning-subtle text-warning-emphasis fs-9 border-bottom">
+                                        <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                                        Tiene {{ grupo.cupos_clasificacion }} cupos de clasificación, pero solo {{ grupo.equipos_asignados.count }} equipos.
+                                    </div>
+                                {% endif %}
+
+                                <!-- Lista de Equipos Asignados -->
+                                <div class="card-body p-3">
+                                    {% if not grupo.equipos_asignados.exists %}
+                                        <div class="text-center py-4 text-muted fs-8 border rounded-3 bg-light border-dashed">
+                                            <i class="fa-solid fa-user-plus me-1 text-secondary"></i>Sin equipos asignados
+                                        </div>
+                                    {% else %}
+                                        <div class="list-group list-group-flush border rounded-3 overflow-hidden">
+                                            {% for asig in grupo.equipos_asignados.all %}
+                                                <div class="list-group-item d-flex align-items-center justify-content-between py-2 px-3 bg-white">
+                                                    <div class="d-flex align-items-center gap-2 text-truncate">
+                                                        {% if asig.equipo.logo %}
+                                                            <img src="{{ asig.equipo.logo.url }}" alt="{{ asig.equipo.nombre }}" class="rounded-circle border" style="width: 28px; height: 28px; object-fit: cover;">
+                                                        {% else %}
+                                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold fs-9" style="width: 28px; height: 28px;">
+                                                                {{ asig.equipo.nombre|slice:":2"|upper }}
+                                                            </div>
+                                                        {% endif %}
+                                                        <span class="fw-semibold text-dark fs-8 text-truncate">{{ asig.equipo.nombre }}</span>
+                                                    </div>
+
+                                                    <div class="d-flex align-items-center gap-1">
+                                                        <!-- Mover a otro grupo -->
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary p-1 px-2 fs-9 rounded-2" data-bs-toggle="modal" data-bs-target="#modalMoverEquipo{{ asig.id }}" title="Mover de Grupo">
+                                                            <i class="fa-solid fa-right-left me-1"></i>Mover
+                                                        </button>
+                                                        <!-- Retirar del grupo -->
+                                                        <form method="POST" action="{% url 'retirar_equipo_grupo' torneo.id asig.id %}" class="d-inline" onsubmit="return confirm('¿Retirar a {{ asig.equipo.nombre }} de este grupo?');">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger p-1 px-2 fs-9 rounded-2" title="Retirar del Grupo">
+                                                                <i class="fa-solid fa-xmark"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+
+                                                <!-- MODAL MOVER EQUIPO -->
+                                                <div class="modal fade" id="modalMoverEquipo{{ asig.id }}" tabindex="-1" aria-hidden="true">
+                                                    <div class="modal-dialog modal-dialog-centered">
+                                                        <div class="modal-content border-0 shadow rounded-4">
+                                                            <form method="POST" action="{% url 'mover_equipo_grupo' torneo.id asig.id %}">
+                                                                {% csrf_token %}
+                                                                <div class="modal-header border-bottom p-3.5">
+                                                                    <h6 class="modal-title fw-bold text-dark">
+                                                                        <i class="fa-solid fa-right-left text-primary me-2"></i>Mover Equipo
+                                                                    </h6>
+                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                </div>
+                                                                <div class="modal-body p-4 fs-8">
+                                                                    <p class="mb-3">
+                                                                        Selecciona el nuevo grupo para <strong class="text-dark">{{ asig.equipo.nombre }}</strong> (Actualmente en <strong>{{ grupo.nombre }}</strong>):
+                                                                    </p>
+                                                                    <div class="mb-3">
+                                                                        <label class="form-label fw-semibold text-secondary">Grupo Destino</label>
+                                                                        <select name="grupo_destino_id" class="form-select fs-8" required>
+                                                                            <option value="">-- Seleccionar Grupo --</option>
+                                                                            {% for g in grupos %}
+                                                                                {% if g.id != grupo.id %}
+                                                                                    <option value="{{ g.id }}">{{ g.nombre }}{% if g.sector %} ({{ g.sector }}){% endif %}</option>
+                                                                                {% endif %}
+                                                                            {% endfor %}
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="modal-footer border-top p-3 bg-light">
+                                                                    <button type="button" class="btn btn-secondary fs-8" data-bs-dismiss="modal">Cancelar</button>
+                                                                    <button type="submit" class="btn btn-primary fs-8 fw-bold">Confirmar Cambio</button>
+                                                                </div>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Botón para Asignar Equipos Directamente a este Grupo -->
+                                <div class="card-footer bg-white border-top p-3">
+                                    <form method="POST" action="{% url 'agregar_equipo_grupo' torneo.id grupo.id %}" class="d-flex gap-2">
+                                        {% csrf_token %}
+                                        <select name="equipo_id" class="form-select form-select-sm fs-8" required>
+                                            <option value="">-- Asignar Equipo --</option>
+                                            {% for eq in equipos_disponibles %}
+                                                <option value="{{ eq.id }}">{{ eq.nombre }}</option>
+                                            {% empty %}
+                                                <option value="" disabled>Sin equipos disponibles</option>
+                                            {% endfor %}
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-primary px-3 fw-bold fs-8 flex-shrink-0" {% if not equipos_disponibles %}disabled{% endif %}>
+                                            <i class="fa-solid fa-plus me-1"></i>Agregar
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- MODAL EDITAR GRUPO -->
+                        <div class="modal fade" id="modalEditarGrupo{{ grupo.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 shadow rounded-4">
+                                    <form method="POST" action="{% url 'editar_grupo_torneo' torneo.id grupo.id %}">
+                                        {% csrf_token %}
+                                        <div class="modal-header border-bottom p-3.5">
+                                            <h5 class="modal-title fw-bold text-dark">
+                                                <i class="fa-solid fa-pen-to-square text-primary me-2"></i>Editar Grupo: {{ grupo.nombre }}
+                                            </h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body p-4 fs-8">
+                                            <div class="row g-3">
+                                                <div class="col-12 col-md-6">
+                                                    <label class="form-label fw-semibold text-secondary">Nombre del Grupo</label>
+                                                    <input type="text" name="nombre" value="{{ grupo.nombre }}" class="form-control fs-8" required>
+                                                </div>
+                                                <div class="col-12 col-md-6">
+                                                    <label class="form-label fw-semibold text-secondary">Sector / Descripción</label>
+                                                    <input type="text" name="sector" value="{{ grupo.sector|default:'' }}" class="form-control fs-8" placeholder="Ej. Servicios, Comercio">
+                                                </div>
+                                                <div class="col-12 col-md-6">
+                                                    <label class="form-label fw-semibold text-secondary">Orden de Presentación</label>
+                                                    <input type="number" name="orden" value="{{ grupo.orden }}" min="1" class="form-control fs-8" required>
+                                                </div>
+                                                <div class="col-12 col-md-6">
+                                                    <label class="form-label fw-semibold text-secondary">Cupos de Clasificación</label>
+                                                    <input type="number" name="cupos_clasificacion" value="{{ grupo.cupos_clasificacion }}" min="1" class="form-control fs-8" required>
+                                                </div>
+                                                <div class="col-12">
+                                                    <label class="form-label fw-semibold text-secondary">Modalidad de Enfrentamientos</label>
+                                                    <select name="formato_enfrentamientos" class="form-select fs-8">
+                                                        <option value="una_vuelta" {% if grupo.formato_enfrentamientos == 'una_vuelta' %}selected{% endif %}>Una Vuelta (Solo Ida)</option>
+                                                        <option value="ida_vuelta" {% if grupo.formato_enfrentamientos == 'ida_vuelta' %}selected{% endif %}>Ida y Vuelta</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-12">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="activo" id="editActivo{{ grupo.id }}" {% if grupo.activo %}checked{% endif %}>
+                                                        <label class="form-check-label fw-semibold text-dark" for="editActivo{{ grupo.id }}">
+                                                            Grupo Activo
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer border-top p-3 bg-light">
+                                            <button type="button" class="btn btn-secondary fs-8" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" class="btn btn-primary fs-8 fw-bold">Guardar Cambios</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- PANEL LATERAL: EQUIPOS DISPONIBLES EN LA ORGANIZACIÓN -->
+        <div class="col-12 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 bg-white sticky-top" style="top: 20px;">
+                <div class="card-header bg-white border-bottom p-3.5 d-flex align-items-center justify-content-between">
+                    <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-warning"></i> Equipos Disponibles
+                    </h5>
+                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-2.5 py-1 fs-9">
+                        {{ total_equipos_disponibles }} Libres
+                    </span>
+                </div>
+                <div class="card-body p-3">
+                    <p class="text-muted fs-8 mb-3">
+                        Equipos de la categoría <strong class="text-dark">{{ torneo.categoria.nombre|default:"General" }}</strong> sin grupo asignado:
+                    </p>
+
+                    {% if not equipos_disponibles %}
+                        <div class="text-center py-4 text-muted fs-8 border rounded-3 bg-light">
+                            <i class="fa-solid fa-circle-check fa-2x text-success mb-2 d-block"></i>
+                            Todos los equipos aptos han sido asignados a grupos.
+                        </div>
+                    {% else %}
+                        <div class="list-group list-group-flush border rounded-3 overflow-auto" style="max-height: 420px;">
+                            {% for eq in equipos_disponibles %}
+                                <div class="list-group-item d-flex align-items-center justify-content-between py-2 px-3">
+                                    <div class="d-flex align-items-center gap-2 text-truncate">
+                                        {% if eq.logo %}
+                                            <img src="{{ eq.logo.url }}" alt="{{ eq.nombre }}" class="rounded-circle border" style="width: 30px; height: 30px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold fs-9" style="width: 30px; height: 30px;">
+                                                {{ eq.nombre|slice:":2"|upper }}
+                                            </div>
+                                        {% endif %}
+                                        <div>
+                                            <div class="fw-semibold text-dark fs-8">{{ eq.nombre }}</div>
+                                            <div class="text-muted fs-9">Categoría: {{ eq.categoria.nombre|default:"General" }}</div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Dropdown rápido para asignar a grupo -->
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-primary px-2 py-1 fs-9 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" {% if not grupos %}disabled{% endif %}>
+                                            Asignar a...
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm fs-8">
+                                            {% for g in grupos %}
+                                                <li>
+                                                    <form method="POST" action="{% url 'agregar_equipo_grupo' torneo.id g.id %}">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="equipo_id" value="{{ eq.id }}">
+                                                        <button type="submit" class="dropdown-item">
+                                                            <i class="fa-solid fa-angle-right me-1 text-primary"></i>{{ g.nombre }}
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            {% empty %}
+                                                <li><span class="dropdown-item text-muted">Crea un grupo primero</span></li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL CREAR GRUPO -->
+<div class="modal fade" id="modalCrearGrupo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <form method="POST" action="{% url 'crear_grupo_torneo' torneo.id %}">
+                {% csrf_token %}
+                <div class="modal-header border-bottom p-3.5">
+                    <h5 class="modal-title fw-bold text-dark">
+                        <i class="fa-solid fa-folder-plus text-primary me-2"></i>Crear Nuevo Grupo Personalizado
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 fs-8">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Nombre del Grupo *</label>
+                            {{ grupo_form.nombre }}
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Sector / Descripción</label>
+                            {{ grupo_form.sector }}
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Orden de Presentación</label>
+                            {{ grupo_form.orden }}
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-semibold text-secondary">Cupos de Clasificación</label>
+                            {{ grupo_form.cupos_clasificacion }}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold text-secondary">Modalidad de Enfrentamientos</label>
+                            {{ grupo_form.formato_enfrentamientos }}
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                {{ grupo_form.activo }}
+                                <label class="form-check-label fw-semibold text-dark" for="{{ grupo_form.activo.id_for_label }}">
+                                    Grupo Activo
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top p-3 bg-light">
+                    <button type="button" class="btn btn-secondary fs-8" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fs-8 fw-bold">Crear Grupo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

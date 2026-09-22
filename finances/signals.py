@@ -27,8 +27,10 @@ def generar_multa_tarjeta(sender, instance, created, **kwargs):
                 equipo=equipo,
                 jugador=jugador,
                 defaults={
+                    'organizacion': instance.partido.organizacion,
                     'monto': monto,
                     'motivo': motivo,
                     'estado': 'pendiente'
                 }
             )
+

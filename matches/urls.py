@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, views_grupos, views_fixture_personalizado, views_estadisticas_personalizado
 
 urlpatterns = [
     # Cartelera Pública de Partidos (Calendario)
@@ -40,5 +40,27 @@ urlpatterns = [
     path('torneos/<int:torneo_id>/crear-partido/', views.crear_partido_torneo, name='crear_partido_torneo'),
     path('torneos/<int:torneo_id>/estadisticas/', views.estadisticas_torneo, name='estadisticas_torneo'),
     path('torneos/<int:torneo_id>/imprimir/', views.imprimir_fixture_torneo, name='imprimir_fixture_torneo'),
+    
+    # Torneo Personalizado por Grupos - Fase 2
+    path('torneos/<int:torneo_id>/grupos/', views_grupos.configurar_grupos_torneo, name='configurar_grupos_torneo'),
+    path('torneos/<int:torneo_id>/grupos/crear/', views_grupos.crear_grupo_torneo, name='crear_grupo_torneo'),
+    path('torneos/<int:torneo_id>/grupos/<int:grupo_id>/editar/', views_grupos.editar_grupo_torneo, name='editar_grupo_torneo'),
+    path('torneos/<int:torneo_id>/grupos/<int:grupo_id>/eliminar/', views_grupos.eliminar_grupo_torneo, name='eliminar_grupo_torneo'),
+    path('torneos/<int:torneo_id>/grupos/<int:grupo_id>/estado/', views_grupos.cambiar_estado_grupo_torneo, name='cambiar_estado_grupo_torneo'),
+    path('torneos/<int:torneo_id>/grupos/<int:grupo_id>/equipos/agregar/', views_grupos.agregar_equipo_grupo, name='agregar_equipo_grupo'),
+    path('torneos/<int:torneo_id>/grupos/equipos/<int:asignacion_id>/mover/', views_grupos.mover_equipo_grupo, name='mover_equipo_grupo'),
+    path('torneos/<int:torneo_id>/grupos/equipos/<int:asignacion_id>/retirar/', views_grupos.retirar_equipo_grupo, name='retirar_equipo_grupo'),
+
+    # Torneo Personalizado por Grupos - Fase 3 (Fixture & Calendario)
+    path('torneos/<int:torneo_id>/fixture/configurar/', views_fixture_personalizado.configurar_generar_fixture, name='configurar_generar_fixture'),
+    path('torneos/<int:torneo_id>/fixture/personalizado/', views_fixture_personalizado.ver_fixture_personalizado, name='ver_fixture_personalizado'),
+    path('torneos/<int:torneo_id>/fixture/reprogramar/<int:partido_id>/', views_fixture_personalizado.reprogramar_partido_personalizado, name='reprogramar_partido_personalizado'),
+    path('torneos/<int:torneo_id>/fixture/imprimir-personalizado/', views_fixture_personalizado.imprimir_fixture_personalizado, name='imprimir_fixture_personalizado'),
+
+    # Torneo Personalizado por Grupos - Fase 4 (Estadísticas, Tablas de Posiciones & Exportaciones)
+    path('torneos/<int:torneo_id>/personalizado/estadisticas/', views_estadisticas_personalizado.estadisticas_torneo_personalizado, name='estadisticas_torneo_personalizado'),
+    path('torneos/<int:torneo_id>/personalizado/estadisticas/imprimir/', views_estadisticas_personalizado.imprimir_estadisticas_personalizado, name='imprimir_estadisticas_personalizado'),
+    path('torneos/<int:torneo_id>/personalizado/estadisticas/excel/', views_estadisticas_personalizado.exportar_excel_estadisticas_personalizado, name='exportar_excel_estadisticas_personalizado'),
 ]
+
 

@@ -16,6 +16,10 @@
                         <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill fs-9 fw-bold px-3">
                             <i class="fa-solid fa-ranking-star me-1"></i>Formato Liga
                         </span>
+                    {% elif torneo.tipo == 'personalizado' %}
+                        <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill fs-9 fw-bold px-3">
+                            <i class="fa-solid fa-layer-group me-1"></i>Personalizado por Grupos
+                        </span>
                     {% else %}
                         <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill fs-9 fw-bold px-3">
                             <i class="fa-solid fa-sitemap me-1"></i>Grupos + Eliminatorias
@@ -297,6 +301,20 @@
                             <i class="fa-solid fa-calendar-plus me-2"></i>Generar Calendario de Liga
                         </button>
                     </form>
+                {% elif torneo.tipo == 'personalizado' %}
+                    <!-- Torneo Personalizado por Grupos (Fase 2, 3 y 4) -->
+                    <p class="text-muted fs-8 mb-3">Administra los grupos por sector, fixture, posiciones y estadísticas del torneo.</p>
+                    <div class="d-flex flex-column gap-2.5">
+                        <a href="{% url 'configurar_grupos_torneo' torneo.id %}" class="btn btn-outline-primary w-100 py-2.5 fw-bold text-uppercase fs-8 text-center d-flex justify-content-center align-items-center shadow-sm">
+                            <i class="fa-solid fa-layer-group me-2"></i>1. Configurar Grupos
+                        </a>
+                        <a href="{% url 'ver_fixture_personalizado' torneo.id %}" class="btn btn-outline-success w-100 py-2.5 fw-bold text-uppercase fs-8 text-center d-flex justify-content-center align-items-center shadow-sm">
+                            <i class="fa-solid fa-calendar-days me-2"></i>2. Fixture por Grupos
+                        </a>
+                        <a href="{% url 'estadisticas_torneo_personalizado' torneo.id %}" class="btn btn-primary w-100 py-2.5 fw-bold text-uppercase fs-8 text-center d-flex justify-content-center align-items-center shadow-sm">
+                            <i class="fa-solid fa-chart-line me-2"></i>3. Posiciones y Estadísticas
+                        </a>
+                    </div>
                 {% else %}
                     <!-- Copa de Grupos y Eliminatorias -->
                     <p class="text-muted fs-8 mb-3">Configura y administra la Fase de Grupos y las Llaves Eliminatorias (Playoffs).</p>
