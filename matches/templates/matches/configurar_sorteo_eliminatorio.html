@@ -1,0 +1,131 @@
+{% extends 'teams/base.html' %}
+{% block title %}Configurar Sorteo Eliminatorio - {{ torneo.nombre }} - Sistema Deportivo{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-md-5">
+
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
+        <div class="d-flex align-items-center gap-3">
+            <a href="{% url 'confirmar_clasificados_view' torneo.id %}" class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 44px; height: 44px;" title="Volver a Clasificados">
+                <i class="fa-solid fa-arrow-left fs-5"></i>
+            </a>
+            <div>
+                <h2 class="fw-bold text-dark mb-1 d-flex align-items-center flex-wrap gap-2">
+                    <i class="fa-solid fa-sitemap text-primary"></i>
+                    <span>Configurar Sorteo / Fase Eliminatoria</span>
+                </h2>
+                <p class="text-muted small mb-0">Torneo: <strong>{{ torneo.nombre }}</strong> | Total Clasificados: <strong>{{ total_clasificados }}</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Composición de Bombos -->
+    <h4 class="fw-bold text-dark mb-3"><i class="fa-solid fa-layer-group text-primary me-2"></i>Bombos de Clasificación</h4>
+    <div class="row g-4 mb-5">
+        {% regroup clasificados by bombo as bombos_list %}
+        {% for b in bombos_list %}
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100 border">
+                <div class="card-header bg-primary text-white p-3 fw-bold d-flex justify-content-between align-items-center">
+                    <span><i class="fa-solid fa-cubes me-2"></i>Bombo {{ b.grouper }}</span>
+                    <span class="badge bg-white text-primary rounded-pill">{{ b.list|length }} equipos</span>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush fs-8">
+                        {% for item in b.list %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2.5 px-3">
+                            <div>
+                                <div class="fw-bold text-dark">{{ item.equipo.nombre }}</div>
+                                <small class="text-muted fs-9">Grupo {{ item.grupo.nombre }} {% if item.grupo.sector %}({{ item.grupo.sector }}){% endif %}</small>
+                            </div>
+                            <span class="badge bg-light text-dark border">{{ item.puntos }} pts</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Formulario de Configuración del Sorteo -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white border">
+        <h4 class="fw-bold text-dark mb-3"><i class="fa-solid fa-sliders text-primary me-2"></i>Parámetros del Sorteo y Cruces</h4>
+        
+        <form method="POST" action="{% url 'configurar_sorteo_eliminatorio_view' torneo.id %}">
+            {% csrf_token %}
+
+            <div class="row g-4 mb-4">
+                <div class="col-12 col-md-6">
+                    <label class="form-label fw-bold text-dark fs-8">Formato de la Fase Eliminatoria:</label>
+                    <select name="formato" class="form-select fs-8 py-2.5">
+                        <option value="partido_unico">Partido Único (Eliminación Directa)</option>
+                        <option value="ida_vuelta">Ida y Vuelta (Enfrentamiento de 2 Partidos)</option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <label class="form-label fw-bold text-dark fs-8">Estadio Predeterminado:</label>
+                    <input type="text" name="estadio" class="form-control fs-8 py-2.5" value="Estadio Principal">
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <label class="form-label fw-bold text-dark fs-8">Fecha Inicial de Partido:</label>
+                    <input type="date" name="fecha_inicial" class="form-control fs-8 py-2.5" required value="2026-10-01">
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <label class="form-label fw-bold text-dark fs-8">Hora de Inicio:</label>
+                    <input type="time" name="hora_inicial" class="form-control fs-8 py-2.5" required value="14:00">
+                </div>
+
+                <div class="col-12 col-md-4">
+                    <label class="form-label fw-bold text-dark fs-8">Intervalo en Días (Ida y Vuelta):</label>
+                    <input type="number" name="intervalo_dias" class="form-control fs-8 py-2.5" min="1" value="7">
+                </div>
+            </div>
+
+            <h5 class="fw-bold text-dark mb-3">Restricciones de Enfrentamiento:</h5>
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6">
+                    <div class="form-check form-switch bg-light p-3 rounded-3 border">
+                        <input class="form-check-input ms-0 me-3" type="checkbox" name="evitar_mismo_grupo" value="1" id="chkEvitarGrupo" checked>
+                        <label class="form-check-label fw-bold text-dark fs-8" for="chkEvitarGrupo">
+                            Evitar cruce entre equipos del mismo grupo en primera ronda
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <div class="form-check form-switch bg-light p-3 rounded-3 border">
+                        <input class="form-check-input ms-0 me-3" type="checkbox" name="evitar_mismo_sector" value="1" id="chkEvitarSector">
+                        <label class="form-check-label fw-bold text-dark fs-8" for="chkEvitarSector">
+                            Evitar cruce entre equipos del mismo sector (cuando sea posible)
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <div class="form-check form-switch bg-light p-3 rounded-3 border">
+                        <input class="form-check-input ms-0 me-3" type="checkbox" name="sortear_localia" value="1" id="chkLocalia" checked>
+                        <label class="form-check-label fw-bold text-dark fs-8" for="chkLocalia">
+                            Sortear orden de localía en cada llave
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-3 border-top">
+                <a href="{% url 'confirmar_clasificados_view' torneo.id %}" class="btn btn-outline-secondary rounded-pill px-4 py-2.5 fw-bold fs-8">
+                    Volver a Clasificados
+                </a>
+                <button type="submit" class="btn btn-primary rounded-pill px-4 py-2.5 fw-bold fs-8 shadow-sm">
+                    <i class="fa-solid fa-wand-magic-sparkles me-1.5"></i>Generar Vista Previa del Sorteo
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

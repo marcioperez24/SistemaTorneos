@@ -295,3 +295,108 @@ class BitacoraTorneo(models.Model):
     def __str__(self):
         return f"[{self.fecha_hora.strftime('%Y-%m-%d %H:%M')}] {self.accion} - {self.torneo.nombre}"
 
+
+class ClasificadoTorneo(models.Model):
+    METODO_CHOICES = (
+        ('posicion', 'Posición Directa'),
+        ('tabla', 'Tabla de Posiciones'),
+        ('empate_resuelto', 'Resolución de Empate'),
+        ('decision_admin', 'Decisión Administrativa'),
+    )
+
+    organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")
+    torneo = models.ForeignKey(Torneo, on_delete=models.CASCADE, related_name='clasificados_definitivos', verbose_name="Torneo")
+    grupo = models.ForeignKey(GrupoTorneo, on_delete=models.CASCADE, related_name='clasificados_definitivos', verbose_name="Grupo de Origen")
+    equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='clasificaciones_torneo', verbose_name="Equipo Clasificado")
+    posicion_grupo = models.IntegerField(verbose_name="Posición en el Grupo")
+    puntos = models.IntegerField(default=0, verbose_name="Puntos Obtenidos")
+    diferencia_goles = models.IntegerField(default=0, verbose_name="Diferencia de Goles")
+    goles_favor = models.IntegerField(default=0, verbose_name="Goles a Favor")
+    bombo = models.IntegerField(default=1, verbose_name="Número de Bombo")
+    metodo_clasificacion = models.CharField(max_length=50, choices=METODO_CHOICES, default='posicion', verbose_name="Método de Clasificación")
+    confirmado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Confirmado Por")
+    fecha_confirmacion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Confirmación")
+    datos_tabla = models.JSONField(default=dict, blank=True, null=True, verbose_name="Fotografía de Estadísticas (JSON)")
+    activo = models.BooleanField(default=True, verbose_name="Clasificación Activa")
+
+    class Meta:
+        verbose_name = "Clasificado Definitivo de Torneo"
+        verbose_name_plural = "Clasificados Definitivos de Torneos"
+        unique_together = ('torneo', 'equipo')
+        ordering = ['bombo', 'posicion_grupo', 'grupo', 'id']
+
+    def __str__(self):
+        return f"{self.equipo.nombre} (G-{self.grupo.nombre} Pos {self.posicion_grupo}, Bombo {self.bombo}) - {self.torneo.nombre}"
+
+
+class ResolucionEmpateTorneo(models.Model):
+    MOTIVOS_CHOICES = (
+        ('partido_desempate', 'Partido de Desempate'),
+        ('sorteo_admin', 'Sorteo Administrativo'),
+        ('comision', 'Resolución de Comisión'),
+        ('reglamento', 'Criterio Reglamentario Adicional'),
+        ('otro', 'Otro Motivo'),
+    )
+
+    organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")
+    torneo = models.ForeignKey(Torneo, on_delete=models.CASCADE, related_name='resoluciones_empate', verbose_name="Torneo")
+    grupo = models.ForeignKey(GrupoTorneo, on_delete=models.CASCADE, related_name='resoluciones_empate', verbose_name="Grupo")
+    equipos_empatados = models.ManyToManyField(Equipo, related_name='empates_resueltos', verbose_name="Equipos Involucrados")
+    equipo_ganador = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='empates_ganados', verbose_name="Equipo Favorecido / Ganador")
+    motivo_resolucion = models.CharField(max_length=50, choices=MOTIVOS_CHOICES, default='sorteo_admin', verbose_name="Motivo / Criterio Utilizado")
+    observacion = models.TextField(blank=True, null=True, verbose_name="Observación / Acta Administrativa")
+    resuelto_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Resuelto Por")
+    fecha_hora = models.DateTimeField(auto_now_add=True, verbose_name="Fecha y Hora de Resolución")
+
+    class Meta:
+        verbose_name = "Resolución de Empate de Torneo"
+        verbose_name_plural = "Resoluciones de Empates de Torneo"
+        ordering = ['-fecha_hora']
+
+    def __str__(self):
+        return f"Empate Grupo {self.grupo.nombre}: Ganador {self.equipo_ganador.nombre} ({self.get_motivo_resolucion_display()})"
+
+
+class LlaveEliminatoria(models.Model):
+    ESTADOS = (
+        ('pendiente', 'Pendiente'),
+        ('programada', 'Programada'),
+        ('en_curso', 'En Curso'),
+        ('finalizada', 'Finalizada'),
+    )
+
+    FORMATOS = (
+        ('partido_unico', 'Partido Único'),
+        ('ida_vuelta', 'Ida y Vuelta'),
+    )
+
+    organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")
+    torneo = models.ForeignKey(Torneo, on_delete=models.CASCADE, related_name='llaves_eliminatorias', verbose_name="Torneo")
+    fase = models.CharField(max_length=20, choices=Partido.FASE_CHOICES, default='octavos', verbose_name="Fase Eliminatoria")
+    numero_llave = models.IntegerField(default=1, verbose_name="Número de Llave")
+    
+    equipo_local = models.ForeignKey(Equipo, on_delete=models.SET_NULL, null=True, blank=True, related_name='llaves_local', verbose_name="Equipo Local / Sembrado 1")
+    equipo_visitante = models.ForeignKey(Equipo, on_delete=models.SET_NULL, null=True, blank=True, related_name='llaves_visitante', verbose_name="Equipo Visitante / Sembrado 2")
+    clasificado_local = models.ForeignKey(ClasificadoTorneo, on_delete=models.SET_NULL, null=True, blank=True, related_name='llaves_clasificado_local', verbose_name="Clasificado Local")
+    clasificado_visitante = models.ForeignKey(ClasificadoTorneo, on_delete=models.SET_NULL, null=True, blank=True, related_name='llaves_clasificado_visitante', verbose_name="Clasificado Visitante")
+    
+    formato = models.CharField(max_length=20, choices=FORMATOS, default='partido_unico', verbose_name="Formato de la Llave")
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente', verbose_name="Estado de la Llave")
+    ganador = models.ForeignKey(Equipo, on_delete=models.SET_NULL, null=True, blank=True, related_name='llaves_ganadas', verbose_name="Ganador de la Llave")
+    siguiente_llave = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='llaves_previas', verbose_name="Siguiente Llave (Ronda Posterior)")
+    orden_visual = models.IntegerField(default=1, verbose_name="Orden de Presentación Visual")
+    es_bye = models.BooleanField(default=False, verbose_name="Es Pase Directo / BYE")
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Llave Eliminatoria"
+        verbose_name_plural = "Llaves Eliminatorias"
+        unique_together = ('torneo', 'fase', 'numero_llave')
+        ordering = ['fase', 'numero_llave', 'id']
+
+    def __str__(self):
+        local_str = self.equipo_local.nombre if self.equipo_local else ("BYE" if self.es_bye else "Por Definir")
+        visit_str = self.equipo_visitante.nombre if self.equipo_visitante else ("BYE" if self.es_bye else "Por Definir")
+        return f"{self.get_fase_display()} Llave #{self.numero_llave}: {local_str} vs {visit_str} ({self.torneo.nombre})"
+
+

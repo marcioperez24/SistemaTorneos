@@ -1,0 +1,91 @@
+{% extends 'teams/base.html' %}
+{% block title %}Vista Previa del Sorteo - {{ torneo.nombre }} - Sistema Deportivo{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-md-5">
+
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
+        <div class="d-flex align-items-center gap-3">
+            <a href="{% url 'configurar_sorteo_eliminatorio_view' torneo.id %}" class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 44px; height: 44px;" title="Volver a Configurar">
+                <i class="fa-solid fa-arrow-left fs-5"></i>
+            </a>
+            <div>
+                <h2 class="fw-bold text-dark mb-1 d-flex align-items-center flex-wrap gap-2">
+                    <i class="fa-solid fa-eye text-primary"></i>
+                    <span>Vista Previa de Llaves Eliminatorias</span>
+                </h2>
+                <p class="text-muted small mb-0">
+                    Fase: <strong>{{ preview.fase_display }}</strong> | Total Llaves: <strong>{{ preview.num_llaves }}</strong> | Formato: <strong>{{ preview.formato }}</strong>
+                    {% if preview.num_byes > 0 %}| Pases Directos (BYE): <strong>{{ preview.num_byes }}</strong>{% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <form method="POST" action="{% url 'vista_previa_sorteo_view' torneo.id %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="repetir">
+                <button type="submit" class="btn btn-outline-primary rounded-pill px-3 py-2 fw-semibold fs-8 shadow-sm">
+                    <i class="fa-solid fa-rotate me-1"></i>Repetir Sorteo
+                </button>
+            </form>
+            
+            <form method="POST" action="{% url 'confirmar_cuadro_view' torneo.id %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success rounded-pill px-4 py-2 fw-bold fs-8 shadow-sm">
+                    <i class="fa-solid fa-check-double me-1.5"></i>Confirmar y Crear Cuadro
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Tarjetas de Vista Previa de Llaves -->
+    <div class="row g-4 mb-5">
+        {% for ll in preview.llaves %}
+        <div class="col-12 col-md-6 col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden border">
+                <div class="card-header bg-light p-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark">Llave # {{ ll.numero_llave }} - {{ preview.fase_display }}</h6>
+                    {% if ll.es_bye %}
+                        <span class="badge bg-warning text-dark rounded-pill px-2.5 py-1">Pase Directo / BYE</span>
+                    {% else %}
+                        <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5 py-1">{{ preview.formato }}</span>
+                    {% endif %}
+                </div>
+                <div class="card-body p-3.5">
+                    {% if ll.es_bye %}
+                        <div class="d-flex align-items-center justify-content-between bg-light p-3 rounded-3 border mb-2">
+                            <div>
+                                <span class="fw-bold text-dark fs-7">{{ ll.local.nombre }}</span>
+                                <div class="text-muted fs-9">Grupo {{ ll.local.grupo }} (Pos {{ ll.local.posicion }})</div>
+                            </div>
+                            <span class="badge bg-success rounded-pill px-3 py-1.5 fs-9">Avanza a la sig. ronda</span>
+                        </div>
+                    {% else %}
+                        <!-- Local -->
+                        <div class="d-flex align-items-center justify-content-between bg-light p-2.5 rounded-3 border mb-2">
+                            <div>
+                                <span class="badge bg-secondary-subtle text-secondary me-1">Local</span>
+                                <span class="fw-bold text-dark fs-8">{{ ll.local.nombre }}</span>
+                                <div class="text-muted fs-9">Grupo {{ ll.local.grupo }} (Bombo {{ ll.local.bombo }})</div>
+                            </div>
+                        </div>
+                        <div class="text-center my-1 text-muted fs-9 font-normal">VS</div>
+                        <!-- Visitante -->
+                        <div class="d-flex align-items-center justify-content-between bg-light p-2.5 rounded-3 border">
+                            <div>
+                                <span class="badge bg-secondary-subtle text-secondary me-1">Visitante</span>
+                                <span class="fw-bold text-dark fs-8">{{ ll.visitante.nombre }}</span>
+                                <div class="text-muted fs-9">Grupo {{ ll.visitante.grupo }} (Bombo {{ ll.visitante.bombo }})</div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

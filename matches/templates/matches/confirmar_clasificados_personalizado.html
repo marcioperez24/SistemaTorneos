@@ -1,0 +1,291 @@
+{% extends 'teams/base.html' %}
+{% block title %}Confirmar Clasificados - {{ torneo.nombre }} - Sistema Deportivo{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-md-5">
+
+    <!-- Header Principal -->
+    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4 pb-3 border-bottom">
+        <div class="d-flex align-items-center gap-3">
+            <a href="{% url 'estadisticas_torneo_personalizado' torneo.id %}" class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 44px; height: 44px;" title="Volver a Estadísticas">
+                <i class="fa-solid fa-arrow-left fs-5"></i>
+            </a>
+            <div>
+                <h2 class="fw-bold text-dark mb-1 d-flex align-items-center flex-wrap gap-2">
+                    <i class="fa-solid fa-user-check text-primary"></i>
+                    <span>Confirmación Definitiva de Clasificados</span>
+                </h2>
+                <p class="text-muted small mb-0">Torneo: <strong>{{ torneo.nombre }}</strong> | Categoría: <strong>{{ torneo.get_categoria_display }}</strong></p>
+            </div>
+        </div>
+
+        {% if ya_confirmado %}
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fs-8">
+                    <i class="fa-solid fa-lock me-1.5"></i>Clasificación Confirmada Definitivamente
+                </span>
+                <a href="{% url 'configurar_sorteo_eliminatorio_view' torneo.id %}" class="btn btn-primary rounded-pill px-3 py-2 fw-bold fs-8 shadow-sm">
+                    Ir al Sorteo / Cuadro <i class="fa-solid fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if ya_confirmado %}
+    <!-- BANNER DE CLASIFICACIÓN CONFIRMADA -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-success-subtle text-success border-start border-4 border-success">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div>
+                <h4 class="fw-bold mb-1"><i class="fa-solid fa-circle-check me-2"></i>Los clasificados de este torneo ya han sido confirmados</h4>
+                <p class="mb-0 fs-8 text-success-emphasis">Se generó una fotografía inmutable de la tabla de posiciones para la fase eliminatoria.</p>
+            </div>
+            {% if user.role == 'superadmin' %}
+            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill fw-bold" data-bs-toggle="modal" data-bs-target="#modalReabrirClasificacion">
+                <i class="fa-solid fa-unlock me-1"></i>Reabrir Clasificación (Superadmin)
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Lista de Clasificados Confirmados -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5">
+        <div class="card-header bg-white border-bottom p-3.5 fw-bold text-dark">
+            Equipos Clasificados Definitivamente ({{ clasificados_existentes|length }})
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 text-center fs-8">
+                <thead class="table-light text-uppercase fw-bold text-muted fs-9">
+                    <tr>
+                        <th>BOMBO</th>
+                        <th class="text-start">EQUIPO</th>
+                        <th>GRUPO</th>
+                        <th>POSICIÓN EN GRUPO</th>
+                        <th>PTS</th>
+                        <th>DG</th>
+                        <th>GF</th>
+                        <th>MÉTODO</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in clasificados_existentes %}
+                    <tr>
+                        <td><span class="badge bg-primary rounded-pill px-3 py-1">Bombo {{ c.bombo }}</span></td>
+                        <td class="text-start fw-bold">{{ c.equipo.nombre }}</td>
+                        <td><span class="badge bg-secondary-subtle text-secondary">{{ c.grupo.nombre }}</span></td>
+                        <td class="fw-bold"># {{ c.posicion_grupo }}</td>
+                        <td class="fw-bold text-primary">{{ c.puntos }}</td>
+                        <td class="fw-bold">{{ c.diferencia_goles }}</td>
+                        <td>{{ c.goles_favor }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ c.get_metodo_clasificacion_display }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- PANTALLA DE REVISIÓN Y CONFIRMACIÓN -->
+
+    {% if estado_info.tiene_partidos_pendientes %}
+    <div class="alert alert-warning border-warning rounded-4 p-3.5 mb-4 d-flex align-items-center gap-3">
+        <i class="fa-solid fa-triangle-exclamation fs-3 text-warning"></i>
+        <div>
+            <h6 class="fw-bold mb-0">Partidos Pendientes en Grupos</h6>
+            <span class="fs-8">No se pueden confirmar los clasificados porque todavía existen partidos pendientes en los grupos. Completa la fase de grupos o utiliza una confirmación excepcional.</span>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if estado_info.tiene_empates_pendientes %}
+    <div class="alert alert-danger border-danger rounded-4 p-3.5 mb-4 d-flex align-items-center gap-3">
+        <i class="fa-solid fa-circle-exclamation fs-3 text-danger"></i>
+        <div>
+            <h6 class="fw-bold mb-0">Empates Pendientes de Resolución</h6>
+            <span class="fs-8">Existen equipos igualados en todos los criterios deportivos en el límite de clasificación. Debes resolver los empates administrativamente antes de confirmar.</span>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Resumen de Grupos y Clasificados Provisionales -->
+    <div class="row g-4 mb-4">
+        {% for g_info in estado_info.grupos_info %}
+        <div class="col-12 col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden border">
+                <div class="card-header bg-light p-3 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-dark">Grupo {{ g_info.grupo.nombre }}</h5>
+                    <span class="badge {% if g_info.estado == 'Finalizado' %}bg-success{% else %}bg-warning text-dark{% endif %} rounded-pill px-3 py-1 fs-9">
+                        {{ g_info.estado }}
+                    </span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover align-middle mb-0 text-center fs-8">
+                            <thead class="table-light fs-9 text-muted">
+                                <tr>
+                                    <th>POS</th>
+                                    <th class="text-start">EQUIPO</th>
+                                    <th>PJ</th>
+                                    <th>PTS</th>
+                                    <th>DG</th>
+                                    <th>ESTADO</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in g_info.tabla %}
+                                <tr class="{% if row.es_clasificado_provisional %}table-success-subtle{% endif %}">
+                                    <td class="fw-bold">{{ row.posicion }}</td>
+                                    <td class="text-start fw-bold">{{ row.nombre }}</td>
+                                    <td>{{ row.PJ }}</td>
+                                    <td class="fw-bold text-primary">{{ row.PTS }}</td>
+                                    <td class="fw-bold">{{ row.DG }}</td>
+                                    <td>
+                                        {% if row.es_clasificado_provisional %}
+                                            {% if row.empate_pendiente %}
+                                                <span class="badge bg-warning text-dark border border-warning" style="font-size: 0.65rem;">Empate Pendiente</span>
+                                            {% else %}
+                                                <span class="badge bg-success" style="font-size: 0.65rem;">Clasificado (Bombo {{ row.posicion }})</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted fs-9">Eliminado</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {% if g_info.empates_en_grupo %}
+                <div class="card-footer bg-warning-subtle p-3 text-center border-top">
+                    <button type="button" class="btn btn-warning btn-sm fw-bold rounded-pill" data-bs-toggle="modal" data-bs-target="#modalResolverEmpate{{ g_info.grupo.id }}">
+                        <i class="fa-solid fa-gavel me-1"></i>Resolver Empate en Grupo {{ g_info.grupo.nombre }}
+                    </button>
+                </div>
+
+                <!-- Modal para resolver empate de este grupo -->
+                <div class="modal fade" id="modalResolverEmpate{{ g_info.grupo.id }}" tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content rounded-4 border-0 shadow">
+                            <form method="POST" action="{% url 'resolver_empate_view' torneo.id g_info.grupo.id %}">
+                                {% csrf_token %}
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-gavel me-2"></i>Resolver Empate - Grupo {{ g_info.grupo.nombre }}</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body p-4">
+                                    <p class="fs-8 text-muted mb-3">Selecciona el equipo favorecido por criterio reglamentario o resolución administrativa.</p>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold fs-8">Equipo Favorecido (Clasificado):</label>
+                                        <select name="equipo_ganador_id" class="form-select fs-8" required>
+                                            {% for item in g_info.tabla %}
+                                                {% if item.es_clasificado_provisional or item.empate_pendiente %}
+                                                    <option value="{{ item.equipo_id }}">{{ item.posicion }}. {{ item.nombre }} ({{ item.PTS }} pts, DG {{ item.DG }})</option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    {% for item in g_info.tabla %}
+                                        {% if item.empate_pendiente %}
+                                            <input type="hidden" name="equipos_empatados_ids" value="{{ item.equipo_id }}">
+                                        {% endif %}
+                                    {% endfor %}
+
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold fs-8">Criterio / Motivo de Resolución:</label>
+                                        <select name="motivo_resolucion" class="form-select fs-8" required>
+                                            <option value="sorteo_admin">Sorteo Administrativo / Moneda</option>
+                                            <option value="partido_desempate">Partido Extra de Desempate</option>
+                                            <option value="comision">Resolución de Comisión Disciplinaria</option>
+                                            <option value="reglamento">Criterio Reglamentario Adicional</option>
+                                            <option value="otro">Otro Motivo</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold fs-8">Observaciones / Detalles del Acta:</label>
+                                        <textarea name="observacion" class="form-control fs-8" rows="3" placeholder="Escribe los detalles de la resolución administrativa..."></textarea>
+                                    </div>
+                                </div>
+                                <div class="modal-footer bg-light">
+                                    <button type="button" class="btn btn-secondary btn-sm rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="submit" class="btn btn-primary btn-sm rounded-pill fw-bold">Guardar Resolución</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Acciones de Confirmación -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white border">
+        <h5 class="fw-bold mb-3 text-dark"><i class="fa-solid fa-lock me-2 text-primary"></i>Confirmar Fase de Clasificación</h5>
+        <p class="fs-8 text-muted mb-4">Al confirmar, se congelarán los clasificados definitivos y se crearán los bombos para el sorteo del cuadro eliminatorio.</p>
+
+        <form method="POST" action="{% url 'confirmar_clasificados_view' torneo.id %}">
+            {% csrf_token %}
+
+            {% if estado_info.tiene_partidos_pendientes %}
+            <div class="bg-light p-3 rounded-3 border mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="confirmacion_excepcional" value="1" id="chkExcepcional">
+                    <label class="form-check-label fw-bold text-dark fs-8" for="chkExcepcional">
+                        Confirmación Excepcional (Aún existen partidos pendientes en grupos)
+                    </label>
+                </div>
+                <div class="mt-2">
+                    <input type="text" name="motivo_excepcional" class="form-control fs-8" placeholder="Escribe la justificación del cierre excepcional de grupos...">
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <a href="{% url 'estadisticas_torneo_personalizado' torneo.id %}" class="btn btn-outline-secondary rounded-pill px-4 py-2.5 fw-bold fs-8">
+                    Volver a Estadísticas
+                </a>
+                <button type="submit" class="btn btn-success rounded-pill px-4 py-2.5 fw-bold fs-8 shadow-sm" {% if estado_info.tiene_empates_pendientes %}disabled{% endif %}>
+                    <i class="fa-solid fa-check-circle me-1.5"></i>Confirmar Clasificados Definitivos
+                </button>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+
+</div>
+
+{% if ya_confirmado and user.role == 'superadmin' %}
+<!-- Modal Reabrir Clasificación -->
+<div class="modal fade" id="modalReabrirClasificacion" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form method="POST" action="{% url 'reabrir_clasificacion_view' torneo.id %}">
+                {% csrf_token %}
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-unlock me-2"></i>Reabrir Clasificación Definitiva</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 fs-8 text-muted">
+                    <p class="text-danger fw-bold"><i class="fa-solid fa-triangle-exclamation me-1"></i>¡Atención!</p>
+                    <p>Esta acción invalidará los clasificados guardados y eliminará el cuadro de eliminatorias que no haya iniciado partidos.</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark">Motivo de Reapertura:</label>
+                        <textarea name="motivo_reapertura" class="form-control fs-8" rows="3" required placeholder="Escribe el motivo oficial..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary btn-sm rounded-pill" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger btn-sm rounded-pill fw-bold">Reabrir Clasificación</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

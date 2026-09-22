@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, views_grupos, views_fixture_personalizado, views_estadisticas_personalizado
+from . import views, views_grupos, views_fixture_personalizado, views_estadisticas_personalizado, views_eliminatorias_personalizado
 
 urlpatterns = [
     # Cartelera Pública de Partidos (Calendario)
@@ -61,6 +61,18 @@ urlpatterns = [
     path('torneos/<int:torneo_id>/personalizado/estadisticas/', views_estadisticas_personalizado.estadisticas_torneo_personalizado, name='estadisticas_torneo_personalizado'),
     path('torneos/<int:torneo_id>/personalizado/estadisticas/imprimir/', views_estadisticas_personalizado.imprimir_estadisticas_personalizado, name='imprimir_estadisticas_personalizado'),
     path('torneos/<int:torneo_id>/personalizado/estadisticas/excel/', views_estadisticas_personalizado.exportar_excel_estadisticas_personalizado, name='exportar_excel_estadisticas_personalizado'),
+
+    # Torneo Personalizado por Grupos - Fase 5 (Clasificación Definitiva, Sorteo de Bombos & Cuadro Eliminatorio)
+    path('torneos/<int:torneo_id>/personalizado/clasificados/confirmar/', views_eliminatorias_personalizado.confirmar_clasificados_view, name='confirmar_clasificados_view'),
+    path('torneos/<int:torneo_id>/personalizado/clasificados/reabrir/', views_eliminatorias_personalizado.reabrir_clasificacion_view, name='reabrir_clasificacion_view'),
+    path('torneos/<int:torneo_id>/personalizado/empate/<int:grupo_id>/resolver/', views_eliminatorias_personalizado.resolver_empate_view, name='resolver_empate_view'),
+    path('torneos/<int:torneo_id>/personalizado/eliminatorias/configurar/', views_eliminatorias_personalizado.configurar_sorteo_eliminatorio_view, name='configurar_sorteo_eliminatorio_view'),
+    path('torneos/<int:torneo_id>/personalizado/eliminatorias/vista-previa/', views_eliminatorias_personalizado.vista_previa_sorteo_view, name='vista_previa_sorteo_view'),
+    path('torneos/<int:torneo_id>/personalizado/eliminatorias/confirmar-cuadro/', views_eliminatorias_personalizado.confirmar_cuadro_view, name='confirmar_cuadro_view'),
+    path('torneos/<int:torneo_id>/personalizado/eliminatorias/cuadro/', views_eliminatorias_personalizado.ver_cuadro_eliminatorio_view, name='ver_cuadro_eliminatorio_view'),
+    path('torneos/<int:torneo_id>/personalizado/eliminatorias/imprimir/', views_eliminatorias_personalizado.imprimir_cuadro_eliminatorio_view, name='imprimir_cuadro_eliminatorio_view'),
+    path('torneos/<int:torneo_id>/personalizado/eliminatorias/excel/', views_eliminatorias_personalizado.exportar_excel_cuadro_eliminatorio_view, name='exportar_excel_cuadro_eliminatorio_view'),
 ]
+
 
 

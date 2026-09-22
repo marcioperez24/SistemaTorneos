@@ -734,5 +734,247 @@ class TorneoPersonalizadoPhase4Tests(TestCase):
         self.assertEqual(Partido.objects.filter(torneo=self.torneo, fase='cuartos').count(), 0)
 
 
+from matches.models import ClasificadoTorneo, ResolucionEmpateTorneo, LlaveEliminatoria
+from matches.services.sorteo_personalizado import (
+    verificar_estado_clasificacion_grupos,
+    confirmar_clasificados_definitivos,
+    resolver_empate_administrativo,
+    reabrir_clasificacion_definitiva,
+    generar_sorteo_eliminatorio,
+    confirmar_y_crear_cuadro_eliminatorio,
+    generar_excel_cuadro_eliminatorio
+)
+
+
+class TorneoPersonalizadoPhase5Tests(TestCase):
+
+    def setUp(self):
+        self.admin_user = User.objects.create_user(
+            username="admin_p5", password="password123", role="superadmin"
+        )
+        self.org1 = Organizacion.objects.create(nombre="Org Fase 5", codigo="ORGF5")
+        self.org2 = Organizacion.objects.create(nombre="Org Ajena 5", codigo="ORGF5A")
+
+        UsuarioOrganizacion.objects.create(usuario=self.admin_user, organizacion=self.org1, rol='admin', activo=True)
+
+        self.cat1 = Categoria.objects.create(nombre="Senior 40", organizacion=self.org1)
+
+        self.torneo = Torneo.objects.create(
+            nombre="Copa Personalizada F5",
+            categoria=self.cat1,
+            organizacion=self.org1,
+            tipo='personalizado',
+            temporada="2026",
+            puntos_victoria=3,
+            puntos_empate=1,
+            puntos_derrota=0
+        )
+
+        self.grupo_a = GrupoTorneo.objects.create(
+            torneo=self.torneo, nombre="Grupo A", sector="Sector 1", cupos_clasificacion=2
+        )
+        self.grupo_b = GrupoTorneo.objects.create(
+            torneo=self.torneo, nombre="Grupo B", sector="Sector 2", cupos_clasificacion=2
+        )
+
+        self.equipos_a = []
+        for i in range(1, 4):
+            eq = Equipo.objects.create(
+                nombre=f"Equipo A{i}", categoria=self.cat1, organizacion=self.org1, dirigente=self.admin_user
+            )
+            self.equipos_a.append(eq)
+            EquipoGrupoTorneo.objects.create(torneo=self.torneo, grupo=self.grupo_a, equipo=eq, orden=i)
+
+        self.equipos_b = []
+        for i in range(1, 4):
+            eq = Equipo.objects.create(
+                nombre=f"Equipo B{i}", categoria=self.cat1, organizacion=self.org1, dirigente=self.admin_user
+            )
+            self.equipos_b.append(eq)
+            EquipoGrupoTorneo.objects.create(torneo=self.torneo, grupo=self.grupo_b, equipo=eq, orden=i)
+
+        # Crear partidos finalizados en Grupo A: A1 le gana a A2 (3-0), A2 le gana a A3 (2-0), A1 le gana a A3 (1-0)
+        # Posiciones Grupo A: 1. A1 (6 pts), 2. A2 (3 pts), 3. A3 (0 pts)
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, grupo_personalizado=self.grupo_a,
+            fase='grupos', equipo_local=self.equipos_a[0], equipo_visitante=self.equipos_a[1],
+            goles_local=3, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, grupo_personalizado=self.grupo_a,
+            fase='grupos', equipo_local=self.equipos_a[1], equipo_visitante=self.equipos_a[2],
+            goles_local=2, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, grupo_personalizado=self.grupo_a,
+            fase='grupos', equipo_local=self.equipos_a[0], equipo_visitante=self.equipos_a[2],
+            goles_local=1, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+
+        # Crear partidos finalizados en Grupo B: B1 le gana a B2 (2-1), B2 le gana a B3 (3-1), B1 le gana a B3 (2-0)
+        # Posiciones Grupo B: 1. B1 (6 pts), 2. B2 (3 pts), 3. B3 (0 pts)
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, grupo_personalizado=self.grupo_b,
+            fase='grupos', equipo_local=self.equipos_b[0], equipo_visitante=self.equipos_b[1],
+            goles_local=2, goles_visitante=1, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, grupo_personalizado=self.grupo_b,
+            fase='grupos', equipo_local=self.equipos_b[1], equipo_visitante=self.equipos_b[2],
+            goles_local=3, goles_visitante=1, fecha_hora=timezone.now(), estado='finalizado'
+        )
+        Partido.objects.create(
+            organizacion=self.org1, torneo=self.torneo, grupo_personalizado=self.grupo_b,
+            fase='grupos', equipo_local=self.equipos_b[0], equipo_visitante=self.equipos_b[2],
+            goles_local=2, goles_visitante=0, fecha_hora=timezone.now(), estado='finalizado'
+        )
+
+    def _login_admin(self):
+        session = self.client.session
+        session['current_organizacion_id'] = self.org1.id
+        session.save()
+        self.client.login(username="admin_p5", password="password123")
+
+    def test_verificar_estado_clasificacion_grupos(self):
+        estado = verificar_estado_clasificacion_grupos(self.torneo, self.org1)
+        self.assertTrue(estado['todos_finalizados'])
+        self.assertEqual(len(estado['empates_pendientes'] if 'empates_pendientes' in estado else []), 0)
+        self.assertEqual(len(estado['grupos_info']), 2)
+
+    def test_confirmar_clasificados_definitivos_automatico(self):
+        confirmar_clasificados_definitivos(self.torneo, self.org1, self.admin_user)
+        self.assertEqual(ClasificadoTorneo.objects.filter(torneo=self.torneo).count(), 4)
+        a1_clas = ClasificadoTorneo.objects.get(torneo=self.torneo, equipo=self.equipos_a[0])
+        self.assertEqual(a1_clas.posicion_grupo, 1)
+        self.assertEqual(a1_clas.bombo, 1)
+
+    def test_resolver_empate_administrativo(self):
+        # Crear empate de prueba en Grupo A entre A1 y A2
+        res = resolver_empate_administrativo(
+            torneo=self.torneo,
+            grupo=self.grupo_a,
+            equipos_ids=[self.equipos_a[0].id, self.equipos_a[1].id],
+            equipo_ganador_id=self.equipos_a[0].id,
+            motivo="Sorteo ante delegados",
+            observacion="Observación test",
+            usuario=self.admin_user,
+            organizacion=self.org1
+        )
+        self.assertIsNotNone(res)
+        self.assertEqual(ResolucionEmpateTorneo.objects.filter(torneo=self.torneo).count(), 1)
+
+    def test_reabrir_clasificacion_definitiva(self):
+        confirmar_clasificados_definitivos(self.torneo, self.org1, self.admin_user)
+        self.assertEqual(ClasificadoTorneo.objects.filter(torneo=self.torneo).count(), 4)
+
+        reabrir_clasificacion_definitiva(self.torneo, self.org1, self.admin_user, motivo="Sorteo incorrecto realizado por error humano")
+        self.assertEqual(ClasificadoTorneo.objects.filter(torneo=self.torneo).count(), 0)
+
+    def test_generar_sorteo_eliminatorio_automatico_bombos(self):
+        confirmar_clasificados_definitivos(self.torneo, self.org1, self.admin_user)
+        sorteo = generar_sorteo_eliminatorio(self.torneo, self.org1, self.admin_user, params={'tipo_sorteo': 'bombos'})
+        self.assertEqual(sorteo['total_clasificados'], 4)
+        self.assertEqual(len(sorteo['llaves']), 2)
+
+    def test_confirmar_y_crear_cuadro_eliminatorio_partido_unico(self):
+        confirmar_clasificados_definitivos(self.torneo, self.org1, self.admin_user)
+        sorteo = generar_sorteo_eliminatorio(self.torneo, self.org1, self.admin_user, params={'tipo_sorteo': 'bombos', 'formato': 'partido_unico'})
+        
+        llaves_creadas = confirmar_y_crear_cuadro_eliminatorio(
+            torneo=self.torneo,
+            organizacion=self.org1,
+            usuario=self.admin_user,
+            preview_data=sorteo
+        )
+        self.assertEqual(len(llaves_creadas), 2)
+        self.assertEqual(LlaveEliminatoria.objects.filter(torneo=self.torneo).count(), 2)
+        self.assertEqual(Partido.objects.filter(torneo=self.torneo, fase='semifinal').count(), 2)
+
+    def test_confirmar_y_crear_cuadro_eliminatorio_ida_y_vuelta(self):
+        confirmar_clasificados_definitivos(self.torneo, self.org1, self.admin_user)
+        sorteo = generar_sorteo_eliminatorio(self.torneo, self.org1, self.admin_user, params={'tipo_sorteo': 'bombos', 'formato': 'ida_vuelta'})
+        
+        llaves_creadas = confirmar_y_crear_cuadro_eliminatorio(
+            torneo=self.torneo,
+            organizacion=self.org1,
+            usuario=self.admin_user,
+            preview_data=sorteo
+        )
+        self.assertEqual(len(llaves_creadas), 2)
+        self.assertEqual(Partido.objects.filter(torneo=self.torneo, fase='semifinal').count(), 4)  # 2 llaves x 2 partidos cada una
+
+    def test_cuadro_eliminatorio_con_byes(self):
+        # Reducir cupos de Grupo B a 1 clasificado -> Total 3 clasificados
+        self.grupo_b.cupos_clasificacion = 1
+        self.grupo_b.save()
+
+        confirmar_clasificados_definitivos(self.torneo, self.org1, self.admin_user)
+        self.assertEqual(ClasificadoTorneo.objects.filter(torneo=self.torneo).count(), 3)
+
+        sorteo = generar_sorteo_eliminatorio(self.torneo, self.org1, self.admin_user, params={'tipo_sorteo': 'posicion'})
+        self.assertEqual(sorteo['total_clasificados'], 3)
+        self.assertEqual(sorteo['num_byes'], 1)
+        
+        # Una de las llaves tiene es_bye = True
+        byes = [ll for ll in sorteo['llaves'] if ll['es_bye']]
+        self.assertEqual(len(byes), 1)
+
+    def test_vistas_web_y_exportaciones_fase5(self):
+        self._login_admin()
+        
+        # 1. Vista confirmación clasificados
+        url_conf = reverse('confirmar_clasificados_view', kwargs={'torneo_id': self.torneo.id})
+        res_conf = self.client.get(url_conf)
+        self.assertEqual(res_conf.status_code, 200)
+
+        # Confirmar clasificados vía POST
+        self.client.post(url_conf)
+
+        # 2. Vista configurar sorteo
+        url_sort = reverse('configurar_sorteo_eliminatorio_view', kwargs={'torneo_id': self.torneo.id})
+        res_sort = self.client.get(url_sort)
+        self.assertEqual(res_sort.status_code, 200)
+
+        # Generar sorteo vía POST
+        res_prev = self.client.post(url_sort, {'tipo_sorteo': 'bombos', 'mismo_grupo_filtro': 'on'})
+        self.assertEqual(res_prev.status_code, 200)
+
+        # Confirmar cuadro vía POST
+        url_conf_cuadro = reverse('confirmar_cuadro_view', kwargs={'torneo_id': self.torneo.id})
+        res_cuadro = self.client.post(url_conf_cuadro, {'ida_y_vuelta': 'off'})
+        self.assertEqual(res_cuadro.status_code, 302)
+
+        # 3. Vista ver cuadro
+        url_ver = reverse('ver_cuadro_eliminatorio_view', kwargs={'torneo_id': self.torneo.id})
+        res_ver = self.client.get(url_ver)
+        self.assertEqual(res_ver.status_code, 200)
+
+        # 4. Vista imprimir cuadro
+        url_print = reverse('imprimir_cuadro_eliminatorio_view', kwargs={'torneo_id': self.torneo.id})
+        res_print = self.client.get(url_print)
+        self.assertEqual(res_print.status_code, 200)
+
+        # 5. Vista exportar Excel cuadro
+        url_excel = reverse('exportar_excel_cuadro_eliminatorio_view', kwargs={'torneo_id': self.torneo.id})
+        res_excel = self.client.get(url_excel)
+        self.assertEqual(res_excel.status_code, 200)
+        self.assertEqual(
+            res_excel['Content-Type'],
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+    def test_aislamiento_organizacion_fase5(self):
+        user_org2 = User.objects.create_user(username="org2_user5", password="password123")
+        session = self.client.session
+        session['organizacion_id'] = self.org2.id
+        session.save()
+        self.client.login(username="org2_user5", password="password123")
+
+        url = reverse('confirmar_clasificados_view', kwargs={'torneo_id': self.torneo.id})
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 404)
+
+
+
 
 
