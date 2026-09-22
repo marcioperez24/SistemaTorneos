@@ -292,13 +292,16 @@ def registro_jugador(request, token):
             ficha_anterior = FichaJugador.objects.filter(user=request.user).order_by('-id').first()
             
         # Si tiene un registro anterior, mostramos la pantalla simplificada y rápida
+        # Si tiene un registro anterior, mostramos la pantalla simplificada y rápida
         if ficha_anterior:
             if request.method == 'POST':
+                org = invitacion.equipo.organizacion if invitacion.equipo else invitacion.organizacion
                 if tipo == 'dt':
                     nueva_ficha = FichaDT(
                         user=request.user,
                         equipo=invitacion.equipo,
                         torneo=invitacion.torneo,
+                        organizacion=org,
                         estado_validacion='pendiente',
                         fecha_firma=timezone.now(),
                         firma_digital=True,
@@ -317,6 +320,7 @@ def registro_jugador(request, token):
                         user=request.user,
                         equipo=invitacion.equipo,
                         torneo=invitacion.torneo,
+                        organizacion=org,
                         numero_camiseta=request.POST.get('numero_camiseta'),
                         estado_validacion='pendiente',
                         fecha_firma=timezone.now(),
@@ -380,8 +384,10 @@ def registro_jugador(request, token):
                     messages.error(request, f'El equipo ya alcanzó el máximo de jugadores ({invitacion.torneo.max_jugadores_por_equipo}) permitidos en este torneo.')
                     return redirect(request.path)
                     
-            ficha = form.save(equipo=invitacion.equipo)
+            org = invitacion.equipo.organizacion if invitacion.equipo else invitacion.organizacion
+            ficha = form.save(commit=False, equipo=invitacion.equipo, organizacion=org)
             ficha.torneo = invitacion.torneo
+            ficha.organizacion = org
             # Firmando digitalmente con la fecha actual
             ficha.fecha_firma = timezone.now()
             ficha.save()
