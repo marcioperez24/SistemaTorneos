@@ -5,7 +5,7 @@
 <div class="gradient-header text-center py-5">
     <div class="container d-flex flex-column align-items-center">
         {% if equipo.logo %}
-            <img src="{{ equipo.logo.url }}" alt="{{ equipo.nombre }}" class="rounded-circle border mb-3 shadow" style="width: 90px; height: 90px; object-fit: cover; border-color: #fff !important; border-width: 3px !important;">
+            <img src="{{ equipo.logo.url }}" alt="{{ equipo.nombre }}" class="shadow border mb-3" style="width: 90px; height: 90px; object-fit: contain; background: #ffffff; border-radius: 18px; padding: 6px; border-color: #fff !important; border-width: 3px !important;">
         {% else %}
             <div class="bg-white text-primary rounded-circle border mb-3 shadow d-flex align-items-center justify-content-center fw-bold" style="width: 90px; height: 90px; font-size: 2.2rem; border-color: #fff !important; border-width: 3px !important;">
                 {{ equipo.nombre|slice:":2"|upper }}

@@ -249,7 +249,7 @@
                             </div>
                         </div>
                         {% if ficha.equipo.logo %}
-                            <img src="{{ ficha.equipo.logo.url }}" alt="Logo Equipo" style="height: 7.5mm; width: 7.5mm; object-fit: cover; border-radius: 50%;">
+                            <img src="{{ ficha.equipo.logo.url }}" alt="Logo Equipo" style="height: 7.5mm; width: 7.5mm; object-fit: contain; background: #ffffff; border-radius: 2mm; padding: 0.3mm;">
                         {% else %}
                             <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="height: 7.5mm; width: 7.5mm; font-size: 7.5pt;">
                                 {{ ficha.equipo.nombre|slice:":2"|upper }}

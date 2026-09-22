@@ -137,7 +137,7 @@
                     <!-- EQUIPO LOCAL -->
                     <div class="d-flex flex-column align-items-center text-center print-col-35" style="width: 35%;">
                         {% if partido.equipo_local.logo %}
-                            <img src="{{ partido.equipo_local.logo.url }}" alt="{{ partido.equipo_local.nombre }}" class="rounded-circle border border-white shadow-sm mb-2" style="width: 60px; height: 60px; object-fit: cover;">
+                            <img src="{{ partido.equipo_local.logo.url }}" alt="{{ partido.equipo_local.nombre }}" class="border border-white shadow-sm mb-2" style="width: 60px; height: 60px; object-fit: contain; background: #ffffff; padding: 4px; border-radius: 14px;">
                         {% else %}
                             <div class="bg-primary bg-gradient text-white rounded-circle border border-white shadow-sm d-flex align-items-center justify-content-center fw-bold mb-2" style="width: 60px; height: 60px; font-size: 20px;">
                                 {{ partido.equipo_local.nombre|slice:":2"|upper }}
@@ -160,7 +160,7 @@
                     <!-- EQUIPO VISITANTE -->
                     <div class="d-flex flex-column align-items-center text-center print-col-35" style="width: 35%;">
                         {% if partido.equipo_visitante.logo %}
-                            <img src="{{ partido.equipo_visitante.logo.url }}" alt="{{ partido.equipo_visitante.nombre }}" class="rounded-circle border border-white shadow-sm mb-2" style="width: 60px; height: 60px; object-fit: cover;">
+                            <img src="{{ partido.equipo_visitante.logo.url }}" alt="{{ partido.equipo_visitante.nombre }}" class="border border-white shadow-sm mb-2" style="width: 60px; height: 60px; object-fit: contain; background: #ffffff; padding: 4px; border-radius: 14px;">
                         {% else %}
                             <div class="bg-primary bg-gradient text-white rounded-circle border border-white shadow-sm d-flex align-items-center justify-content-center fw-bold mb-2" style="width: 60px; height: 60px; font-size: 20px;">
                                 {{ partido.equipo_visitante.nombre|slice:":2"|upper }}

@@ -134,7 +134,7 @@
                                         <div class="row align-items-center text-center my-3">
                                             <div class="col-4">
                                                 {% if partido.equipo_local.logo %}
-                                                    <img src="{{ partido.equipo_local.logo.url }}" alt="{{ partido.equipo_local.nombre }}" class="rounded-circle border mb-2 shadow-sm" style="width: 50px; height: 50px; object-fit: cover;">
+                                                    <img src="{{ partido.equipo_local.logo.url }}" alt="{{ partido.equipo_local.nombre }}" class="border mb-2 shadow-sm" style="width: 50px; height: 50px; object-fit: contain; background: #ffffff; padding: 3px; border-radius: 12px;">
                                                 {% else %}
                                                     <div class="bg-primary text-white rounded-circle mx-auto mb-2 shadow-sm d-flex align-items-center justify-content-center fw-bold" style="width: 50px; height: 50px;">
                                                         {{ partido.equipo_local.nombre|slice:":2"|upper }}
@@ -153,7 +153,7 @@
                                             
                                             <div class="col-4">
                                                 {% if partido.equipo_visitante.logo %}
-                                                    <img src="{{ partido.equipo_visitante.logo.url }}" alt="{{ partido.equipo_visitante.nombre }}" class="rounded-circle border mb-2 shadow-sm" style="width: 50px; height: 50px; object-fit: cover;">
+                                                    <img src="{{ partido.equipo_visitante.logo.url }}" alt="{{ partido.equipo_visitante.nombre }}" class="border mb-2 shadow-sm" style="width: 50px; height: 50px; object-fit: contain; background: #ffffff; padding: 3px; border-radius: 12px;">
                                                 {% else %}
                                                     <div class="bg-primary text-white rounded-circle mx-auto mb-2 shadow-sm d-flex align-items-center justify-content-center fw-bold" style="width: 50px; height: 50px;">
                                                         {{ partido.equipo_visitante.nombre|slice:":2"|upper }}
@@ -358,7 +358,7 @@
                                                     <td>
                                                         <div class="d-flex align-items-center">
                                                             {% if fila.equipo.logo %}
-                                                                <img src="{{ fila.equipo.logo.url }}" alt="{{ fila.equipo.nombre }}" class="rounded-circle border me-2" style="width: 28px; height: 28px; object-fit: cover;">
+                                                                <img src="{{ fila.equipo.logo.url }}" alt="{{ fila.equipo.nombre }}" class="border me-2" style="width: 28px; height: 28px; object-fit: contain; background: #ffffff; padding: 2px; border-radius: 6px;">
                                                             {% else %}
                                                                 <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-2" style="width: 28px; height: 28px; font-size: 11px;">
                                                                     {{ fila.equipo.nombre|slice:":2"|upper }}

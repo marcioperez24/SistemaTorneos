@@ -23,7 +23,7 @@
                     <div class="d-flex align-items-center justify-content-end text-end flex-1" style="min-width: 120px;">
                         <span class="fw-bold text-dark fs-7 me-2 text-truncate" style="max-width: 130px;" title="{{ partido.equipo_local.nombre }}">{{ partido.equipo_local.nombre }}</span>
                         {% if partido.equipo_local.logo %}
-                            <img src="{{ partido.equipo_local.logo.url }}" alt="{{ partido.equipo_local.nombre }}" class="rounded-circle border shadow-sm flex-shrink-0" style="width: 36px; height: 36px; object-fit: cover;">
+                            <img src="{{ partido.equipo_local.logo.url }}" alt="{{ partido.equipo_local.nombre }}" class="border shadow-sm flex-shrink-0" style="width: 36px; height: 36px; object-fit: contain; background: #ffffff; padding: 2px; border-radius: 8px;">
                         {% else %}
                             <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm flex-shrink-0" style="width: 36px; height: 36px; font-size: 0.75rem;">
                                 {{ partido.equipo_local.nombre|slice:":2"|upper }}
@@ -45,7 +45,7 @@
                     <!-- Visitante -->
                     <div class="d-flex align-items-center justify-content-start text-start flex-1" style="min-width: 120px;">
                         {% if partido.equipo_visitante.logo %}
-                            <img src="{{ partido.equipo_visitante.logo.url }}" alt="{{ partido.equipo_visitante.nombre }}" class="rounded-circle border shadow-sm flex-shrink-0 me-2" style="width: 36px; height: 36px; object-fit: cover;">
+                            <img src="{{ partido.equipo_visitante.logo.url }}" alt="{{ partido.equipo_visitante.nombre }}" class="border shadow-sm flex-shrink-0 me-2" style="width: 36px; height: 36px; object-fit: contain; background: #ffffff; padding: 2px; border-radius: 8px;">
                         {% else %}
                             <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm flex-shrink-0 me-2" style="width: 36px; height: 36px; font-size: 0.75rem;">
                                 {{ partido.equipo_visitante.nombre|slice:":2"|upper }}
