@@ -3,12 +3,29 @@
 from django.db import migrations, models
 import uuid
 
-def gen_uuid(apps, schema_editor):
+
+def add_fields_and_generate_uuids(apps, schema_editor):
     Torneo = apps.get_model('matches', 'Torneo')
+    connection = schema_editor.connection
+
+    with connection.cursor() as cursor:
+        table_description = connection.introspection.get_table_description(cursor, Torneo._meta.db_table)
+        existing_columns = [col.name for col in table_description]
+
+    if 'es_publico' not in existing_columns:
+        field = models.BooleanField(default=True, verbose_name='Torneo Publicado / Vista Pública Activa')
+        field.set_attributes_from_name('es_publico')
+        schema_editor.add_field(Torneo, field)
+
+    if 'public_uuid' not in existing_columns:
+        field = models.UUIDField(default=None, null=True, editable=False, verbose_name='Identificador Público UUID')
+        field.set_attributes_from_name('public_uuid')
+        schema_editor.add_field(Torneo, field)
+
     for torneo in Torneo.objects.all():
-        if not torneo.public_uuid:
-            torneo.public_uuid = uuid.uuid4()
-            torneo.save(update_fields=['public_uuid'])
+        torneo.public_uuid = uuid.uuid4()
+        torneo.save(update_fields=['public_uuid'])
+
 
 class Migration(migrations.Migration):
 
@@ -17,17 +34,23 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='torneo',
-            name='es_publico',
-            field=models.BooleanField(default=True, verbose_name='Torneo Publicado / Vista Pública Activa'),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunPython(add_fields_and_generate_uuids, reverse_code=migrations.RunPython.noop),
+            ],
+            state_operations=[
+                migrations.AddField(
+                    model_name='torneo',
+                    name='es_publico',
+                    field=models.BooleanField(default=True, verbose_name='Torneo Publicado / Vista Pública Activa'),
+                ),
+                migrations.AddField(
+                    model_name='torneo',
+                    name='public_uuid',
+                    field=models.UUIDField(default=None, null=True, editable=False, verbose_name='Identificador Público UUID'),
+                ),
+            ],
         ),
-        migrations.AddField(
-            model_name='torneo',
-            name='public_uuid',
-            field=models.UUIDField(default=uuid.uuid4, editable=False, null=True, verbose_name='Identificador Público UUID'),
-        ),
-        migrations.RunPython(gen_uuid, reverse_code=migrations.RunPython.noop),
         migrations.AlterField(
             model_name='torneo',
             name='public_uuid',
