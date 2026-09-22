@@ -2,22 +2,180 @@
 {% block title %}Registro Exitoso - Sistema Deportivo{% endblock %}
 
 {% block content %}
-<div class="container my-5 py-5">
+<style>
+    .success-badge-icon {
+        width: 90px;
+        height: 90px;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.35);
+        font-size: 2.75rem;
+        animation: pulseSuccess 2s infinite;
+    }
+
+    @keyframes pulseSuccess {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+        70% { transform: scale(1.05); box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .receipt-card {
+        border-radius: 20px;
+        border: none;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+        background: #ffffff;
+        overflow: hidden;
+    }
+
+    .receipt-header {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        color: #ffffff;
+        padding: 2.5rem 2rem 2rem;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.85rem 0;
+        border-bottom: 1px dashed #e2e8f0;
+    }
+
+    .info-row:last-child {
+        border-bottom: none;
+    }
+
+    .status-banner {
+        background-color: #fffbeb;
+        border: 1px solid #fde68a;
+        color: #92400e;
+        border-radius: 12px;
+    }
+
+    @media print {
+        .no-print { display: none !important; }
+        body { background: white !important; }
+        .receipt-card { box-shadow: none !important; border: 1px solid #ccc !important; }
+    }
+</style>
+
+<div class="container my-5 py-3">
     <div class="row justify-content-center">
-        <div class="col-md-7 text-center">
-            <div class="card card-custom p-5">
-                <div class="mb-4 text-success">
-                    <i class="fa-solid fa-circle-check fa-5x"></i>
+        <div class="col-lg-8 col-md-10">
+            <div class="receipt-card text-center mb-4">
+                <div class="receipt-header">
+                    <div class="mb-3">
+                        <div class="success-badge-icon">
+                            <i class="fa-solid fa-check"></i>
+                        </div>
+                    </div>
+                    <h2 class="fw-bold mb-2 text-white">¡INFORMACIÓN ENVIADA CON ÉXITO!</h2>
+                    <p class="text-white-50 lead mb-0">Tu ficha y documentación han sido recibidas y registradas en el sistema.</p>
                 </div>
-                <h2 class="fw-bold mb-3">¡Registro Completado con Éxito!</h2>
-                <p class="lead text-secondary mb-4">Tu ficha de jugador y documentación han sido cargadas exitosamente y enviadas a la Secretaría de la Liga.</p>
-                <div class="alert alert-warning border-0 py-3 shadow-sm mb-4">
-                    <i class="fa-solid fa-clock me-2"></i>
-                    <strong>Estado actual: Pendiente de Validación.</strong><br>
-                    La comisión técnica revisará tu selfie y cédula. Una vez aprobados, tu dirigente podrá descargar tu carnet digital con código QR para habilitarte en los partidos.
+
+                <div class="p-4 p-md-5 text-start">
+                    {% if ficha %}
+                    <div class="d-flex align-items-center gap-3 p-3 bg-light rounded-4 mb-4 border">
+                        {% if ficha.foto %}
+                            <img src="{{ ficha.foto.url }}" alt="Foto" class="rounded-circle shadow-sm" style="width: 75px; height: 75px; object-fit: cover; border: 3px solid #fff;">
+                        {% elif ficha.equipo and ficha.equipo.logo %}
+                            <img src="{{ ficha.equipo.logo.url }}" alt="Logo" class="rounded-circle shadow-sm" style="width: 75px; height: 75px; object-fit: cover; border: 3px solid #fff;">
+                        {% else %}
+                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 75px; height: 75px; font-size: 1.8rem;">
+                                {{ ficha.user.first_name|slice:":1"|upper }}{{ ficha.user.last_name|slice:":1"|upper }}
+                            </div>
+                        {% endif %}
+                        <div>
+                            <span class="badge bg-primary text-uppercase px-2.5 py-1.5 mb-1" style="font-size: 0.75rem;">
+                                {% if tipo == 'dt' %}Ficha de Director Técnico{% else %}Ficha de Jugador{% endif %}
+                            </span>
+                            <h4 class="fw-bold mb-0 text-dark">{{ ficha.user.get_full_name|default:ficha.user.username }}</h4>
+                            {% if ficha.nro_cedula %}
+                                <small class="text-muted"><i class="fa-solid fa-id-card me-1"></i>Cédula: {{ ficha.nro_cedula }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="fw-bold text-uppercase text-secondary me-2" style="font-size: 0.8rem; letter-spacing: 0.5px;">
+                            <i class="fa-solid fa-receipt me-1"></i> Resumen de Fichero Inscrito
+                        </h6>
+                        <div class="bg-white rounded-3">
+                            {% if ficha.equipo %}
+                            <div class="info-row">
+                                <span class="text-secondary fw-semibold">Club / Equipo:</span>
+                                <span class="fw-bold text-dark d-flex align-items-center gap-2">
+                                    {% if ficha.equipo.logo %}
+                                        <img src="{{ ficha.equipo.logo.url }}" style="width: 24px; height: 24px; object-fit: cover;" class="rounded-circle">
+                                    {% endif %}
+                                    {{ ficha.equipo.nombre }}
+                                </span>
+                            </div>
+                            {% endif %}
+
+                            {% if ficha.torneo %}
+                            <div class="info-row">
+                                <span class="text-secondary fw-semibold">Torneo / Campeonato:</span>
+                                <span class="fw-bold text-dark">{{ ficha.torneo.nombre }}</span>
+                            </div>
+                            {% endif %}
+
+                            {% if ficha.equipo and ficha.equipo.get_categoria_display %}
+                            <div class="info-row">
+                                <span class="text-secondary fw-semibold">Categoría:</span>
+                                <span class="badge bg-info text-dark">{{ ficha.equipo.get_categoria_display }}</span>
+                            </div>
+                            {% endif %}
+
+                            {% if tipo == 'jugador' and ficha.numero_camiseta %}
+                            <div class="info-row">
+                                <span class="text-secondary fw-semibold">Número de Camiseta:</span>
+                                <span class="badge bg-dark fs-6 px-3">#{{ ficha.numero_camiseta }}</span>
+                            </div>
+                            {% endif %}
+
+                            <div class="info-row">
+                                <span class="text-secondary fw-semibold">Fecha de Registro:</span>
+                                <span class="text-dark font-monospace">{% if ficha.fecha_firma %}{{ ficha.fecha_firma|date:"d/m/Y - h:i A" }}{% else %}Hoy{% endif %}</span>
+                            </div>
+
+                            <div class="info-row">
+                                <span class="text-secondary fw-semibold">Estado del Carnet:</span>
+                                <span class="badge bg-warning text-dark px-3 py-2 fw-bold d-inline-flex align-items-center gap-1">
+                                    <i class="fa-solid fa-hourglass-half"></i> Pendiente de Validación por Secretaría
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="status-banner p-3 p-md-4 mb-4">
+                        <div class="d-flex align-items-start gap-3">
+                            <i class="fa-solid fa-shield-halved fa-2x text-warning mt-1"></i>
+                            <div>
+                                <h6 class="fw-bold mb-1">¿Qué sucede a continuación?</h6>
+                                <p class="mb-0 small text-secondary" style="line-height: 1.6;">
+                                    <strong>1. Validación de Secretaría:</strong> La comisión de control revisará que la foto de tu rostro, las fotos de tu cédula y tu firma digital coincidan y sean legibles.<br>
+                                    <strong>2. Habilitación en Planilla:</strong> Una vez aprobados tus datos, el sistema generará tu carnet digital con código QR para que tu dirigente te pueda alinear en los partidos oficiales.<br>
+                                    <strong>3. No necesitas hacer nada más:</strong> ¡Tu ficha ya está guardada de forma segura en la base de datos de la liga!
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column flex-sm-row justify-content-center gap-3 no-print mt-4">
+                        <button type="button" onclick="window.print()" class="btn btn-outline-secondary py-2.5 px-4 rounded-pill fw-bold">
+                            <i class="fa-solid fa-print me-2"></i>Imprimir Comprobante
+                        </button>
+                        <a href="{% url 'login' %}" class="btn btn-custom-primary py-2.5 px-5 rounded-pill fw-bold shadow-sm">
+                            <i class="fa-solid fa-right-to-bracket me-2"></i>Ir al Portal de Acceso
+                        </a>
+                    </div>
                 </div>
-                <p class="text-muted small">Ya puedes cerrar esta ventana o regresar al inicio.</p>
-                <a href="{% url 'login' %}" class="btn btn-custom-primary mt-2 px-5 py-2.5">Ir al Portal de Acceso</a>
             </div>
         </div>
     </div>

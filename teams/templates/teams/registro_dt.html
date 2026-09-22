@@ -340,6 +340,13 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             alert('Debes dibujar y guardar tu firma en la pizarrita para poder inscribirte.');
             signatureModal.show();
+            return;
+        }
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> ENVIANDO FICHA DE DT... ESPERE POR FAVOR';
         }
     });
 

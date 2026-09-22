@@ -332,6 +332,8 @@ def registro_jugador(request, token):
                     nueva_ficha.telefono_emergencia = ficha_anterior.telefono_emergencia
                     nueva_ficha.save()
                     
+                request.session['last_registro_ficha_id'] = nueva_ficha.id
+                request.session['last_registro_tipo'] = tipo
                 return redirect('registro_exito')
                 
             return render(request, 'teams/registro_existente.html', {
@@ -383,6 +385,9 @@ def registro_jugador(request, token):
             # Firmando digitalmente con la fecha actual
             ficha.fecha_firma = timezone.now()
             ficha.save()
+
+            request.session['last_registro_ficha_id'] = ficha.id
+            request.session['last_registro_tipo'] = tipo
             return redirect('registro_exito')
     else:
         form_user = request.user if request.user.is_authenticated else None
@@ -399,7 +404,20 @@ def registro_jugador(request, token):
     })
 
 def registro_exito(request):
-    return render(request, 'teams/registro_exito.html', {'hide_navbar': True})
+    ficha_id = request.session.get('last_registro_ficha_id')
+    tipo = request.session.get('last_registro_tipo', 'jugador')
+    ficha = None
+    if ficha_id:
+        if tipo == 'dt':
+            ficha = FichaDT.objects.filter(id=ficha_id).select_related('user', 'equipo', 'torneo').first()
+        else:
+            ficha = FichaJugador.objects.filter(id=ficha_id).select_related('user', 'equipo', 'torneo').first()
+
+    return render(request, 'teams/registro_exito.html', {
+        'hide_navbar': True,
+        'ficha': ficha,
+        'tipo': tipo
+    })
 
 @login_required
 def secretaria_dashboard(request):
