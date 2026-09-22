@@ -26,6 +26,7 @@ jobs:
             set -e
             cd /home/marcio/apps/SistemaTorneos
 
+            git checkout -- .
             git pull --ff-only origin main
 
             source .venv/bin/activate
