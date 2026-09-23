@@ -6,14 +6,15 @@ from matches.models import (
     LlaveEliminatoria, ResultadoFinalTorneo
 )
 from matches.services.estadisticas_personalizado import (
-    calcular_posiciones_grupo, calcular_estadisticas_jugadores_grupo
+    calcular_posiciones_grupo, calcular_estadisticas_jugadores_grupo,
+    calcular_posiciones_general, calcular_estadisticas_jugadores_general
 )
-from matches.services.panel_personalizado import generar_enlaces_whatsapp
+import urllib.parse
 
 
 def vista_publica_torneo_view(request, public_uuid):
     """
-    Vista pública anónima y segura del torneo personalizado por grupos.
+    Vista pública anónima y segura de cualquier torneo (Liga, Grupos o Personalizado).
     No requiere autenticación ni middleware de organización.
     """
     torneo = get_object_or_404(Torneo.objects.select_related('organizacion', 'categoria'), public_uuid=public_uuid)
@@ -24,23 +25,47 @@ def vista_publica_torneo_view(request, public_uuid):
     grupos = GrupoTorneo.objects.filter(torneo=torneo, activo=True).order_by('orden')
     grupos_data = []
 
-    for g in grupos:
-        res_pos = calcular_posiciones_grupo(g, torneo, torneo.organizacion)
-        pos = res_pos['tabla']
-        partidos = Partido.objects.filter(torneo=torneo, grupo_personalizado=g).select_related(
-            'equipo_local', 'equipo_visitante'
-        ).order_by('fecha_hora')
+    if grupos.exists():
+        for g in grupos:
+            res_pos = calcular_posiciones_grupo(g, torneo, torneo.organizacion)
+            pos = res_pos['tabla']
+            partidos = Partido.objects.filter(torneo=torneo, grupo_personalizado=g).select_related(
+                'equipo_local', 'equipo_visitante'
+            ).order_by('jornada', 'fecha_hora')
 
-        # Estadísticas de jugadores por grupo
-        stats_j = calcular_estadisticas_jugadores_grupo(g, torneo, torneo.organizacion)
+            # Estadísticas de jugadores por grupo
+            stats_j = calcular_estadisticas_jugadores_grupo(g, torneo, torneo.organizacion)
+
+            grupos_data.append({
+                'grupo': g,
+                'posiciones': pos,
+                'partidos': partidos,
+                'goleadores': stats_j['goleadores'][:10],
+                'asistencias': stats_j['asistencias'][:10],
+                'tarjetas': stats_j['amarillas'][:10],
+            })
+    else:
+        # Torneo sin grupos (Ej. formato Liga o Eliminatoria pura)
+        res_pos = calcular_posiciones_general(torneo, torneo.organizacion)
+        pos = res_pos['tabla']
+        partidos = Partido.objects.filter(torneo=torneo).select_related(
+            'equipo_local', 'equipo_visitante'
+        ).order_by('jornada', 'fecha_hora')
+
+        stats_j = calcular_estadisticas_jugadores_general(torneo, torneo.organizacion)
+
+        class GrupoFicticio:
+            nombre = "Tabla General"
+            sector = "Todos contra todos"
+            cupos_clasificacion = 4
 
         grupos_data.append({
-            'grupo': g,
+            'grupo': GrupoFicticio(),
             'posiciones': pos,
             'partidos': partidos,
-            'goleadores': stats_j['goleadores'][:5],
-            'asistencias': stats_j['asistencias'][:5],
-            'tarjetas': stats_j['amarillas'][:5],
+            'goleadores': stats_j['goleadores'][:10],
+            'asistencias': stats_j['asistencias'][:10],
+            'tarjetas': stats_j['amarillas'][:10],
         })
 
     clasificados = ClasificadoTorneo.objects.filter(torneo=torneo).select_related('grupo', 'equipo')
@@ -48,7 +73,8 @@ def vista_publica_torneo_view(request, public_uuid):
     resultado_final = ResultadoFinalTorneo.objects.filter(torneo=torneo).first()
 
     base_public_url = request.build_absolute_uri()
-    whatsapp_link = generar_enlaces_whatsapp(torneo, base_public_url)
+    mensaje_wa = f"🏆 Sigue toda la información, fixture y posiciones de {torneo.nombre} ({torneo.organizacion.nombre}) aquí: {base_public_url}"
+    whatsapp_link = f"https://api.whatsapp.com/send?text={urllib.parse.quote(mensaje_wa)}"
 
     context = {
         'torneo': torneo,

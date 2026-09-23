@@ -3,32 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ torneo.nombre }} - Portal Oficial</title>
+    <title>{{ torneo.nombre }} - Portal Oficial del Torneo</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
         body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .hero-banner { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; }
-        .tab-btn.active { border-bottom: 3px solid #1e3c72 !important; font-weight: bold; color: #1e3c72 !important; }
+        .hero-banner { background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e3c72 100%); color: white; }
+        .tab-btn.active { border-bottom: 3px solid #0d6efd !important; font-weight: bold; color: #0d6efd !important; }
+        .org-logo-hero { max-height: 60px; max-width: 150px; object-fit: contain; }
+        .team-logo-sm { width: 22px; height: 22px; object-fit: contain; flex-shrink: 0; }
+        .team-logo-md { width: 26px; height: 26px; object-fit: contain; flex-shrink: 0; }
     </style>
 </head>
 <body>
 
     <!-- Hero Header -->
     <header class="hero-banner py-4 shadow-sm mb-4">
-        <div class="container text-center">
-            <span class="badge bg-white text-dark text-uppercase px-3 py-2 rounded-pill mb-2 fw-bold">
-                <i class="bi bi-shield-check me-1 text-primary"></i> {{ torneo.organizacion.nombre }}
-            </span>
-            <h1 class="display-6 fw-bold mb-1">{{ torneo.nombre }}</h1>
-            <p class="lead mb-2 opacity-75">Categoría: {{ torneo.categoria.nombre|default:"General" }} &bull; {{ torneo.temporada }}</p>
-            <div class="d-flex justify-content-center gap-2 mt-3">
-                <a href="{{ whatsapp_link }}" target="_blank" class="btn btn-success btn-sm rounded-pill px-4 shadow-sm">
-                    <i class="bi bi-whatsapp me-1"></i> Compartir Torneo
-                </a>
+        <div class="container">
+            <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-3 text-center text-md-start">
+                <div class="d-flex flex-column flex-md-row align-items-center gap-3">
+                    {% if torneo.organizacion.logo %}
+                        <img src="{{ torneo.organizacion.logo.url }}" alt="{{ torneo.organizacion.nombre }}" class="org-logo-hero bg-white p-2 rounded-3 shadow-sm">
+                    {% else %}
+                        <div class="bg-white text-primary rounded-3 p-2 d-flex align-items-center justify-content-center shadow-sm" style="width: 55px; height: 55px;">
+                            <i class="bi bi-trophy-fill fs-2"></i>
+                        </div>
+                    {% endif %}
+                    <div>
+                        <span class="badge bg-primary-subtle text-primary-emphasis text-uppercase px-3 py-1.5 rounded-pill mb-1 fw-bold">
+                            <i class="bi bi-shield-check me-1"></i> {{ torneo.organizacion.nombre }}
+                        </span>
+                        <h1 class="h2 fw-bold text-white mb-1">{{ torneo.nombre }}</h1>
+                        <p class="mb-0 opacity-75 small">
+                            Categoría: <strong>{{ torneo.categoria.nombre|default:"General" }}</strong> &bull; Temporada: <strong>{{ torneo.temporada }}</strong>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 flex-wrap justify-content-center">
+                    <a href="{{ whatsapp_link }}" target="_blank" class="btn btn-success rounded-pill px-3 py-2 btn-sm fw-bold shadow-sm">
+                        <i class="bi bi-whatsapp me-1"></i> Compartir WhatsApp
+                    </a>
+                    <button type="button" onclick="copiarLinkPagina()" class="btn btn-light rounded-pill px-3 py-2 btn-sm fw-bold shadow-sm">
+                        <i class="bi bi-clipboard me-1 text-primary"></i> Copiar Enlace
+                    </button>
+                </div>
             </div>
         </div>
     </header>
+
+    <!-- Toast de Notificación -->
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
+        <div id="copyToast" class="toast align-items-center text-bg-dark border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi bi-check-circle-fill text-success me-2"></i> ¡Enlace copiado al portapapeles!
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
 
     <!-- Contenido Principal -->
     <main class="container pb-5">
@@ -52,12 +86,12 @@
         <ul class="nav nav-tabs border-0 bg-white shadow-sm rounded-4 p-2 mb-4 justify-content-center" id="publicTabs">
             <li class="nav-item">
                 <button class="nav-link tab-btn active border-0 text-secondary px-4 py-2" data-bs-toggle="tab" data-bs-target="#tab-grupos">
-                    <i class="bi bi-grid-3x3-gap me-1"></i> Grupos y Tablas
+                    <i class="bi bi-grid-3x3-gap me-1"></i> Posiciones
                 </button>
             </li>
             <li class="nav-item">
                 <button class="nav-link tab-btn border-0 text-secondary px-4 py-2" data-bs-toggle="tab" data-bs-target="#tab-fixture">
-                    <i class="bi bi-calendar-event me-1"></i> Partidos y Resultados
+                    <i class="bi bi-calendar-event me-1"></i> Fixture y Resultados
                 </button>
             </li>
             <li class="nav-item">
@@ -82,9 +116,14 @@
                     {% for item in grupos_data %}
                     <div class="col-12 col-lg-6">
                         <div class="card border-0 shadow-sm rounded-4 h-100">
-                            <div class="card-header bg-white border-0 p-4 pb-2">
-                                <h4 class="fw-bold mb-0 text-dark">{{ item.grupo.nombre }}</h4>
-                                <small class="text-muted">{{ item.grupo.sector|default:"Sector General" }}</small>
+                            <div class="card-header bg-white border-0 p-4 pb-2 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h4 class="fw-bold mb-0 text-dark">{{ item.grupo.nombre }}</h4>
+                                    <small class="text-muted">{{ item.grupo.sector|default:"Sector General" }}</small>
+                                </div>
+                                <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 fw-bold">
+                                    {{ item.posiciones|length }} Equipos
+                                </span>
                             </div>
                             <div class="card-body p-0">
                                 <div class="table-responsive">
@@ -106,7 +145,13 @@
                                             {% for row in item.posiciones %}
                                             <tr class="{% if row.posicion <= item.grupo.cupos_clasificacion %}table-success bg-opacity-25{% endif %}">
                                                 <td class="ps-3 text-start fw-bold">
-                                                    <span class="me-1">{{ row.posicion }}.</span> {{ row.equipo.nombre }}
+                                                    <span class="me-1 text-muted">{{ row.posicion }}.</span>
+                                                    {% if row.equipo.logo %}
+                                                        <img src="{{ row.equipo.logo.url }}" alt="{{ row.equipo.nombre }}" class="team-logo-sm me-1">
+                                                    {% else %}
+                                                        <i class="bi bi-shield text-muted me-1"></i>
+                                                    {% endif %}
+                                                    <span>{{ row.equipo.nombre }}</span>
                                                 </td>
                                                 <td>{{ row.PJ }}</td>
                                                 <td>{{ row.PG }}</td>
@@ -139,26 +184,40 @@
                     <div class="col-12 col-lg-6">
                         <div class="card border-0 shadow-sm rounded-4">
                             <div class="card-header bg-white border-0 p-4 pb-2">
-                                <h5 class="fw-bold mb-0 text-dark">Partidos - {{ item.grupo.nombre }}</h5>
+                                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-calendar-week me-2 text-primary"></i>Partidos - {{ item.grupo.nombre }}</h5>
                             </div>
                             <div class="card-body p-0">
                                 <div class="list-group list-group-flush">
                                     {% for p in item.partidos %}
                                     <div class="list-group-item p-3 border-light">
-                                        <div class="d-flex justify-content-between align-items-center mb-1 small text-muted">
-                                            <span><i class="bi bi-clock me-1"></i> {{ p.fecha_hora|date:"d/m/Y H:i"|default:"Por definir" }}</span>
-                                            <span><i class="bi bi-geo-alt me-1"></i> {{ p.estadio|default:"Por definir" }}</span>
+                                        <div class="d-flex justify-content-between align-items-center mb-2 small text-muted">
+                                            <span><i class="bi bi-clock me-1 text-primary"></i> {{ p.fecha_hora|date:"d/m/Y H:i"|default:"Fecha Por Definir" }}</span>
+                                            <span><i class="bi bi-geo-alt me-1 text-danger"></i> {{ p.estadio|default:"Cancha Por Definir" }}</span>
                                         </div>
                                         <div class="row align-items-center text-center">
-                                            <div class="col-5 text-end fw-bold">{{ p.equipo_local.nombre }}</div>
+                                            <div class="col-5 text-end fw-bold d-flex align-items-center justify-content-end gap-2">
+                                                <span>{{ p.equipo_local.nombre }}</span>
+                                                {% if p.equipo_local.logo %}
+                                                    <img src="{{ p.equipo_local.logo.url }}" alt="{{ p.equipo_local.nombre }}" class="team-logo-md">
+                                                {% else %}
+                                                    <i class="bi bi-shield text-muted"></i>
+                                                {% endif %}
+                                            </div>
                                             <div class="col-2">
                                                 {% if p.estado == 'finalizado' %}
                                                 <span class="badge bg-dark px-3 py-2 fs-6">{{ p.goles_local }} - {{ p.goles_visitante }}</span>
                                                 {% else %}
-                                                <span class="badge bg-light text-dark border px-2 py-1">VS</span>
+                                                <span class="badge bg-light text-dark border px-2 py-1 fw-bold">VS</span>
                                                 {% endif %}
                                             </div>
-                                            <div class="col-5 text-start fw-bold">{{ p.equipo_visitante.nombre }}</div>
+                                            <div class="col-5 text-start fw-bold d-flex align-items-center justify-content-start gap-2">
+                                                {% if p.equipo_visitante.logo %}
+                                                    <img src="{{ p.equipo_visitante.logo.url }}" alt="{{ p.equipo_visitante.nombre }}" class="team-logo-md">
+                                                {% else %}
+                                                    <i class="bi bi-shield text-muted"></i>
+                                                {% endif %}
+                                                <span>{{ p.equipo_visitante.nombre }}</span>
+                                            </div>
                                         </div>
                                     </div>
                                     {% empty %}
@@ -172,24 +231,29 @@
                 </div>
             </div>
 
-            <!-- TAB 3: ESTADÍSTICAS (GOLEADORES) -->
+            <!-- TAB 3: ESTADÍSTICAS (GOLEADORES Y TARJETAS) -->
             <div class="tab-pane fade" id="tab-estadisticas">
                 <div class="row g-4">
                     {% for item in grupos_data %}
                     <div class="col-12 col-md-4">
                         <div class="card border-0 shadow-sm rounded-4 h-100">
                             <div class="card-header bg-white border-0 p-4 pb-2">
-                                <h5 class="fw-bold mb-0 text-dark">Goleadores - {{ item.grupo.nombre }}</h5>
+                                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-award-fill me-2 text-warning"></i>Goleadores - {{ item.grupo.nombre }}</h5>
                             </div>
                             <div class="card-body p-0">
                                 <ul class="list-group list-group-flush small">
                                     {% for gol in item.goleadores %}
                                     <li class="list-group-item d-flex justify-content-between align-items-center p-3">
                                         <div>
-                                            <strong class="text-dark">{{ gol.jugador__user__first_name }} {{ gol.jugador__user__last_name }}</strong>
-                                            <div class="text-muted small">{{ gol.equipo__nombre }}</div>
+                                            <strong class="text-dark">{{ gol.nombre_jugador }}</strong>
+                                            <div class="text-muted small">
+                                                {% if gol.equipo_logo %}
+                                                    <img src="{{ gol.equipo_logo.url }}" alt="" class="team-logo-sm me-1">
+                                                {% endif %}
+                                                {{ gol.equipo_nombre }}
+                                            </div>
                                         </div>
-                                        <span class="badge bg-success rounded-pill px-3 py-2 fs-6">{{ gol.total_goles }} Goles</span>
+                                        <span class="badge bg-success rounded-pill px-3 py-2 fs-6">{{ gol.total }} Goles</span>
                                     </li>
                                     {% empty %}
                                     <li class="list-group-item p-3 text-center text-muted">Sin registros de goles aún.</li>
@@ -216,11 +280,21 @@
                                     <span>Llave #{{ ll.numero_llave }}</span>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center p-2 rounded-2 {% if ll.ganador == ll.equipo_local %}bg-success bg-opacity-10 fw-bold{% else %}bg-light{% endif %} mb-1">
-                                    <span>{{ ll.equipo_local.nombre|default:"Por definir" }}</span>
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        {% if ll.equipo_local.logo %}
+                                            <img src="{{ ll.equipo_local.logo.url }}" class="team-logo-sm" alt="">
+                                        {% endif %}
+                                        <span>{{ ll.equipo_local.nombre|default:"Por definir" }}</span>
+                                    </div>
                                     <span>{{ ll.marcador_global_local }}</span>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center p-2 rounded-2 {% if ll.ganador == ll.equipo_visitante %}bg-success bg-opacity-10 fw-bold{% else %}bg-light{% endif %}">
-                                    <span>{{ ll.equipo_visitante.nombre|default:"Por definir" }}</span>
+                                    <div class="d-flex align-items-center gap-1.5">
+                                        {% if ll.equipo_visitante.logo %}
+                                            <img src="{{ ll.equipo_visitante.logo.url }}" class="team-logo-sm" alt="">
+                                        {% endif %}
+                                        <span>{{ ll.equipo_visitante.nombre|default:"Por definir" }}</span>
+                                    </div>
                                     <span>{{ ll.marcador_global_visitante }}</span>
                                 </div>
                                 {% if ll.definido_por_penales %}
@@ -242,10 +316,22 @@
 
     <footer class="bg-dark text-white-50 py-4 mt-5 text-center small">
         <div class="container">
-            <p class="mb-0">Portal Oficial &bull; Powered by {{ torneo.organizacion.nombre }} &bull; SistemaTorneos</p>
+            <p class="mb-0">Portal Oficial del Campeonato &bull; Powered by {{ torneo.organizacion.nombre }} &bull; SistemaTorneos</p>
         </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function copiarLinkPagina() {
+            var url = window.location.href;
+            navigator.clipboard.writeText(url).then(function() {
+                var toastEl = document.getElementById('copyToast');
+                var toast = new bootstrap.Toast(toastEl);
+                toast.show();
+            }).catch(function(err) {
+                prompt("Copia este enlace público:", url);
+            });
+        }
+    </script>
 </body>
 </html>

@@ -720,3 +720,200 @@ def generar_excel_estadisticas_torneo(torneo, organizacion, grupo_id=None):
     wb.save(output)
     output.seek(0)
     return output.getvalue()
+
+
+def calcular_posiciones_general(torneo, organizacion):
+    """
+    Calcula la tabla de posiciones general para un torneo de tipo 'liga' o cualquier torneo sin grupos asignados.
+    """
+    equipos = list(torneo.equipos.all())
+    partidos_all = list(
+        Partido.objects.filter(
+            organizacion=organizacion,
+            torneo=torneo,
+        ).select_related('equipo_local', 'equipo_visitante').order_by('fecha_hora', 'id')
+    )
+    
+    equipos_map = {e.id: e for e in equipos}
+    for p in partidos_all:
+        if p.equipo_local and p.equipo_local_id not in equipos_map:
+            equipos_map[p.equipo_local_id] = p.equipo_local
+        if p.equipo_visitante and p.equipo_visitante_id not in equipos_map:
+            equipos_map[p.equipo_visitante_id] = p.equipo_visitante
+
+    partidos_finalizados = [p for p in partidos_all if p.estado == 'finalizado']
+
+    pts_win = getattr(torneo, 'puntos_victoria', 3)
+    pts_draw = getattr(torneo, 'puntos_empate', 1)
+    pts_loss = getattr(torneo, 'puntos_derrota', 0)
+
+    stats_map = {}
+    for eq_id, equipo in equipos_map.items():
+        stats_map[eq_id] = {
+            'equipo': equipo,
+            'equipo_id': equipo.id,
+            'nombre': equipo.nombre,
+            'logo': equipo.logo,
+            'PJ': 0, 'PG': 0, 'PE': 0, 'PP': 0,
+            'GF': 0, 'GC': 0, 'DG': 0, 'PTS': 0,
+            'rendimiento': 0.0,
+            'forma': [],
+            'tarjetas_amarillas': 0,
+            'tarjetas_rojas': 0,
+            'posicion': 0,
+            'es_clasificado_provisional': False,
+            'empate_pendiente': False,
+        }
+
+    for p in partidos_finalizados:
+        loc_id = p.equipo_local_id
+        vis_id = p.equipo_visitante_id
+        gl = p.goles_local
+        gv = p.goles_visitante
+
+        if loc_id in stats_map:
+            s_loc = stats_map[loc_id]
+            s_loc['PJ'] += 1
+            s_loc['GF'] += gl
+            s_loc['GC'] += gv
+            s_loc['DG'] = s_loc['GF'] - s_loc['GC']
+            if gl > gv:
+                s_loc['PG'] += 1
+                s_loc['PTS'] += pts_win
+                s_loc['forma'].append('G')
+            elif gl < gv:
+                s_loc['PP'] += 1
+                s_loc['PTS'] += pts_loss
+                s_loc['forma'].append('P')
+            else:
+                s_loc['PE'] += 1
+                s_loc['PTS'] += pts_draw
+                s_loc['forma'].append('E')
+
+        if vis_id in stats_map:
+            s_vis = stats_map[vis_id]
+            s_vis['PJ'] += 1
+            s_vis['GF'] += gv
+            s_vis['GC'] += gl
+            s_vis['DG'] = s_vis['GF'] - s_vis['GC']
+            if gv > gl:
+                s_vis['PG'] += 1
+                s_vis['PTS'] += pts_win
+                s_vis['forma'].append('G')
+            elif gv < gl:
+                s_vis['PP'] += 1
+                s_vis['PTS'] += pts_loss
+                s_vis['forma'].append('P')
+            else:
+                s_vis['PE'] += 1
+                s_vis['PTS'] += pts_draw
+                s_vis['forma'].append('E')
+
+    equipos_ordenados = _resolver_desempate_grupos(list(stats_map.values()), partidos_finalizados)
+
+    for idx, item in enumerate(equipos_ordenados, start=1):
+        item['posicion'] = idx
+
+    return {
+        'tabla': equipos_ordenados,
+    }
+
+
+def calcular_estadisticas_jugadores_general(torneo, organizacion):
+    """
+    Calcula goleadores, asistencias, tarjetas para un torneo general/liga.
+    """
+    partidos_finalizados = Partido.objects.filter(
+        organizacion=organizacion,
+        torneo=torneo,
+        estado='finalizado'
+    )
+    eventos = EventoPartido.objects.filter(
+        partido__in=partidos_finalizados,
+        jugador__isnull=False
+    ).select_related('jugador', 'equipo')
+
+    fichas_map = {}
+    fichas_qs = FichaJugador.objects.filter(
+        organizacion=organizacion
+    ).select_related('user', 'equipo')
+
+    for f in fichas_qs:
+        if f.torneo_id == torneo.id and f.equipo_id:
+            fichas_map[(f.user_id, f.equipo_id, f.torneo_id)] = f
+        if f.equipo_id and (f.user_id, f.equipo_id, None) not in fichas_map:
+            fichas_map[(f.user_id, f.equipo_id, None)] = f
+        if (f.user_id, None, None) not in fichas_map:
+            fichas_map[(f.user_id, None, None)] = f
+
+    def get_ficha_jugador(user_id, equipo_id):
+        return (
+            fichas_map.get((user_id, equipo_id, torneo.id)) or
+            fichas_map.get((user_id, equipo_id, None)) or
+            fichas_map.get((user_id, None, None))
+        )
+
+    conteo_goles = {}
+    conteo_asistencias = {}
+    conteo_amarillas = {}
+    conteo_rojas = {}
+
+    for ev in eventos:
+        key = (ev.jugador_id, ev.equipo_id if ev.equipo_id else None)
+        if ev.tipo == 'gol':
+            conteo_goles[key] = conteo_goles.get(key, 0) + 1
+        elif ev.tipo == 'asistencia':
+            conteo_asistencias[key] = conteo_asistencias.get(key, 0) + 1
+        elif ev.tipo == 'amarilla':
+            conteo_amarillas[key] = conteo_amarillas.get(key, 0) + 1
+        elif ev.tipo == 'roja':
+            conteo_rojas[key] = conteo_rojas.get(key, 0) + 1
+
+    def construir_ranking(conteo_dict):
+        items = []
+        for (user_id, equipo_id), total in conteo_dict.items():
+            if total <= 0:
+                continue
+            ficha = get_ficha_jugador(user_id, equipo_id)
+            nombre_jugador = ficha.user.get_full_name() if (ficha and ficha.user) else "Jugador N/A"
+            equipo_obj = ficha.equipo if (ficha and ficha.equipo) else None
+            
+            if not equipo_obj and equipo_id:
+                try:
+                    equipo_obj = Equipo.objects.get(id=equipo_id)
+                except Equipo.DoesNotExist:
+                    equipo_obj = None
+
+            foto_url = ficha.foto.url if (ficha and ficha.foto) else None
+            dorsal = ficha.numero_camiseta if (ficha and ficha.numero_camiseta is not None) else "-"
+            
+            partidos_jugados = 0
+            if equipo_obj:
+                partidos_jugados = partidos_finalizados.filter(
+                    Q(equipo_local=equipo_obj) | Q(equipo_visitante=equipo_obj)
+                ).count()
+
+            items.append({
+                'user_id': user_id,
+                'nombre_jugador': nombre_jugador,
+                'foto_url': foto_url,
+                'dorsal': dorsal,
+                'equipo': equipo_obj,
+                'equipo_nombre': equipo_obj.nombre if equipo_obj else "Sin Equipo",
+                'equipo_logo': equipo_obj.logo if equipo_obj else None,
+                'total': total,
+                'partidos_jugados': partidos_jugados,
+            })
+        
+        items.sort(key=lambda x: (-x['total'], x['nombre_jugador']))
+        for idx, item in enumerate(items, start=1):
+            item['posicion'] = idx
+        return items
+
+    return {
+        'goleadores': construir_ranking(conteo_goles),
+        'asistencias': construir_ranking(conteo_asistencias),
+        'amarillas': construir_ranking(conteo_amarillas),
+        'rojas': construir_ranking(conteo_rojas),
+    }
+
