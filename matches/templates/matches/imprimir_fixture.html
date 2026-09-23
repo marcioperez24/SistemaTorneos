@@ -102,6 +102,9 @@
                 break-inside: avoid !important;
             }
         }
+        body.hide-datetime .col-fecha-hora {
+            display: none !important;
+        }
     </style>
 </head>
 <body class="py-4">
@@ -112,7 +115,13 @@
             <a href="{% url 'detalle_torneo' torneo.id %}" class="btn btn-outline-secondary rounded-pill px-4 fw-semibold">
                 <i class="fa-solid fa-arrow-left me-2"></i>Volver al Torneo
             </a>
-            <div class="d-flex gap-2">
+            <div class="d-flex align-items-center gap-4">
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" role="switch" id="toggleFechaHora" checked onchange="toggleMostrarFechaHora(this.checked)">
+                    <label class="form-check-label fw-bold text-dark cursor-pointer" for="toggleFechaHora">
+                        <i class="fa-regular fa-clock me-1 text-primary"></i>Incluir Fecha y Hora
+                    </label>
+                </div>
                 <button onclick="window.print()" class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">
                     <i class="fa-solid fa-print me-2"></i>Imprimir / Guardar en PDF
                 </button>
@@ -175,7 +184,7 @@
                                     <th style="width: 28%;">Equipo Local</th>
                                     <th style="width: 15%;" class="text-center">Resultado</th>
                                     <th style="width: 28%;">Equipo Visitante</th>
-                                    <th style="width: 15%;">Fecha / Estadio</th>
+                                    <th style="width: 15%;"><span class="col-fecha-hora">Fecha / </span>Estadio</th>
                                     <th style="width: 14%;">Vocal / Árbitro</th>
                                 </tr>
                             </thead>
@@ -215,7 +224,7 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <div class="fw-semibold"><i class="fa-regular fa-clock me-1 text-primary"></i>{{ partido.fecha_hora|date:"d/m/Y H:i" }}</div>
+                                            <div class="fw-semibold col-fecha-hora"><i class="fa-regular fa-clock me-1 text-primary"></i>{{ partido.fecha_hora|date:"d/m/Y H:i" }}</div>
                                             <div class="small text-muted"><i class="fa-solid fa-map-marker-alt me-1 text-danger"></i>{{ partido.estadio }}</div>
                                         </td>
                                         <td class="small text-muted">
@@ -252,7 +261,7 @@
                                     <th style="width: 28%;">Equipo Local</th>
                                     <th style="width: 15%;" class="text-center">Resultado</th>
                                     <th style="width: 28%;">Equipo Visitante</th>
-                                    <th style="width: 15%;">Fecha / Estadio</th>
+                                    <th style="width: 15%;"><span class="col-fecha-hora">Fecha / </span>Estadio</th>
                                     <th style="width: 14%;">Vocal / Árbitro</th>
                                 </tr>
                             </thead>
@@ -292,7 +301,7 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <div class="fw-semibold"><i class="fa-regular fa-clock me-1 text-primary"></i>{{ partido.fecha_hora|date:"d/m/Y H:i" }}</div>
+                                            <div class="fw-semibold col-fecha-hora"><i class="fa-regular fa-clock me-1 text-primary"></i>{{ partido.fecha_hora|date:"d/m/Y H:i" }}</div>
                                             <div class="small text-muted"><i class="fa-solid fa-map-marker-alt me-1 text-danger"></i>{{ partido.estadio }}</div>
                                         </td>
                                         <td class="small text-muted">
@@ -323,7 +332,7 @@
                                     <th style="width: 28%;">Equipo Local</th>
                                     <th style="width: 15%;" class="text-center">Resultado</th>
                                     <th style="width: 28%;">Equipo Visitante</th>
-                                    <th style="width: 15%;">Fecha / Estadio</th>
+                                    <th style="width: 15%;"><span class="col-fecha-hora">Fecha / </span>Estadio</th>
                                     <th style="width: 14%;">Vocal / Árbitro</th>
                                 </tr>
                             </thead>
@@ -363,7 +372,7 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <div class="fw-semibold"><i class="fa-regular fa-clock me-1 text-primary"></i>{{ partido.fecha_hora|date:"d/m/Y H:i" }}</div>
+                                            <div class="fw-semibold col-fecha-hora"><i class="fa-regular fa-clock me-1 text-primary"></i>{{ partido.fecha_hora|date:"d/m/Y H:i" }}</div>
                                             <div class="small text-muted"><i class="fa-solid fa-map-marker-alt me-1 text-danger"></i>{{ partido.estadio }}</div>
                                         </td>
                                         <td class="small text-muted">
@@ -386,5 +395,28 @@
         </div>
     </div>
 
+    <script>
+        function toggleMostrarFechaHora(mostrar) {
+            if (mostrar) {
+                document.body.classList.remove('hide-datetime');
+                localStorage.setItem('impresion_mostrar_fecha_hora', '1');
+            } else {
+                document.body.classList.add('hide-datetime');
+                localStorage.setItem('impresion_mostrar_fecha_hora', '0');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const pref = localStorage.getItem('impresion_mostrar_fecha_hora');
+            const toggleInput = document.getElementById('toggleFechaHora');
+            if (pref === '0') {
+                if (toggleInput) toggleInput.checked = false;
+                document.body.classList.add('hide-datetime');
+            } else {
+                if (toggleInput) toggleInput.checked = true;
+                document.body.classList.remove('hide-datetime');
+            }
+        });
+    </script>
 </body>
 </html>
