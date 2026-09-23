@@ -1,36 +1,52 @@
+from decimal import Decimal
+from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from matches.models import EventoPartido
-from .models import MultaTarjeta, MovimientoCaja
+from .models import MultaTarjeta
 
 @receiver(post_save, sender=EventoPartido)
 def generar_multa_tarjeta(sender, instance, created, **kwargs):
     if created and instance.tipo in ['amarilla', 'roja']:
-        # Determinar monto
-        monto = 50.00 if instance.tipo == 'amarilla' else 150.00
-        motivo = 'amarilla' if instance.tipo == 'amarilla' else 'roja'
-        
-        # Encontrar el jugador y su equipo
+        partido = instance.partido
+        if not partido:
+            return
+
+        torneo = partido.torneo
+        if instance.tipo == 'amarilla':
+            if torneo and torneo.costo_amarilla is not None:
+                monto = Decimal(str(torneo.costo_amarilla))
+            else:
+                monto = Decimal('50.00')
+            motivo = 'amarilla'
+        else:
+            if torneo and torneo.costo_roja is not None:
+                monto = Decimal(str(torneo.costo_roja))
+            else:
+                monto = Decimal('150.00')
+            motivo = 'roja'
+
         jugador = instance.jugador
-        # Si el evento no tiene equipo registrado pero sí jugador, usamos el equipo de su ficha
         equipo = instance.equipo
         if not equipo and jugador:
-            ficha = jugador.ficha_perfil.first()
-            if ficha:
-                equipo = ficha.equipo
-                
+            fichas = getattr(jugador, 'fichas_jugador', None)
+            if fichas:
+                f = fichas.filter(torneo=torneo).first() if torneo else fichas.first()
+                if f:
+                    equipo = f.equipo
+
         if jugador and equipo:
-            # Crear la multa de forma atómica
-            MultaTarjeta.objects.get_or_create(
-                partido=instance.partido,
-                evento=instance,
-                equipo=equipo,
-                jugador=jugador,
-                defaults={
-                    'organizacion': instance.partido.organizacion,
-                    'monto': monto,
-                    'motivo': motivo,
-                    'estado': 'pendiente'
-                }
-            )
+            with transaction.atomic():
+                MultaTarjeta.objects.get_or_create(
+                    evento=instance,
+                    defaults={
+                        'partido': partido,
+                        'equipo': equipo,
+                        'jugador': jugador,
+                        'organizacion': partido.organizacion,
+                        'monto': monto,
+                        'motivo': motivo,
+                        'estado': 'pendiente'
+                    }
+                )
 

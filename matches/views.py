@@ -406,17 +406,6 @@ def registrar_evento(request, partido_id):
         )
         
         if tipo in ['amarilla', 'roja']:
-            # Crear multa en el sistema de finanzas
-            monto_multa = partido.torneo.costo_amarilla if tipo == 'amarilla' else partido.torneo.costo_roja
-            MultaTarjeta.objects.create(
-                partido=partido,
-                evento=evento,
-                equipo=equipo,
-                jugador=jugador,
-                monto=monto_multa,
-                motivo=tipo
-            )
-            
             if tipo == 'amarilla':
                 # Buscar ficha jugador para el equipo y torneo
                 ficha = FichaJugador.objects.filter(user=jugador, equipo=equipo, torneo=partido.torneo).first()

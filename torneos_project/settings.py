@@ -12,20 +12,17 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 
+import os
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-hf#8-!r-b(ns8-u@t*1js6y98azkc0*2f2vd6@!za5sac*v0_t')
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 't')
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-hf#8-!r-b(ns8-u@t*1js6y98azkc0*2f2vd6@!za5sac*v0_t'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
-
-ALLOWED_HOSTS = ['torneos.sysacadep.win', '127.0.0.1', 'localhost']
+allowed_hosts_env = os.environ.get('DJANGO_ALLOWED_HOSTS', 'torneos.sysacadep.win,127.0.0.1,localhost')
+ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_env.split(',') if h.strip()]
 
 
 # Application definition
@@ -135,9 +132,23 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
-CSRF_TRUSTED_ORIGINS = ['https://torneos.sysacadep.win']
+csrf_origins_env = os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', 'https://torneos.sysacadep.win')
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in csrf_origins_env.split(',') if o.strip()]
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Configuración de Seguridad en Producción (Controlada por variables de entorno)
+SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'False').lower() in ('true', '1', 't')
+CSRF_COOKIE_SECURE = os.environ.get('CSRF_COOKIE_SECURE', 'False').lower() in ('true', '1', 't')
+SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'False').lower() in ('true', '1', 't')
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+
+hsts_seconds = os.environ.get('SECURE_HSTS_SECONDS', '0')
+if hsts_seconds.isdigit() and int(hsts_seconds) > 0:
+    SECURE_HSTS_SECONDS = int(hsts_seconds)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = False
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'club_portal'

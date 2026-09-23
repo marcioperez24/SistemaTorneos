@@ -19,7 +19,19 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+from django.http import JsonResponse
+from django.db import connection
+
+def health_check(request):
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+        return JsonResponse({"status": "ok", "db": "ok"}, status=200)
+    except Exception as e:
+        return JsonResponse({"status": "error", "db": str(e)}, status=500)
+
 urlpatterns = [
+    path('health/', health_check, name='health_check'),
     path('admin/', admin.site.urls),
     path('', include('teams.urls')),
     path('partidos/', include('matches.urls')),

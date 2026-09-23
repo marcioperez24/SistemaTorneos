@@ -1715,7 +1715,6 @@ class TorneoPersonalizadoPhase7Tests(TestCase):
         self.assertContains(response, "CREADO GRUPO C")
 
     def test_12_aislamiento_multiempresa_panel(self):
-        # Usuario de otra organización intenta acceder al panel de la Org1
         self.client.login(username="admin_p7", password="password123")
         session = self.client.session
         session['current_organizacion_id'] = self.org2.id
@@ -1724,6 +1723,58 @@ class TorneoPersonalizadoPhase7Tests(TestCase):
         url = reverse('panel_torneo_personalizado', kwargs={'torneo_id': self.torneo.id})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
+
+
+class Fase8SecurityAndAuditTests(TestCase):
+
+    def setUp(self):
+        self.user = User.objects.create_user(username="user_fase8", password="password123")
+        self.org_a = Organizacion.objects.create(nombre="Org Fase 8 A", codigo="ORGF8A")
+        self.org_b = Organizacion.objects.create(nombre="Org Fase 8 B", codigo="ORGF8B")
+
+        from users.models import UsuarioOrganizacion
+        UsuarioOrganizacion.objects.create(usuario=self.user, organizacion=self.org_a, rol='admin', activo=True)
+        UsuarioOrganizacion.objects.create(usuario=self.user, organizacion=self.org_b, rol='espectador', activo=True)
+
+        self.cat_a = Categoria.objects.create(nombre="Categoría A", organizacion=self.org_a)
+        self.torneo_a = Torneo.objects.create(
+            nombre="Copa Fase 8", tipo="personalizado", categoria=self.cat_a,
+            organizacion=self.org_a, temporada="2026"
+        )
+
+    def test_01_health_check_endpoint(self):
+        response = self.client.get('/health/')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"status": "ok", "db": "ok"})
+
+    def test_02_comando_auditar_torneo(self):
+        from django.core.management import call_command
+        from io import StringIO
+
+        out = StringIO()
+        call_command('auditar_torneo_personalizado', torneo=self.torneo_a.id, stdout=out)
+        self.assertIn("AUDITORÍA DE INTEGRIDAD", out.getvalue())
+
+    def test_03_roles_diferentes_por_organizacion(self):
+        self.assertEqual(self.user.get_role_in_organizacion(self.org_a), 'admin')
+        self.assertEqual(self.user.get_role_in_organizacion(self.org_b), 'espectador')
+
+        self.assertTrue(self.user.has_module_access('torneos', self.org_a))
+        self.assertFalse(self.user.has_module_access('torneos', self.org_b))
+
+    def test_04_middleware_limpia_organizacion_invalida(self):
+        self.client.login(username="user_fase8", password="password123")
+        session = self.client.session
+        # Intentar forzar un org_id al que no pertenece
+        org_c = Organizacion.objects.create(nombre="Org C Inaccesible", codigo="ORGC")
+        session['current_organizacion_id'] = org_c.id
+        session.save()
+
+        # Realizar petición protegida
+        url = reverse('detalle_torneo', kwargs={'torneo_id': self.torneo_a.id})
+        response = self.client.get(url)
+        # El middleware debe limpiar la org inválida y asignar org_a (donde el usuario es miembro activo)
+        self.assertEqual(self.client.session.get('current_organizacion_id'), self.org_a.id)
 
 
 

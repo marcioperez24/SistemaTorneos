@@ -22,27 +22,35 @@ class CustomUser(AbstractUser):
             self.role = 'superadmin'
         super().save(*args, **kwargs)
 
-    def has_module_access(self, module_name):
-        if self.is_superuser or self.role == 'superadmin':
+    def get_role_in_organizacion(self, organizacion=None):
+        if self.is_superuser:
+            return 'superadmin'
+        if not organizacion:
+            return self.role
+        uo = UsuarioOrganizacion.objects.filter(usuario=self, organizacion=organizacion, activo=True).first()
+        return uo.rol if uo else self.role
+
+    def has_module_access(self, module_name, organizacion=None):
+        role_to_check = self.get_role_in_organizacion(organizacion) if organizacion else self.role
+        if self.is_superuser or role_to_check in ['superadmin', 'admin', 'organizador']:
             return True
         try:
-            perm = RolePermission.objects.get(role=self.role, module=module_name)
+            perm = RolePermission.objects.get(role=role_to_check, module=module_name)
             return perm.allowed
         except RolePermission.DoesNotExist:
-            # Fallback to hardcoded defaults
             defaults = {
-                'partidos': ['superadmin', 'comision', 'vocal'],
-                'equipos': ['dirigente'],
-                'vocalia': ['vocal'],
-                'secretaria': ['comision'],
-                'arbitros': ['comision'],
-                'vocales': ['comision'],
-                'torneos': ['comision'],
-                'categorias': ['comision'],
-                'tesoreria': ['tesorero', 'tesoreria'],
-                'usuarios': [],
+                'partidos': ['superadmin', 'admin', 'comision', 'vocal', 'organizador'],
+                'equipos': ['dirigente', 'superadmin', 'admin', 'comision', 'organizador'],
+                'vocalia': ['vocal', 'superadmin', 'admin', 'comision', 'organizador'],
+                'secretaria': ['comision', 'superadmin', 'admin', 'organizador'],
+                'arbitros': ['comision', 'superadmin', 'admin', 'organizador'],
+                'vocales': ['comision', 'superadmin', 'admin', 'organizador'],
+                'torneos': ['comision', 'superadmin', 'admin', 'organizador'],
+                'categorias': ['comision', 'superadmin', 'admin', 'organizador'],
+                'tesoreria': ['tesorero', 'tesoreria', 'superadmin', 'admin', 'organizador'],
+                'usuarios': ['superadmin', 'admin', 'organizador'],
             }
-            return self.role in defaults.get(module_name, [])
+            return role_to_check in defaults.get(module_name, [])
 
     @property
     def ficha_jugador(self):
