@@ -38,6 +38,45 @@
             vertical-align: middle;
         }
 
+        .org-logo-header {
+            max-height: 55px;
+            max-width: 140px;
+            object-fit: contain;
+        }
+
+        .system-logo-badge {
+            width: 50px;
+            height: 50px;
+            background-color: #f8f9fa;
+            border: 2px solid #0d6efd;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .team-logo-sm {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+            border-radius: 3px;
+            flex-shrink: 0;
+            display: inline-block;
+        }
+
+        .team-logo-placeholder-sm {
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8f9fa;
+            border: 1px dashed #ced4da;
+            border-radius: 3px;
+            font-size: 10px;
+            flex-shrink: 0;
+        }
+
         @media print {
             .no-print {
                 display: none !important;
@@ -45,6 +84,8 @@
             body {
                 background: #ffffff !important;
                 padding: 0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             .print-container {
                 box-shadow: none !important;
@@ -83,17 +124,26 @@
     <div class="print-container">
         <!-- Encabezado de la Organización y Torneo -->
         <div class="d-flex justify-content-between align-items-center border-bottom pb-4 mb-4">
-            <div>
-                <h4 class="fw-bold text-uppercase mb-1 text-primary">
-                    <i class="fa-solid fa-shield-halved me-2"></i>{{ request.organizacion.nombre }}
-                </h4>
-                <h2 class="fw-extrabold text-dark mb-2">{{ torneo.nombre|upper }}</h2>
-                <div class="d-flex flex-wrap gap-3 text-secondary small fw-semibold">
-                    <span><i class="fa-solid fa-tag me-1 text-primary"></i>Categoría: {{ torneo.get_categoria_display }}</span>
-                    <span>•</span>
-                    <span><i class="fa-solid fa-calendar me-1 text-info"></i>Temporada: {{ torneo.temporada }}</span>
-                    <span>•</span>
-                    <span><i class="fa-solid fa-sitemap me-1 text-warning"></i>Formato: {{ torneo.get_tipo_display }}</span>
+            <div class="d-flex align-items-center">
+                {% if request.organizacion.logo %}
+                    <img src="{{ request.organizacion.logo.url }}" alt="{{ request.organizacion.nombre }}" class="org-logo-header me-3">
+                {% else %}
+                    <div class="system-logo-badge me-3">
+                        <i class="fa-solid fa-trophy text-primary fs-3"></i>
+                    </div>
+                {% endif %}
+                <div>
+                    <h4 class="fw-bold text-uppercase mb-1 text-primary">
+                        {{ request.organizacion.nombre }}
+                    </h4>
+                    <h2 class="fw-extrabold text-dark mb-2">{{ torneo.nombre|upper }}</h2>
+                    <div class="d-flex flex-wrap gap-3 text-secondary small fw-semibold">
+                        <span><i class="fa-solid fa-tag me-1 text-primary"></i>Categoría: {{ torneo.get_categoria_display }}</span>
+                        <span>•</span>
+                        <span><i class="fa-solid fa-calendar me-1 text-info"></i>Temporada: {{ torneo.temporada }}</span>
+                        <span>•</span>
+                        <span><i class="fa-solid fa-sitemap me-1 text-warning"></i>Formato: {{ torneo.get_tipo_display }}</span>
+                    </div>
                 </div>
             </div>
             <div class="text-end">
@@ -102,6 +152,9 @@
                 </div>
                 <div class="text-muted small">
                     <i class="fa-solid fa-clock me-1"></i>Generado: {{ fecha_impresion|date:"d/m/Y H:i" }}
+                </div>
+                <div class="fw-bold text-dark small mt-1">
+                    <i class="fa-solid fa-shield-halved text-primary me-1"></i> SISTEMA DE TORNEOS PRO
                 </div>
             </div>
         </div>
@@ -132,7 +185,16 @@
                                     <tr>
                                         <td class="text-center fw-bold text-muted">{{ forloop.counter }}</td>
                                         <td class="fw-bold text-dark">
-                                            {{ partido.equipo_local.nombre }}
+                                            <div class="d-inline-flex align-items-center gap-2">
+                                                {% if partido.equipo_local.logo %}
+                                                    <img src="{{ partido.equipo_local.logo.url }}" alt="{{ partido.equipo_local.nombre }}" class="team-logo-sm">
+                                                {% else %}
+                                                    <span class="team-logo-placeholder-sm">
+                                                        <i class="fa-solid fa-shield text-muted"></i>
+                                                    </span>
+                                                {% endif %}
+                                                <span>{{ partido.equipo_local.nombre }}</span>
+                                            </div>
                                         </td>
                                         <td class="text-center fw-bold font-monospace fs-7">
                                             {% if partido.estado == 'programado' %}
@@ -142,7 +204,16 @@
                                             {% endif %}
                                         </td>
                                         <td class="fw-bold text-dark">
-                                            {{ partido.equipo_visitante.nombre }}
+                                            <div class="d-inline-flex align-items-center gap-2">
+                                                {% if partido.equipo_visitante.logo %}
+                                                    <img src="{{ partido.equipo_visitante.logo.url }}" alt="{{ partido.equipo_visitante.nombre }}" class="team-logo-sm">
+                                                {% else %}
+                                                    <span class="team-logo-placeholder-sm">
+                                                        <i class="fa-solid fa-shield text-muted"></i>
+                                                    </span>
+                                                {% endif %}
+                                                <span>{{ partido.equipo_visitante.nombre }}</span>
+                                            </div>
                                         </td>
                                         <td>
                                             <div class="fw-semibold"><i class="fa-regular fa-clock me-1 text-primary"></i>{{ partido.fecha_hora|date:"d/m/Y H:i" }}</div>
@@ -191,7 +262,16 @@
                                     <tr>
                                         <td class="text-center fw-bold text-muted">{{ forloop.counter }}</td>
                                         <td class="fw-bold text-dark">
-                                            {{ partido.equipo_local.nombre }}
+                                            <div class="d-inline-flex align-items-center gap-2">
+                                                {% if partido.equipo_local.logo %}
+                                                    <img src="{{ partido.equipo_local.logo.url }}" alt="{{ partido.equipo_local.nombre }}" class="team-logo-sm">
+                                                {% else %}
+                                                    <span class="team-logo-placeholder-sm">
+                                                        <i class="fa-solid fa-shield text-muted"></i>
+                                                    </span>
+                                                {% endif %}
+                                                <span>{{ partido.equipo_local.nombre }}</span>
+                                            </div>
                                         </td>
                                         <td class="text-center fw-bold font-monospace fs-7">
                                             {% if partido.estado == 'programado' %}
@@ -201,7 +281,16 @@
                                             {% endif %}
                                         </td>
                                         <td class="fw-bold text-dark">
-                                            {{ partido.equipo_visitante.nombre }}
+                                            <div class="d-inline-flex align-items-center gap-2">
+                                                {% if partido.equipo_visitante.logo %}
+                                                    <img src="{{ partido.equipo_visitante.logo.url }}" alt="{{ partido.equipo_visitante.nombre }}" class="team-logo-sm">
+                                                {% else %}
+                                                    <span class="team-logo-placeholder-sm">
+                                                        <i class="fa-solid fa-shield text-muted"></i>
+                                                    </span>
+                                                {% endif %}
+                                                <span>{{ partido.equipo_visitante.nombre }}</span>
+                                            </div>
                                         </td>
                                         <td>
                                             <div class="fw-semibold"><i class="fa-regular fa-clock me-1 text-primary"></i>{{ partido.fecha_hora|date:"d/m/Y H:i" }}</div>
@@ -244,7 +333,16 @@
                                     <tr>
                                         <td class="text-center fw-bold text-muted">{{ forloop.counter }}</td>
                                         <td class="fw-bold text-dark">
-                                            {{ partido.equipo_local.nombre }}
+                                            <div class="d-inline-flex align-items-center gap-2">
+                                                {% if partido.equipo_local.logo %}
+                                                    <img src="{{ partido.equipo_local.logo.url }}" alt="{{ partido.equipo_local.nombre }}" class="team-logo-sm">
+                                                {% else %}
+                                                    <span class="team-logo-placeholder-sm">
+                                                        <i class="fa-solid fa-shield text-muted"></i>
+                                                    </span>
+                                                {% endif %}
+                                                <span>{{ partido.equipo_local.nombre }}</span>
+                                            </div>
                                         </td>
                                         <td class="text-center fw-bold font-monospace fs-7">
                                             {% if partido.estado == 'programado' %}
@@ -254,7 +352,16 @@
                                             {% endif %}
                                         </td>
                                         <td class="fw-bold text-dark">
-                                            {{ partido.equipo_visitante.nombre }}
+                                            <div class="d-inline-flex align-items-center gap-2">
+                                                {% if partido.equipo_visitante.logo %}
+                                                    <img src="{{ partido.equipo_visitante.logo.url }}" alt="{{ partido.equipo_visitante.nombre }}" class="team-logo-sm">
+                                                {% else %}
+                                                    <span class="team-logo-placeholder-sm">
+                                                        <i class="fa-solid fa-shield text-muted"></i>
+                                                    </span>
+                                                {% endif %}
+                                                <span>{{ partido.equipo_visitante.nombre }}</span>
+                                            </div>
                                         </td>
                                         <td>
                                             <div class="fw-semibold"><i class="fa-regular fa-clock me-1 text-primary"></i>{{ partido.fecha_hora|date:"d/m/Y H:i" }}</div>

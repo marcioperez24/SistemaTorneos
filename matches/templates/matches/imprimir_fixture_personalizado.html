@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fixture {{ torneo.nombre }} - {{ organizacion.nombre }}</title>
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -16,6 +19,41 @@
             border-bottom: 2px solid #222;
             padding-bottom: 12px;
             margin-bottom: 20px;
+        }
+        .org-logo-header {
+            max-height: 55px;
+            max-width: 140px;
+            object-fit: contain;
+        }
+        .system-logo-badge {
+            width: 50px;
+            height: 50px;
+            background-color: #f8f9fa;
+            border: 2px solid #0d6efd;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .team-logo-sm {
+            width: 24px;
+            height: 24px;
+            object-fit: contain;
+            border-radius: 3px;
+            flex-shrink: 0;
+            display: inline-block;
+        }
+        .team-logo-placeholder-sm {
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f8f9fa;
+            border: 1px dashed #ced4da;
+            border-radius: 3px;
+            font-size: 10px;
+            flex-shrink: 0;
         }
         .table-fixture th {
             background-color: #f1f3f5 !important;
@@ -34,6 +72,8 @@
             body {
                 padding: 0;
                 margin: 0;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             .card {
                 border: none !important;
@@ -53,20 +93,32 @@
             <small class="text-muted">Utiliza el botón para imprimir o guardar como PDF mediante la vista previa del navegador.</small>
         </div>
         <button onclick="window.print();" class="btn btn-primary fw-bold px-4">
-            Imprimir Fixture / Guardar PDF
+            <i class="fa-solid fa-print me-2"></i>Imprimir Fixture / Guardar PDF
         </button>
     </div>
 
     <!-- Encabezado del Informe -->
     <div class="print-header d-flex justify-content-between align-items-center">
-        <div>
-            <h3 class="fw-bold text-uppercase mb-1">{{ organizacion.nombre }}</h3>
-            <h4 class="text-secondary mb-0 fw-bold">{{ torneo.nombre }}</h4>
-            <div class="text-muted small mt-1">
-                Categoría: {{ torneo.categoria.nombre|default:"General" }} | Temporada: {{ torneo.temporada }}
+        <div class="d-flex align-items-center">
+            {% if organizacion.logo %}
+                <img src="{{ organizacion.logo.url }}" alt="{{ organizacion.nombre }}" class="org-logo-header me-3">
+            {% else %}
+                <div class="system-logo-badge me-3">
+                    <i class="fa-solid fa-trophy text-primary fs-3"></i>
+                </div>
+            {% endif %}
+            <div>
+                <h3 class="fw-bold text-uppercase mb-0 text-dark">{{ organizacion.nombre }}</h3>
+                <h4 class="text-secondary mb-0 fw-bold">{{ torneo.nombre }}</h4>
+                <div class="text-muted small mt-1">
+                    Categoría: {{ torneo.categoria.nombre|default:"General" }} | Temporada: {{ torneo.temporada }}
+                </div>
             </div>
         </div>
         <div class="text-end text-muted small">
+            <div class="fw-bold text-dark mb-1">
+                <i class="fa-solid fa-shield-halved text-primary me-1"></i> SISTEMA DE TORNEOS PRO
+            </div>
             <div>Fecha de Impresión: {{ fecha_impresion|date:"d/m/Y H:i" }}</div>
             <div class="fw-semibold text-dark">Formato: Torneo Personalizado por Grupos</div>
         </div>
@@ -86,17 +138,28 @@
                         <thead>
                             <tr>
                                 <th style="width: 15%;">Fecha y Hora</th>
-                                <th style="width: 30%;" class="text-end">Local</th>
-                                <th style="width: 10%;" class="text-center">Res</th>
-                                <th style="width: 30%;">Visitante</th>
-                                <th style="width: 15%;">Estadio / Cancha</th>
+                                <th style="width: 32%;" class="text-end">Local</th>
+                                <th style="width: 8%;" class="text-center">Res</th>
+                                <th style="width: 32%;">Visitante</th>
+                                <th style="width: 13%;">Estadio / Cancha</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for p in partidos_list %}
                                 <tr>
                                     <td>{{ p.fecha_hora|date:"d/m/Y H:i" }}</td>
-                                    <td class="text-end fw-bold">{{ p.equipo_local.nombre }}</td>
+                                    <td class="text-end fw-bold">
+                                        <div class="d-inline-flex align-items-center justify-content-end gap-2 w-100">
+                                            <span>{{ p.equipo_local.nombre }}</span>
+                                            {% if p.equipo_local.logo %}
+                                                <img src="{{ p.equipo_local.logo.url }}" alt="{{ p.equipo_local.nombre }}" class="team-logo-sm ms-1">
+                                            {% else %}
+                                                <span class="team-logo-placeholder-sm ms-1">
+                                                    <i class="fa-solid fa-shield text-muted"></i>
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
                                     <td class="text-center fw-bold bg-light">
                                         {% if p.estado != 'programado' %}
                                             {{ p.goles_local }} - {{ p.goles_visitante }}
@@ -104,7 +167,18 @@
                                             VS
                                         {% endif %}
                                     </td>
-                                    <td class="fw-bold">{{ p.equipo_visitante.nombre }}</td>
+                                    <td class="fw-bold">
+                                        <div class="d-inline-flex align-items-center justify-content-start gap-2 w-100">
+                                            {% if p.equipo_visitante.logo %}
+                                                <img src="{{ p.equipo_visitante.logo.url }}" alt="{{ p.equipo_visitante.nombre }}" class="team-logo-sm me-1">
+                                            {% else %}
+                                                <span class="team-logo-placeholder-sm me-1">
+                                                    <i class="fa-solid fa-shield text-muted"></i>
+                                                </span>
+                                            {% endif %}
+                                            <span>{{ p.equipo_visitante.nombre }}</span>
+                                        </div>
+                                    </td>
                                     <td>{{ p.estadio }}</td>
                                 </tr>
                             {% endfor %}
