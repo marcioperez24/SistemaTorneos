@@ -851,6 +851,17 @@ def imprimir_fixture_torneo(request, torneo_id):
     equipos = torneo.equipos.all()
     partidos = Partido.objects.filter(torneo=torneo).select_related('equipo_local', 'equipo_visitante', 'vocal', 'arbitro').order_by('jornada', 'fecha_hora')
     
+    jornada = request.GET.get('jornada')
+    equipo_id = request.GET.get('equipo_id')
+    estado = request.GET.get('estado')
+
+    if jornada:
+        partidos = partidos.filter(jornada=jornada)
+    if equipo_id:
+        partidos = partidos.filter(Q(equipo_local_id=equipo_id) | Q(equipo_visitante_id=equipo_id))
+    if estado:
+        partidos = partidos.filter(estado=estado)
+
     total_partidos = partidos.count()
     
     # Agrupar partidos por jornada si es liga
@@ -883,6 +894,9 @@ def imprimir_fixture_torneo(request, torneo_id):
         'partidos_grupos_dict': sorted(partidos_grupos_dict.items()),
         'partidos_eliminatoria_dict': sorted(partidos_eliminatoria_dict.items()),
         'fecha_impresion': timezone.now(),
+        'jornada_filtrada': jornada,
+        'equipo_id_filtrado': equipo_id,
+        'estado_filtrado': estado,
     }
     return render(request, 'matches/imprimir_fixture.html', context)
 

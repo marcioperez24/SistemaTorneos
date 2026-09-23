@@ -282,6 +282,7 @@ def reprogramar_partido_personalizado(request, torneo_id, partido_id):
 def imprimir_fixture_personalizado(request, torneo_id):
     """
     Vista optimizada para impresión en PDF/papel del fixture personalizado por grupo.
+    Soporta filtrado por grupo, jornada, equipo y estado.
     """
     torneo = get_object_or_404(
         Torneo,
@@ -292,6 +293,8 @@ def imprimir_fixture_personalizado(request, torneo_id):
 
     grupo_id = request.GET.get('grupo_id')
     jornada = request.GET.get('jornada')
+    equipo_id = request.GET.get('equipo_id')
+    estado = request.GET.get('estado')
 
     partidos_qs = Partido.objects.filter(torneo=torneo, organizacion=request.organizacion).select_related(
         'equipo_local', 'equipo_visitante', 'grupo_personalizado', 'arbitro', 'vocal'
@@ -301,6 +304,12 @@ def imprimir_fixture_personalizado(request, torneo_id):
         partidos_qs = partidos_qs.filter(grupo_personalizado_id=grupo_id)
     if jornada:
         partidos_qs = partidos_qs.filter(jornada=jornada)
+    if equipo_id:
+        partidos_qs = partidos_qs.filter(
+            models.Q(equipo_local_id=equipo_id) | models.Q(equipo_visitante_id=equipo_id)
+        )
+    if estado:
+        partidos_qs = partidos_qs.filter(estado=estado)
 
     fixture_agrupado = {}
     for p in partidos_qs:
@@ -318,6 +327,10 @@ def imprimir_fixture_personalizado(request, torneo_id):
         'torneo': torneo,
         'organizacion': request.organizacion,
         'fixture_agrupado': fixture_agrupado,
-        'fecha_impresion': datetime.datetime.now()
+        'fecha_impresion': datetime.datetime.now(),
+        'jornada_filtrada': jornada,
+        'grupo_id_filtrado': grupo_id,
+        'equipo_id_filtrado': equipo_id,
+        'estado_filtrado': estado,
     }
     return render(request, 'matches/imprimir_fixture_personalizado.html', context)

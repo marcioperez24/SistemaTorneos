@@ -27,7 +27,7 @@
             <a href="{% url 'configurar_generar_fixture' torneo.id %}" class="btn btn-outline-primary px-3 py-2 fw-bold text-uppercase fs-8">
                 <i class="fa-solid fa-wand-magic-sparkles me-1.5"></i>Regenerar Fixture
             </a>
-            <a href="{% url 'imprimir_fixture_personalizado' torneo.id %}{% if grupo_id_sel %}?grupo_id={{ grupo_id_sel }}{% endif %}" target="_blank" class="btn btn-secondary px-3 py-2 fw-bold text-uppercase fs-8 shadow-sm">
+            <a href="{% url 'imprimir_fixture_personalizado' torneo.id %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}" target="_blank" class="btn btn-secondary px-3 py-2 fw-bold text-uppercase fs-8 shadow-sm">
                 <i class="fa-solid fa-print me-1.5"></i>Imprimir Fixture
             </a>
         </div>

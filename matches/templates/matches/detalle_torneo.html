@@ -51,7 +51,7 @@
             {% endif %}
 
             <!-- Botón Imprimir Fixture -->
-            <a href="{% url 'imprimir_fixture_torneo' torneo.id %}" target="_blank" class="btn btn-outline-dark rounded-pill px-3 py-2 fw-semibold fs-8 flex-grow-1 flex-xl-grow-0">
+            <a href="{% url 'imprimir_fixture_torneo' torneo.id %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}" target="_blank" class="btn btn-outline-dark rounded-pill px-3 py-2 fw-semibold fs-8 flex-grow-1 flex-xl-grow-0">
                 <i class="fa-solid fa-print me-1.5 text-secondary"></i>Imprimir Fixture
             </a>
 
