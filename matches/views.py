@@ -258,7 +258,8 @@ def generar_fixture_view(request):
                         temporada="Copa de Campeones 2026",
                         vocal=vocal,
                         arbitro=arbitro,
-                        estado='programado'
+                        estado='programado',
+                        organizacion=request.organizacion
                     )
                     partidos_creados += 1
             
@@ -965,7 +966,8 @@ def generar_fixture_torneo(request, torneo_id):
                             jornada=f + 1,
                             temporada=torneo.temporada,
                             torneo=torneo,
-                            fase='regular'
+                            fase='regular',
+                            organizacion=torneo.organizacion or request.organizacion
                         )
                         partidos_creados += 1
                 
@@ -1293,7 +1295,8 @@ def crear_partido_torneo(request, torneo_id):
             jornada=int(jornada) if jornada.isdigit() else 1,
             temporada=torneo.temporada,
             torneo=torneo,
-            estado='programado'
+            estado='programado',
+            organizacion=torneo.organizacion or request.organizacion
         )
         
         messages.success(request, "Partido / Cruce de eliminatoria creado exitosamente.")
