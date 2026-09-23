@@ -211,33 +211,20 @@ def calcular_vista_previa_fixture(torneo, organizacion, config):
                 if vocales:
                     idx_vocal += 1
 
-                # Detección de conflictos
+                # Detección de conflictos de equipos (mismo equipo con partidos simultáneos)
                 key_local = (dt_partido, 'equipo', local.id)
                 key_visitante = (dt_partido, 'equipo', visitante.id)
-                key_estadio = (dt_partido, 'estadio', estadio)
 
                 if key_local in ocupacion_equipos:
                     conflictos.append(f"El equipo '{local.nombre}' tiene dos partidos en el mismo horario: {dt_partido.strftime('%Y-%m-%d %H:%M')}.")
                 if key_visitante in ocupacion_equipos:
                     conflictos.append(f"El equipo '{visitante.nombre}' tiene dos partidos en el mismo horario: {dt_partido.strftime('%Y-%m-%d %H:%M')}.")
-                if key_estadio in ocupacion_estadios:
-                    advertencias.append(f"El estadio '{estadio}' está ocupado para múltiples partidos a las {dt_partido.strftime('%Y-%m-%d %H:%M')}.")
 
                 ocupacion_equipos.add(key_local)
                 ocupacion_equipos.add(key_visitante)
-                ocupacion_estadios.add(key_estadio)
 
-                if arb:
-                    key_arb = (dt_partido, 'arbitro', arb.id)
-                    if key_arb in ocupacion_arbitros:
-                        advertencias.append(f"El árbitro '{arb.get_full_name() or arb.username}' tiene asignaciones simultáneas a las {dt_partido.strftime('%H:%M')}.")
-                    ocupacion_arbitros.add(key_arb)
 
-                if voc:
-                    key_voc = (dt_partido, 'vocal', voc.id)
-                    if key_voc in ocupacion_vocales:
-                        advertencias.append(f"El vocal '{voc.get_full_name() or voc.username}' tiene asignaciones simultáneas a las {dt_partido.strftime('%H:%M')}.")
-                    ocupacion_vocales.add(key_voc)
+
 
                 total_partidos_calculados += 1
                 partidos_jornada.append({
