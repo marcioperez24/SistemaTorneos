@@ -18,11 +18,18 @@ def populate_and_migrate_categories(apps, schema_editor):
     # Create Categories
     category_instances = {}
     for code, name in CATEGORIAS_DICT.items():
-        cat, created = Categoria.objects.get_or_create(nombre=name)
+        cat = Categoria.objects.filter(nombre=name).first()
+        if not cat:
+            cat = Categoria.objects.create(nombre=name)
         category_instances[code] = cat
 
     # Fallback default category for anything else or senior
-    default_cat, created = Categoria.objects.get_or_create(nombre='Senior / Libre')
+    default_cat = category_instances.get('senior')
+    if not default_cat:
+        default_cat = Categoria.objects.filter(nombre='Senior / Libre').first()
+        if not default_cat:
+            default_cat = Categoria.objects.create(nombre='Senior / Libre')
+
 
     # Update Equipos
     for equipo in Equipo.objects.all():
