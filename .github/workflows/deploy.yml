@@ -14,6 +14,8 @@ jobs:
   test:
     name: Pruebas y Validación CI
     runs-on: ubuntu-latest
+    env:
+      USE_SQLITE: "true"
     steps:
       - name: Descargar Código
         uses: actions/checkout@v4
@@ -34,6 +36,7 @@ jobs:
 
       - name: Ejecutar Pruebas Unitarias
         run: python manage.py test
+
 
   deploy:
     name: Despliegue en Servidor VPS
