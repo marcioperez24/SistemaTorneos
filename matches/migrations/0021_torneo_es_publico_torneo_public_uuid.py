@@ -12,19 +12,24 @@ def add_fields_and_generate_uuids(apps, schema_editor):
         table_description = connection.introspection.get_table_description(cursor, Torneo._meta.db_table)
         existing_columns = [col.name for col in table_description]
 
-    if 'es_publico' not in existing_columns:
-        field = models.BooleanField(default=True, verbose_name='Torneo Publicado / Vista Pública Activa')
-        field.set_attributes_from_name('es_publico')
-        schema_editor.add_field(Torneo, field)
+        if 'es_publico' not in existing_columns:
+            field = models.BooleanField(default=True, verbose_name='Torneo Publicado / Vista Pública Activa')
+            field.set_attributes_from_name('es_publico')
+            schema_editor.add_field(Torneo, field)
 
-    if 'public_uuid' not in existing_columns:
-        field = models.UUIDField(default=None, null=True, editable=False, verbose_name='Identificador Público UUID')
-        field.set_attributes_from_name('public_uuid')
-        schema_editor.add_field(Torneo, field)
+        if 'public_uuid' not in existing_columns:
+            field = models.UUIDField(default=None, null=True, editable=False, verbose_name='Identificador Público UUID')
+            field.set_attributes_from_name('public_uuid')
+            schema_editor.add_field(Torneo, field)
 
-    for torneo in Torneo.objects.all():
-        torneo.public_uuid = uuid.uuid4()
-        torneo.save(update_fields=['public_uuid'])
+        cursor.execute(f"SELECT id FROM {Torneo._meta.db_table}")
+        torneo_ids = [row[0] for row in cursor.fetchall()]
+
+        for tid in torneo_ids:
+            cursor.execute(
+                f"UPDATE {Torneo._meta.db_table} SET public_uuid = %s WHERE id = %s",
+                [str(uuid.uuid4()), tid]
+            )
 
 
 class Migration(migrations.Migration):
