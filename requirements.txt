@@ -1,8 +1,8 @@
-asgiref==3.8.1
-Django==6.0.5
-mysqlclient==2.2.8
-pillow==12.2.0
-sqlparse==0.5.5
-tzdata==2026.2
-openpyxl==3.1.5
-gunicorn==26.0.0
+Django>=4.2.0,<5.0
+asgiref>=3.8.0
+PyMySQL>=1.1.0
+pillow>=10.0.0
+sqlparse>=0.5.0
+openpyxl>=3.1.0
+gunicorn>=23.0.0
+
