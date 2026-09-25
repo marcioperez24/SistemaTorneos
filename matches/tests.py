@@ -1693,6 +1693,16 @@ class TorneoPersonalizadoPhase7Tests(TestCase):
         self.assertTrue(link.startswith("https://api.whatsapp.com/send?text="))
 
     def test_09_exportar_excel_consolidado(self):
+        # Crear llave eliminatoria con equipos sin definir (None) para asegurar la robustez de la exportación a Excel
+        LlaveEliminatoria.objects.create(
+            organizacion=self.org1,
+            torneo=self.torneo,
+            fase='semifinal',
+            numero_llave=1,
+            equipo_local=None,
+            equipo_visitante=None,
+            estado='pendiente'
+        )
         url = reverse('exportar_excel_consolidado_personalizado', kwargs={'torneo_id': self.torneo.id})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)

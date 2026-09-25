@@ -663,15 +663,18 @@ def generar_excel_cuadro_eliminatorio_completo(torneo, organizacion):
 
     clasificados = ClasificadoTorneo.objects.filter(torneo=torneo, activo=True).order_by('bombo', 'posicion_grupo')
     for item in clasificados:
+        eq_nombre = item.equipo.nombre if item.equipo else "Por definir"
+        grp_nombre = item.grupo.nombre if item.grupo else "Sin grupo"
+        fecha_conf = item.fecha_confirmacion.strftime('%Y-%m-%d %H:%M') if item.fecha_confirmacion else "-"
         ws_clas.append([
-            f"Bombo {item.bombo}",
-            item.equipo.nombre,
-            item.grupo.nombre,
-            item.posicion_grupo,
-            item.puntos,
-            item.diferencia_goles,
-            item.goles_favor,
-            item.fecha_confirmacion.strftime('%Y-%m-%d %H:%M')
+            f"Bombo {item.bombo or '-'}",
+            eq_nombre,
+            grp_nombre,
+            item.posicion_grupo or "",
+            item.puntos if item.puntos is not None else 0,
+            item.diferencia_goles if item.diferencia_goles is not None else 0,
+            item.goles_favor if item.goles_favor is not None else 0,
+            fecha_conf
         ])
         for col_idx in range(1, 9):
             ws_clas.cell(row=ws_clas.max_row, column=col_idx).border = thin_border

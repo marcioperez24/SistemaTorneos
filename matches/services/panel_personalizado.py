@@ -362,7 +362,7 @@ def obtener_alertas_administrativas(torneo):
 def generar_excel_torneo_consolidado(torneo, opcion='completo'):
     """
     Genera un libro de trabajo Excel (.xlsx) consolidado con la información completa del torneo.
-    Pestañas: Resumen, Grupos, Equipos, Fixture, Resultados, Posiciones, Goleadores, Clasificados, Eliminatorias, Campeón.
+    Pestañas: Resumen General, Grupos y Equipos, Fixture y Resultados, Posiciones por Grupo, Clasificados Definitivos, Cuadro Eliminatorio, Tabla de Goleadores.
     """
     wb = openpyxl.Workbook()
     
@@ -382,18 +382,24 @@ def generar_excel_torneo_consolidado(torneo, opcion='completo'):
     # 1. Hoja Resumen
     ws_resumen = wb.active
     ws_resumen.title = "Resumen General"
-    ws_resumen.append([f"SISTEMA DE TORNEOS - {torneo.organizacion.nombre.upper()}"])
+    org_name = torneo.organizacion.nombre.upper() if (torneo.organizacion and torneo.organizacion.nombre) else "ORGANIZACIÓN"
+    ws_resumen.append([f"SISTEMA DE TORNEOS - {org_name}"])
     ws_resumen.append([f"REPORTE CONSOLIDADO: {torneo.nombre}"])
     ws_resumen.append([f"Generado el: {timezone.now().strftime('%Y-%m-%d %H:%M')}"])
     ws_resumen.append([])
 
-    ws_resumen.append(["Categoría", torneo.categoria.nombre if torneo.categoria else "General"])
-    ws_resumen.append(["Temporada", torneo.temporada])
-    ws_resumen.append(["Modalidad", torneo.modalidad])
-    ws_resumen.append(["Tipo de Torneo", torneo.get_tipo_display()])
+    cat_name = torneo.categoria.nombre if torneo.categoria else "General"
+    tipo_name = torneo.get_tipo_display() if hasattr(torneo, 'get_tipo_display') else str(torneo.tipo or "")
+    total_equipos_count = torneo.equipos.count() if hasattr(torneo, 'equipos') else 0
+    total_partidos_count = Partido.objects.filter(torneo=torneo).count()
+
+    ws_resumen.append(["Categoría", cat_name])
+    ws_resumen.append(["Temporada", torneo.temporada or "-"])
+    ws_resumen.append(["Modalidad", torneo.modalidad or "-"])
+    ws_resumen.append(["Tipo de Torneo", tipo_name])
     ws_resumen.append(["Total de Grupos", GrupoTorneo.objects.filter(torneo=torneo, activo=True).count()])
-    ws_resumen.append(["Total de Equipos", torneo.equipos.count()])
-    ws_resumen.append(["Total de Partidos", Partido.objects.filter(torneo=torneo).count()])
+    ws_resumen.append(["Total de Equipos", total_equipos_count])
+    ws_resumen.append(["Total de Partidos", total_partidos_count])
 
     # 2. Hoja Grupos y Equipos
     ws_grupos = wb.create_sheet(title="Grupos y Equipos")
@@ -406,7 +412,9 @@ def generar_excel_torneo_consolidado(torneo, opcion='completo'):
     for g in grupos:
         asig = EquipoGrupoTorneo.objects.filter(grupo=g).select_related('equipo')
         for a in asig:
-            ws_grupos.append([g.nombre, g.sector or "", a.equipo.nombre, a.equipo.entrenador or ""])
+            eq_nombre = a.equipo.nombre if a.equipo else "Por definir"
+            eq_entrenador = (a.equipo.entrenador or "") if a.equipo else ""
+            ws_grupos.append([g.nombre, g.sector or "", eq_nombre, eq_entrenador])
 
     # 3. Hoja Fixture y Resultados
     ws_fix = wb.create_sheet(title="Fixture y Resultados")
@@ -415,22 +423,26 @@ def generar_excel_torneo_consolidado(torneo, opcion='completo'):
         cell.fill = header_fill
         cell.font = header_font
 
-    partidos = Partido.objects.filter(torneo=torneo).select_related('equipo_local', 'equipo_visitante', 'grupo_personalizado').order_by('fecha_hora')
+    partidos = Partido.objects.filter(torneo=torneo).select_related('equipo_local', 'equipo_visitante', 'grupo_personalizado').order_by('fecha_hora', 'id')
     for p in partidos:
-        fase_str = p.grupo_personalizado.nombre if p.grupo_personalizado else p.get_fase_display()
-        gl = p.goles_local if p.estado == 'finalizado' else ""
-        gv = p.goles_visitante if p.estado == 'finalizado' else ""
+        fase_str = p.grupo_personalizado.nombre if p.grupo_personalizado else (p.get_fase_display() if hasattr(p, 'get_fase_display') else str(p.fase or ""))
+        gl = p.goles_local if p.estado in ['finalizado', 'en_curso'] and p.goles_local is not None else ""
+        gv = p.goles_visitante if p.estado in ['finalizado', 'en_curso'] and p.goles_visitante is not None else ""
+        eq_loc = p.equipo_local.nombre if p.equipo_local else "Por definir"
+        eq_vis = p.equipo_visitante.nombre if p.equipo_visitante else "Por definir"
+        fecha_str = p.fecha_hora.strftime("%Y-%m-%d %H:%M") if p.fecha_hora else "Por definir"
+        estado_str = p.get_estado_display() if hasattr(p, 'get_estado_display') else str(p.estado or "")
         ws_fix.append([
             p.id,
-            p.fecha_hora.strftime("%Y-%m-%d %H:%M") if p.fecha_hora else "",
+            fecha_str,
             fase_str,
             p.numero_jornada or "",
-            p.equipo_local.nombre,
+            eq_loc,
             gl,
             gv,
-            p.equipo_visitante.nombre,
+            eq_vis,
             p.estadio or "",
-            p.get_estado_display()
+            estado_str
         ])
 
     # 4. Hoja Posiciones por Grupo
@@ -441,18 +453,23 @@ def generar_excel_torneo_consolidado(torneo, opcion='completo'):
         cell.font = header_font
 
     for g in grupos:
-        res_pos = calcular_posiciones_grupo(g, torneo, torneo.organizacion)
-        pos = res_pos['tabla']
-        for p in pos:
-            ws_pos.append([
-                g.nombre,
-                p['posicion'],
-                p['equipo'].nombre,
-                p['PJ'], p['PG'], p['PE'], p['PP'],
-                p['GF'], p['GC'], p['DG'], p['PTS']
-            ])
+        try:
+            res_pos = calcular_posiciones_grupo(g, torneo, torneo.organizacion)
+            pos = res_pos.get('tabla', [])
+            for p in pos:
+                eq_obj = p.get('equipo')
+                eq_nombre = eq_obj.nombre if hasattr(eq_obj, 'nombre') else str(eq_obj or "Por definir")
+                ws_pos.append([
+                    g.nombre,
+                    p.get('posicion', ''),
+                    eq_nombre,
+                    p.get('PJ', 0), p.get('PG', 0), p.get('PE', 0), p.get('PP', 0),
+                    p.get('GF', 0), p.get('GC', 0), p.get('DG', 0), p.get('PTS', 0)
+                ])
+        except Exception:
+            pass
 
-    # 5. Hoja Clasificados
+    # 5. Hoja Clasificados Definitivos
     ws_clas = wb.create_sheet(title="Clasificados Definitivos")
     ws_clas.append(["Grupo", "Posición", "Equipo", "Bombo Asignado", "PTS", "DG"])
     for cell in ws_clas[1]:
@@ -461,13 +478,15 @@ def generar_excel_torneo_consolidado(torneo, opcion='completo'):
 
     clasificados = ClasificadoTorneo.objects.filter(torneo=torneo).select_related('grupo', 'equipo').order_by('grupo__orden', 'posicion_grupo')
     for c in clasificados:
+        grp_name = c.grupo.nombre if c.grupo else ""
+        eq_name = c.equipo.nombre if c.equipo else "Por definir"
         ws_clas.append([
-            c.grupo.nombre if c.grupo else "",
-            c.posicion_grupo,
-            c.equipo.nombre,
+            grp_name,
+            c.posicion_grupo or "",
+            eq_name,
             c.bombo or "",
-            c.puntos,
-            c.diferencia_goles
+            c.puntos if c.puntos is not None else 0,
+            c.diferencia_goles if c.diferencia_goles is not None else 0
         ])
 
     # 6. Hoja Eliminatorias
@@ -479,27 +498,55 @@ def generar_excel_torneo_consolidado(torneo, opcion='completo'):
 
     llaves = LlaveEliminatoria.objects.filter(torneo=torneo).select_related('equipo_local', 'equipo_visitante', 'ganador').order_by('id')
     for ll in llaves:
-        loc = ll.equipo_local.nombre if ll.equipo_local else "Por Definir"
-        vis = ll.equipo_visitante.nombre if ll.equipo_visitante else "Por Definir"
-        gan = ll.ganador.nombre if ll.ganador else ll.get_estado_display()
-        pen = f"{ll.penales_local}-{ll.penales_visitante}" if ll.definido_por_penales else ""
+        loc = ll.equipo_local.nombre if ll.equipo_local else ("BYE" if getattr(ll, 'es_bye', False) else "Por Definir")
+        vis = ll.equipo_visitante.nombre if ll.equipo_visitante else ("BYE" if getattr(ll, 'es_bye', False) else "Por Definir")
+        gan = ll.ganador.nombre if ll.ganador else (ll.get_estado_display() if hasattr(ll, 'get_estado_display') else str(ll.estado or "Pendiente"))
+        pen = f"{ll.penales_local if ll.penales_local is not None else 0}-{ll.penales_visitante if ll.penales_visitante is not None else 0}" if ll.definido_por_penales else ""
+        fase_name = ll.get_fase_display() if hasattr(ll, 'get_fase_display') else str(ll.fase or "")
         ws_elim.append([
-            ll.get_fase_display(),
-            ll.numero_llave,
+            fase_name,
+            ll.numero_llave or "",
             loc,
-            ll.marcador_global_local,
-            ll.marcador_global_visitante,
+            ll.marcador_global_local if ll.marcador_global_local is not None else 0,
+            ll.marcador_global_visitante if ll.marcador_global_visitante is not None else 0,
             vis,
             pen,
             gan
         ])
 
+    # 7. Hoja Goleadores (si existen)
+    try:
+        from matches.services.estadisticas_personalizado import calcular_estadisticas_jugadores_general, calcular_estadisticas_jugadores_grupo
+        goleadores_list = []
+        if torneo.tipo == 'grupos' or GrupoTorneo.objects.filter(torneo=torneo, activo=True).exists():
+            for g in grupos:
+                st = calcular_estadisticas_jugadores_grupo(g, torneo, torneo.organizacion)
+                goleadores_list.extend(st.get('goleadores', []))
+        else:
+            st = calcular_estadisticas_jugadores_general(torneo, torneo.organizacion)
+            goleadores_list = st.get('goleadores', [])
+
+        if goleadores_list:
+            ws_gol = wb.create_sheet(title="Tabla de Goleadores")
+            ws_gol.append(["Pos", "Jugador", "Equipo", "Goles"])
+            for cell in ws_gol[1]:
+                cell.fill = header_fill
+                cell.font = header_font
+            for idx, item in enumerate(goleadores_list, start=1):
+                jug_nombre = item.get('nombre') or (item.get('jugador').get_full_name() if hasattr(item.get('jugador'), 'get_full_name') else str(item.get('jugador') or ""))
+                eq_nombre = item.get('equipo_nombre') or (item.get('equipo').nombre if hasattr(item.get('equipo'), 'nombre') else "")
+                ws_gol.append([idx, jug_nombre, eq_nombre, item.get('total', item.get('goles', 0))])
+    except Exception:
+        pass
+
     # Autoajuste de columnas
     for sheet in wb.worksheets:
         for col in sheet.columns:
-            max_len = max(len(str(cell.value or '')) for cell in col)
-            col_letter = get_column_letter(col[0].column)
-            sheet.column_dimensions[col_letter].width = max(max_len + 3, 12)
+            vals = [str(cell.value or '') for cell in col]
+            max_len = max(len(v) for v in vals) if vals else 0
+            if col and len(col) > 0:
+                col_letter = get_column_letter(col[0].column)
+                sheet.column_dimensions[col_letter].width = max(max_len + 3, 12)
 
     buf = io.BytesIO()
     wb.save(buf)
