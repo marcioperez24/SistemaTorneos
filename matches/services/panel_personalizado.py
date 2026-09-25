@@ -432,11 +432,12 @@ def generar_excel_torneo_consolidado(torneo, opcion='completo'):
         eq_vis = p.equipo_visitante.nombre if p.equipo_visitante else "Por definir"
         fecha_str = p.fecha_hora.strftime("%Y-%m-%d %H:%M") if p.fecha_hora else "Por definir"
         estado_str = p.get_estado_display() if hasattr(p, 'get_estado_display') else str(p.estado or "")
+        jornada_val = getattr(p, 'jornada', getattr(p, 'numero_jornada', '')) or ""
         ws_fix.append([
             p.id,
             fecha_str,
             fase_str,
-            p.numero_jornada or "",
+            jornada_val,
             eq_loc,
             gl,
             gv,
@@ -561,7 +562,9 @@ def generar_enlaces_whatsapp(torneo, base_public_url, partido=None, grupo=None):
     encoded_url = urllib.parse.quote(base_public_url)
 
     if partido:
-        texto = f"⚽ *{torneo.nombre}*\n\n{partido.equipo_local.nombre} vs {partido.equipo_visitante.nombre}\n📅 Fecha: {partido.fecha_hora.strftime('%d/%m/%Y %H:%M') if partido.fecha_hora else 'Por definir'}\n📍 Cancha: {partido.estadio or 'Por definir'}\n\nConsulta calendario y resultados aquí:\n{base_public_url}"
+        loc_name = partido.equipo_local.nombre if partido.equipo_local else "Por definir"
+        vis_name = partido.equipo_visitante.nombre if partido.equipo_visitante else "Por definir"
+        texto = f"⚽ *{torneo.nombre}*\n\n{loc_name} vs {vis_name}\n📅 Fecha: {partido.fecha_hora.strftime('%d/%m/%Y %H:%M') if partido.fecha_hora else 'Por definir'}\n📍 Cancha: {partido.estadio or 'Por definir'}\n\nConsulta calendario y resultados aquí:\n{base_public_url}"
     elif grupo:
         texto = f"🏆 *{torneo.nombre} - Tabla del Grupo {grupo.nombre}*\n\nConsulta las posiciones actualizadas:\n{base_public_url}"
     else:

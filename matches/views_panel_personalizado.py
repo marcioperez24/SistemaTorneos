@@ -104,7 +104,14 @@ def exportar_excel_consolidado_view(request, torneo_id):
     """
     Endpoint para descargar el informe consolidado en formato Excel (.xlsx).
     """
-    torneo = get_object_or_404(Torneo, id=torneo_id, organizacion=request.organizacion)
+    if hasattr(request, 'organizacion') and request.organizacion:
+        torneo = Torneo.objects.filter(id=torneo_id, organizacion=request.organizacion).first()
+    else:
+        torneo = None
+
+    if not torneo:
+        torneo = get_object_or_404(Torneo, id=torneo_id)
+
     content = generar_excel_torneo_consolidado(torneo)
 
     filename = f"Torneo_{torneo.id}_Reporte_Consolidado.xlsx"
