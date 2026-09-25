@@ -295,6 +295,9 @@ def registro_jugador(request, token):
         # Si tiene un registro anterior, mostramos la pantalla simplificada y rápida
         if ficha_anterior:
             if request.method == 'POST':
+                if not request.POST.get('acepto_lopdp'):
+                    messages.error(request, 'Debes autorizar el tratamiento de tus datos personales (LOPDP) para continuar.')
+                    return redirect(request.path)
                 org = invitacion.equipo.organizacion if invitacion.equipo else invitacion.organizacion
                 if tipo == 'dt':
                     nueva_ficha = FichaDT(
@@ -349,6 +352,9 @@ def registro_jugador(request, token):
             
     # Si no tiene cuenta o está logueado pero es su primera ficha (ej. admin o nuevo usuario)
     if request.method == 'POST':
+        if not request.POST.get('acepto_lopdp'):
+            messages.error(request, 'Debes autorizar el tratamiento de tus datos personales (LOPDP) para continuar.')
+            return redirect(request.path)
         nro_cedula = request.POST.get('nro_cedula', '').strip()
         existing_user = None
         if nro_cedula:
