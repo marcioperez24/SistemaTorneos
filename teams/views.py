@@ -226,8 +226,8 @@ def generar_invitacion(request, equipo_id):
     # Desactivar invitaciones anteriores para este equipo, torneo y tipo
     InvitacionEquipo.objects.filter(equipo=equipo, torneo=torneo, tipo=tipo, activo=True).update(activo=False)
     
-    # Crear nueva invitación válida por 48 horas
-    expira = timezone.now() + timedelta(hours=48)
+    # Crear nueva invitación válida por 72 horas
+    expira = timezone.now() + timedelta(hours=72)
     invitacion = InvitacionEquipo.objects.create(
         equipo=equipo,
         torneo=torneo,
@@ -239,7 +239,7 @@ def generar_invitacion(request, equipo_id):
     # Construir URL absoluta del enlace
     enlace = request.build_absolute_uri(f"/invitacion/{invitacion.token}/")
     tipo_display = "Director Técnico" if tipo == 'dt' else "Jugador"
-    messages.success(request, f"¡Enlace de invitación para {tipo_display} generado con éxito! Válido por 48 horas.")
+    messages.success(request, f"¡Enlace de invitación para {tipo_display} generado con éxito! Válido por 72 horas.")
     
     # Guardamos en la sesión para poder mostrarlo fácilmente en la redirección
     request.session['nuevo_enlace'] = enlace
