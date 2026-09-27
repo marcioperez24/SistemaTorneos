@@ -91,17 +91,121 @@
                                         </div>
                                     </div>
                                     
+                                    <div class="d-flex justify-content-between align-items-center mb-3 px-1">
+                                        <span class="badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill fs-9">
+                                            <i class="fa-solid fa-square text-warning me-1"></i>Amarilla: ${{ t.costo_amarilla }}
+                                        </span>
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill fs-9">
+                                            <i class="fa-solid fa-square text-danger me-1"></i>Roja: ${{ t.costo_roja }}
+                                        </span>
+                                    </div>
                                 </div>
                                 <div class="card-footer bg-white border-top-0 pt-0 pb-3 px-3 d-flex gap-2">
                                     <a href="{% url 'detalle_torneo' t.id %}" class="btn btn-sm btn-custom-primary rounded-pill flex-grow-1 d-flex align-items-center justify-content-center">
                                         <i class="fa-solid fa-gears me-1"></i>Gestionar
                                     </a>
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="Editar Precios y Reglas" data-bs-toggle="modal" data-bs-target="#modalEditarTorneo{{ t.id }}">
+                                        <i class="fa-solid fa-sliders fs-8"></i>
+                                    </button>
                                     <form method="POST" action="{% url 'eliminar_torneo' t.id %}" data-confirm="¿Eliminar el torneo {{ t.nombre }}?" class="m-0">
                                         {% csrf_token %}
                                         <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="Eliminar">
                                             <i class="fa-solid fa-trash-can fs-8"></i>
                                         </button>
                                     </form>
+                                </div>
+
+                                <!-- MODAL EDITAR TORNEO Y PRECIOS -->
+                                <div class="modal fade text-start" id="modalEditarTorneo{{ t.id }}" tabindex="-1" aria-labelledby="modalEditarTorneoLabel{{ t.id }}" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                                        <div class="modal-content border-0 shadow-lg rounded-4">
+                                            <form method="POST" action="{% url 'editar_torneo' t.id %}">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="next" value="{% url 'gestion_torneos' %}">
+                                                <div class="modal-header border-bottom p-4 bg-light rounded-top-4">
+                                                    <div class="d-flex align-items-center">
+                                                        <div class="bg-primary text-white rounded-3 p-2.5 me-3 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                                                            <i class="fa-solid fa-sliders fa-lg"></i>
+                                                        </div>
+                                                        <div>
+                                                            <h5 class="fw-bold mb-0 text-dark" id="modalEditarTorneoLabel{{ t.id }}">Configuración y Precios de Tarjetas</h5>
+                                                            <p class="text-muted small mb-0">{{ t.nombre }} &bull; {{ t.temporada }}</p>
+                                                        </div>
+                                                    </div>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body p-4">
+                                                    <div class="row g-3">
+                                                        <div class="col-md-12">
+                                                            <label class="form-label fw-bold text-secondary fs-8">Nombre del Torneo / Liga</label>
+                                                            <input type="text" name="nombre" value="{{ t.nombre }}" class="form-control" required>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label fw-bold text-secondary fs-8">Temporada / Año</label>
+                                                            <input type="text" name="temporada" value="{{ t.temporada }}" class="form-control" required>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label fw-bold text-secondary fs-8">Modalidad</label>
+                                                            <input type="text" name="modalidad" value="{{ t.modalidad }}" class="form-control" required>
+                                                        </div>
+                                                        
+                                                        <!-- Precios de Tarjetas Destacados -->
+                                                        <div class="col-12 mt-3">
+                                                            <div class="p-3 rounded-3 bg-light border border-2 border-primary-subtle">
+                                                                <h6 class="fw-bold text-dark mb-2 d-flex align-items-center">
+                                                                    <i class="fa-solid fa-file-invoice-dollar text-primary me-2"></i>Tarifas de Multas por Tarjetas
+                                                                </h6>
+                                                                <p class="text-muted small mb-3">Montos que se cobrarán a los equipos/jugadores cuando reciban sanciones en los partidos de este torneo.</p>
+                                                                <div class="row g-3">
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label fw-bold text-warning-emphasis fs-8">
+                                                                            <i class="fa-solid fa-square text-warning me-1"></i>Costo de Tarjeta Amarilla ($) *
+                                                                        </label>
+                                                                        <div class="input-group">
+                                                                            <span class="input-group-text bg-warning-subtle fw-bold text-dark">$</span>
+                                                                            <input type="number" step="0.01" min="0" name="costo_amarilla" value="{{ t.costo_amarilla|stringformat:'.2f' }}" class="form-control fw-bold" required>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label fw-bold text-danger fs-8">
+                                                                            <i class="fa-solid fa-square text-danger me-1"></i>Costo de Tarjeta Roja ($) *
+                                                                        </label>
+                                                                        <div class="input-group">
+                                                                            <span class="input-group-text bg-danger-subtle fw-bold text-danger">$</span>
+                                                                            <input type="number" step="0.01" min="0" name="costo_roja" value="{{ t.costo_roja|stringformat:'.2f' }}" class="form-control fw-bold" required>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="col-md-6">
+                                                            <label class="form-label fw-bold text-secondary fs-8">Límite de Amarillas para Suspensión</label>
+                                                            <input type="number" min="1" max="10" name="limite_amarillas_suspension" value="{{ t.limite_amarillas_suspension }}" class="form-control" required>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <label class="form-label fw-bold text-secondary fs-8">Máximo de Jugadores por Equipo</label>
+                                                            <input type="number" min="5" max="50" name="max_jugadores_por_equipo" value="{{ t.max_jugadores_por_equipo }}" class="form-control" required>
+                                                        </div>
+                                                        <div class="col-12 mt-2">
+                                                            <div class="form-check form-switch">
+                                                                <input class="form-check-input" type="checkbox" name="es_publico" id="checkPublicoTorneo{{ t.id }}" {% if t.es_publico %}checked{% endif %}>
+                                                                <label class="form-check-label fw-semibold text-dark fs-8" for="checkPublicoTorneo{{ t.id }}">
+                                                                    Portal Público Activo
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer border-top p-3 bg-light rounded-bottom-4">
+                                                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                                    <button type="submit" class="btn btn-custom-primary rounded-pill px-4 fw-bold">
+                                                        <i class="fa-solid fa-floppy-disk me-1"></i>Guardar Cambios
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

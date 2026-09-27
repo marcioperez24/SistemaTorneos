@@ -1,0 +1,226 @@
+{% extends 'teams/base.html' %}
+{% block title %}Gestión de Estadios y Canchas - Sistema Deportivo{% endblock %}
+
+{% block content %}
+<div class="gradient-header text-center py-5 shadow-sm">
+    <div class="container">
+        <h1 class="fw-bold mb-1 display-5">
+            <i class="fa-solid fa-map-location-dot text-warning me-2"></i>Gestión de Estadios y Canchas
+        </h1>
+        <p class="text-white-50 mb-0 fs-5">Administra los recintos deportivos, canchas y sedes donde se disputarán los partidos.</p>
+    </div>
+</div>
+
+<div class="container my-5">
+    <div class="row">
+        <!-- Lista de Estadios -->
+        <div class="col-lg-8 mb-4">
+            <div class="card card-custom p-4 border-0 shadow-sm h-100">
+                <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary-subtle text-primary rounded-circle p-3 me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="fa-solid fa-landmark fa-lg text-primary"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-bold mb-0">Estadios y Sedes</h4>
+                            <p class="text-muted mb-0 small">Canchas disponibles para asignación en fixtures y partidos oficiales.</p>
+                        </div>
+                    </div>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-2 fs-8 fw-bold">
+                        {{ estadios.count }} Registrados
+                    </span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle table-borderless" style="min-width: 650px;">
+                        <thead class="table-light text-secondary uppercase font-monospace" style="font-size: 0.85rem;">
+                            <tr>
+                                <th class="py-3 px-3" style="border-radius: 8px 0 0 8px;">Estadio / Cancha</th>
+                                <th class="py-3">Ubicación / Dirección</th>
+                                <th class="py-3">Ciudad</th>
+                                <th class="py-3 text-center">Estado</th>
+                                <th class="py-3 text-end px-3" style="border-radius: 0 8px 8px 0;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for e in estadios %}
+                                <tr style="border-bottom: 1px solid rgba(0,0,0,0.04); transition: var(--transition);">
+                                    <td class="py-3 px-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-light text-primary rounded-circle me-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 40px; height: 40px; font-weight: bold;">
+                                                <i class="fa-solid fa-futbol text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-dark fs-7">{{ e.nombre }}</div>
+                                                {% if e.capacidad %}
+                                                    <small class="text-muted"><i class="fa-solid fa-users me-1"></i>Capacidad: {{ e.capacidad }} personas</small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="text-dark fw-medium fs-8">
+                                            {% if e.direccion %}
+                                                <i class="fa-solid fa-location-dot text-danger me-1"></i>{{ e.direccion }}
+                                            {% else %}
+                                                <span class="text-muted italic">Sin dirección</span>
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="badge bg-light text-secondary border px-2 py-1 fs-9">{{ e.ciudad|default:"Ambato" }}</span>
+                                    </td>
+                                    <td class="py-3 text-center">
+                                        {% if e.activo %}
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1 rounded-pill fs-9">
+                                                <i class="fa-solid fa-circle-check me-1"></i>Activo
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary-subtle text-secondary border px-2.5 py-1 rounded-pill fs-9">
+                                                <i class="fa-solid fa-circle-xmark me-1"></i>Inactivo
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 text-end px-3">
+                                        <div class="d-inline-flex gap-1">
+                                            <button type="button" class="btn btn-sm btn-outline-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="Editar Estadio" data-bs-toggle="modal" data-bs-target="#modalEditarEstadio{{ e.id }}">
+                                                <i class="fa-solid fa-pen fs-9"></i>
+                                            </button>
+                                            <form method="POST" action="{% url 'eliminar_estadio' e.id %}" data-confirm="¿Estás seguro de eliminar el estadio '{{ e.nombre }}'?" class="m-0 d-inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="Eliminar">
+                                                    <i class="fa-solid fa-trash-can fs-9"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+
+                                        <!-- MODAL EDITAR ESTADIO -->
+                                        <div class="modal fade text-start" id="modalEditarEstadio{{ e.id }}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content border-0 shadow-lg rounded-4">
+                                                    <form method="POST" action="{% url 'editar_estadio' e.id %}">
+                                                        {% csrf_token %}
+                                                        <div class="modal-header border-bottom p-4 bg-light rounded-top-4">
+                                                            <div class="d-flex align-items-center">
+                                                                <div class="bg-primary text-white rounded-3 p-2 me-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                                                    <i class="fa-solid fa-pen-to-square"></i>
+                                                                </div>
+                                                                <div>
+                                                                    <h5 class="fw-bold mb-0">Editar Estadio / Cancha</h5>
+                                                                    <p class="text-muted small mb-0">{{ e.nombre }}</p>
+                                                                </div>
+                                                            </div>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body p-4">
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-bold text-secondary fs-8">Nombre del Estadio / Cancha *</label>
+                                                                <input type="text" name="nombre" value="{{ e.nombre }}" class="form-control" required>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-bold text-secondary fs-8">Dirección / Ubicación</label>
+                                                                <input type="text" name="direccion" value="{{ e.direccion|default:'' }}" class="form-control" placeholder="Ej. Av. Los Chasquis">
+                                                            </div>
+                                                            <div class="row g-3 mb-3">
+                                                                <div class="col-md-7">
+                                                                    <label class="form-label fw-bold text-secondary fs-8">Ciudad</label>
+                                                                    <input type="text" name="ciudad" value="{{ e.ciudad|default:'Ambato' }}" class="form-control">
+                                                                </div>
+                                                                <div class="col-md-5">
+                                                                    <label class="form-label fw-bold text-secondary fs-8">Capacidad</label>
+                                                                    <input type="number" name="capacidad" value="{{ e.capacidad|default:'' }}" class="form-control" placeholder="Ej. 1000">
+                                                                </div>
+                                                            </div>
+                                                            <div class="form-check form-switch mt-2">
+                                                                <input class="form-check-input" type="checkbox" name="activo" id="activoCheck{{ e.id }}" {% if e.activo %}checked{% endif %}>
+                                                                <label class="form-check-label fw-semibold text-dark fs-8" for="activoCheck{{ e.id }}">
+                                                                    Estadio Habilitado y Activo
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer border-top p-3 bg-light rounded-bottom-4">
+                                                            <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                                                            <button type="submit" class="btn btn-custom-primary rounded-pill px-4 fw-bold">
+                                                                <i class="fa-solid fa-floppy-disk me-1"></i>Guardar Cambios
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-5 text-muted">
+                                        <i class="fa-solid fa-map-location-dot d-block fa-3x mb-3 text-secondary-50"></i>
+                                        <h6 class="fw-bold mb-1">Aún no hay estadios registrados</h6>
+                                        <p class="small text-muted mb-0">Crea tu primer estadio o cancha usando el formulario de la derecha.</p>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario de Registro -->
+        <div class="col-lg-4 mb-4">
+            <div class="card card-custom p-4 border-0 shadow-sm h-100">
+                <div class="d-flex align-items-center mb-4">
+                    <div class="bg-primary-subtle text-primary rounded-circle p-3 me-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 50px; height: 50px;">
+                        <i class="fa-solid fa-circle-plus fa-lg text-primary"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-0">Registrar Estadio</h4>
+                        <p class="text-muted mb-0 small">Añadir una nueva cancha deportiva.</p>
+                    </div>
+                </div>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary small mb-1">Nombre del Estadio / Cancha *</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-futbol"></i></span>
+                            <input type="text" name="nombre" class="form-control py-2.5" placeholder="Ej. Estadio Bellavista" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary small mb-1">Dirección / Ubicación</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted"><i class="fa-solid fa-map-pin"></i></span>
+                            <input type="text" name="direccion" class="form-control py-2.5" placeholder="Ej. Av. Bolivariana y El Rey">
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-7">
+                            <label class="form-label fw-semibold text-secondary small mb-1">Ciudad</label>
+                            <input type="text" name="ciudad" class="form-control py-2.5" value="Ambato" placeholder="Ciudad">
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label fw-semibold text-secondary small mb-1">Capacidad</label>
+                            <input type="number" name="capacidad" class="form-control py-2.5" placeholder="Ej. 2000">
+                        </div>
+                    </div>
+
+                    <div class="form-check form-switch mb-4">
+                        <input class="form-check-input" type="checkbox" name="activo" id="id_activo" checked>
+                        <label class="form-check-label fw-semibold text-dark small" for="id_activo">
+                            Estadio Activo para Programación
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn btn-custom-accent w-100 py-3 text-uppercase fw-bold shadow-sm rounded-3">
+                        <i class="fa-solid fa-plus-circle me-2"></i>Registrar Estadio
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

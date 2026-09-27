@@ -691,7 +691,7 @@
                             </li>
                         {% endif %}
                         
-                        {% if user_perms.secretaria or user_perms.tesoreria or user_perms.arbitros or user_perms.vocales or user_perms.torneos or user_perms.categorias %}
+                        {% if user_perms.secretaria or user_perms.tesoreria or user_perms.arbitros or user_perms.vocales or user_perms.torneos or user_perms.estadios or user_perms.categorias %}
                             <li class="nav-title mt-3 mb-1 px-3 text-muted" style="font-size: 0.75rem; font-weight: 700; letter-spacing: 1px;">ADMINISTRACIÓN</li>
                             
                             {% if user_perms.secretaria %}
@@ -719,6 +719,13 @@
                                 <li class="nav-item">
                                     <a class="nav-link" href="{% url 'gestion_torneos' %}">
                                         <i class="fa-solid fa-trophy text-primary"></i> Torneos/Ligas
+                                    </a>
+                                </li>
+                            {% endif %}
+                            {% if user_perms.estadios or user_perms.torneos %}
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'gestion_estadios' %}">
+                                        <i class="fa-solid fa-map-location-dot text-primary"></i> Estadios / Canchas
                                     </a>
                                 </li>
                             {% endif %}

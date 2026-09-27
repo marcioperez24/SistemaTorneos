@@ -43,8 +43,33 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label fw-semibold text-secondary">Estadio o Cancha</label>
-                        <input type="text" name="estadio" class="form-control" value="{{ partido.estadio }}" required>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label fw-semibold text-secondary mb-0">Estadio o Cancha</label>
+                            <a href="{% url 'gestion_estadios' %}" target="_blank" class="small text-decoration-none fs-9 text-primary">
+                                <i class="fa-solid fa-plus-circle me-1"></i>Crear nuevo estadio
+                            </a>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <select class="form-select" id="select_estadio" onchange="if(this.value){ document.getElementById('input_estadio').value = this.value; }">
+                                    <option value="">-- Escoger Estadio Registrado --</option>
+                                    {% for est in estadios %}
+                                        <option value="{{ est.nombre }}" {% if partido.estadio == est.nombre %}selected{% endif %}>
+                                            {{ est.nombre }}{% if est.ciudad %} ({{ est.ciudad }}){% endif %}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="fa-solid fa-map-pin text-muted"></i></span>
+                                    <input type="text" name="estadio" id="input_estadio" class="form-control" value="{{ partido.estadio }}" placeholder="Escribir o editar nombre..." required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-text text-muted small mt-1 fs-9">
+                            <i class="fa-solid fa-circle-info me-1"></i>Puedes escoger un estadio registrado de la lista o escribir uno nuevo directamente.
+                        </div>
                     </div>
                     
                     <div class="mb-3">

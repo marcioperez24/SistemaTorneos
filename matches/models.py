@@ -154,6 +154,27 @@ class EquipoGrupoTorneo(models.Model):
         super().save(*args, **kwargs)
 
 
+class Estadio(models.Model):
+    organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, related_name='estadios', verbose_name="Organización")
+    nombre = models.CharField(max_length=150, verbose_name="Nombre del Estadio / Cancha")
+    direccion = models.CharField(max_length=255, blank=True, null=True, verbose_name="Dirección / Ubicación")
+    ciudad = models.CharField(max_length=100, blank=True, null=True, default="Ambato", verbose_name="Ciudad")
+    capacidad = models.IntegerField(blank=True, null=True, verbose_name="Capacidad")
+    activo = models.BooleanField(default=True, verbose_name="Activo")
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Estadio / Cancha"
+        verbose_name_plural = "Estadios y Canchas"
+        unique_together = ('organizacion', 'nombre')
+        ordering = ['nombre']
+
+    def __str__(self):
+        if self.ciudad:
+            return f"{self.nombre} ({self.ciudad})"
+        return self.nombre
+
+
 class Partido(models.Model):
     ESTADOS = (
         ('programado', 'Programado'),
@@ -194,6 +215,14 @@ class Partido(models.Model):
     equipo_visitante = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name='partidos_visitante', verbose_name="Equipo Visitante")
     fecha_hora = models.DateTimeField(verbose_name="Fecha y Hora")
     estadio = models.CharField(max_length=100, default="Estadio Principal", verbose_name="Estadio/Cancha")
+    estadio_fk = models.ForeignKey(
+        Estadio,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='partidos',
+        verbose_name="Estadio Registrado"
+    )
     
     # Asignaciones
     vocal = models.ForeignKey(

@@ -4,10 +4,10 @@ from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta
 from teams.models import Equipo, FichaJugador
-from .models import Partido, EventoPartido, Torneo
+from .models import Partido, EventoPartido, Torneo, Estadio
 from django.contrib.auth import get_user_model
 from django.db.models import Q, F, Count
-from .forms import ArbitroForm, VocalForm, TorneoForm
+from .forms import ArbitroForm, VocalForm, TorneoForm, TorneoEdicionForm, EstadioForm
 from finances.models import MultaTarjeta
 
 User = get_user_model()
@@ -561,7 +561,9 @@ def editar_partido(request, partido_id):
         if fecha_hora:
             partido.fecha_hora = fecha_hora
         if estadio:
-            partido.estadio = estadio
+            partido.estadio = estadio.strip()
+            estadio_obj = Estadio.objects.filter(organizacion=request.organizacion, nombre__iexact=estadio.strip()).first()
+            partido.estadio_fk = estadio_obj
             
         if arbitro_id:
             partido.arbitro = User.objects.get(id=arbitro_id)
@@ -580,11 +582,13 @@ def editar_partido(request, partido_id):
     # Obtener usuarios de la organización actual para asignar
     arbitros = User.objects.filter(role__in=['arbitro', 'superadmin', 'comision'], organizaciones__organizacion=request.organizacion).distinct().order_by('first_name', 'last_name')
     vocales = User.objects.filter(role__in=['vocal', 'superadmin', 'comision'], organizaciones__organizacion=request.organizacion).distinct().order_by('first_name', 'last_name')
+    estadios = Estadio.objects.filter(organizacion=request.organizacion, activo=True).order_by('nombre')
     
     context = {
         'partido': partido,
         'arbitros': arbitros,
         'vocales': vocales,
+        'estadios': estadios,
     }
     return render(request, 'matches/editar_partido.html', context)
 
@@ -841,6 +845,8 @@ def detalle_torneo(request, torneo_id):
         'todos_arbitros': todos_arbitros,
         'todos_vocales': todos_vocales,
         'equipos_no_asignados': equipos_no_asignados,
+        'estadios': Estadio.objects.filter(organizacion=request.organizacion, activo=True).order_by('nombre'),
+        'torneo_edicion_form': TorneoEdicionForm(instance=torneo),
     }
     return render(request, 'matches/detalle_torneo.html', context)
 
@@ -1281,7 +1287,8 @@ def crear_partido_torneo(request, torneo_id):
         eq_local_id = request.POST.get('equipo_local')
         eq_visitante_id = request.POST.get('equipo_visitante')
         fecha_hora = request.POST.get('fecha_hora')
-        estadio = request.POST.get('estadio', 'Campo Principal')
+        estadio = (request.POST.get('estadio') or 'Campo Principal').strip()
+        estadio_obj = Estadio.objects.filter(organizacion=request.organizacion, nombre__iexact=estadio).first()
         vocal_id = request.POST.get('vocal')
         arbitro_id = request.POST.get('arbitro')
         fase = request.POST.get('fase', 'regular')
@@ -1302,6 +1309,7 @@ def crear_partido_torneo(request, torneo_id):
             equipo_visitante=eq_visitante,
             fecha_hora=fecha_hora,
             estadio=estadio,
+            estadio_fk=estadio_obj,
             vocal=vocal,
             arbitro=arbitro,
             fase=fase,
@@ -1385,3 +1393,102 @@ def estadisticas_torneo(request, torneo_id):
         'top_rojas': top_rojas
     }
     return render(request, 'matches/estadisticas_torneo.html', context)
+
+
+@login_required
+def gestion_estadios(request):
+    if not (request.user.role in ['superadmin', 'comision', 'admin', 'organizador'] or request.user.has_module_access('estadios', request.organizacion)):
+        messages.error(request, "No tienes autorización para acceder a la gestión de estadios.")
+        return redirect('partidos_lista')
+
+    if request.method == 'POST':
+        form = EstadioForm(request.POST)
+        if form.is_valid():
+            estadio = form.save(commit=False)
+            estadio.organizacion = request.organizacion
+            estadio.save()
+            messages.success(request, f"Estadio / Cancha '{estadio.nombre}' registrado con éxito.")
+            return redirect('gestion_estadios')
+        else:
+            error_details = []
+            for field_name, errs in form.errors.items():
+                label = form.fields[field_name].label if field_name in form.fields else field_name
+                error_details.append(f"{label}: {', '.join(errs)}")
+            messages.error(request, f"Error al registrar el estadio: {' | '.join(error_details)}")
+    else:
+        form = EstadioForm()
+
+    estadios = Estadio.objects.filter(organizacion=request.organizacion).order_by('nombre')
+    context = {
+        'estadios': estadios,
+        'form': form,
+    }
+    return render(request, 'matches/gestion_estadios.html', context)
+
+
+@login_required
+def editar_estadio(request, estadio_id):
+    if not (request.user.role in ['superadmin', 'comision', 'admin', 'organizador'] or request.user.has_module_access('estadios', request.organizacion)):
+        messages.error(request, "No tienes autorización para editar estadios.")
+        return redirect('gestion_estadios')
+
+    estadio = get_object_or_404(Estadio, id=estadio_id, organizacion=request.organizacion)
+    if request.method == 'POST':
+        form = EstadioForm(request.POST, instance=estadio)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Estadio '{estadio.nombre}' actualizado correctamente.")
+        else:
+            error_details = []
+            for field_name, errs in form.errors.items():
+                label = form.fields[field_name].label if field_name in form.fields else field_name
+                error_details.append(f"{label}: {', '.join(errs)}")
+            messages.error(request, f"Error al actualizar el estadio: {' | '.join(error_details)}")
+    return redirect('gestion_estadios')
+
+
+@login_required
+def eliminar_estadio(request, estadio_id):
+    if not (request.user.role in ['superadmin', 'comision', 'admin', 'organizador'] or request.user.has_module_access('estadios', request.organizacion)):
+        messages.error(request, "No tienes autorización para eliminar estadios.")
+        return redirect('gestion_estadios')
+
+    estadio = get_object_or_404(Estadio, id=estadio_id, organizacion=request.organizacion)
+    if request.method == 'POST':
+        nombre = estadio.nombre
+        estadio.delete()
+        messages.success(request, f"Estadio '{nombre}' eliminado correctamente.")
+    return redirect('gestion_estadios')
+
+
+@login_required
+def editar_torneo(request, torneo_id):
+    if not (request.user.role in ['superadmin', 'comision', 'admin', 'organizador'] or request.user.has_module_access('torneos', request.organizacion)):
+        messages.error(request, "No tienes autorización para editar la configuración del torneo.")
+        return redirect('gestion_torneos')
+
+    torneo = get_object_or_404(Torneo, id=torneo_id, organizacion=request.organizacion)
+
+    if request.method == 'POST':
+        form = TorneoEdicionForm(request.POST, instance=torneo)
+        if form.is_valid():
+            form.save()
+            messages.success(
+                request, 
+                f"Configuración del torneo '{torneo.nombre}' actualizada exitosamente. "
+                f"Costo amarilla: ${torneo.costo_amarilla} | Costo roja: ${torneo.costo_roja}."
+            )
+        else:
+            error_details = []
+            for field_name, errs in form.errors.items():
+                label = form.fields[field_name].label if field_name in form.fields else field_name
+                error_details.append(f"{label}: {', '.join(errs)}")
+            messages.error(request, f"Error al actualizar el torneo: {' | '.join(error_details)}")
+
+    next_url = request.POST.get('next') or request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
+    if torneo.tipo == 'personalizado':
+        return redirect('panel_torneo_personalizado', torneo_id=torneo.id)
+    return redirect('detalle_torneo', torneo_id=torneo.id)
+

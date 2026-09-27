@@ -7,7 +7,7 @@ from django.core.exceptions import ValidationError
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 
-from matches.models import Torneo, GrupoTorneo, Partido, BitacoraTorneo
+from matches.models import Torneo, GrupoTorneo, Partido, BitacoraTorneo, Estadio
 from teams.models import Equipo
 from django.contrib.auth import get_user_model
 from matches.services.fixture_personalizado import (
@@ -106,7 +106,8 @@ def configurar_generar_fixture(request, torneo_id):
         'estadio': estadio,
         'asignar_arbitro': asignar_arbitro,
         'asignar_vocal': asignar_vocal,
-        'grupo_sel_id': int(grupo_sel_id) if grupo_sel_id else None
+        'grupo_sel_id': int(grupo_sel_id) if grupo_sel_id else None,
+        'estadios': Estadio.objects.filter(organizacion=torneo.organizacion, activo=True).order_by('nombre'),
     }
     return render(request, 'matches/configurar_generar_fixture.html', context)
 
@@ -179,6 +180,7 @@ def ver_fixture_personalizado(request, torneo_id):
         'equipos_torneo': equipos_torneo,
         'arbitros': arbitros,
         'vocales': vocales,
+        'estadios': Estadio.objects.filter(organizacion=torneo.organizacion, activo=True).order_by('nombre'),
         'grupo_id_sel': int(grupo_id) if grupo_id else None,
         'jornada_sel': jornada,
         'equipo_id_sel': int(equipo_id) if equipo_id else None,
@@ -254,7 +256,9 @@ def reprogramar_partido_personalizado(request, torneo_id, partido_id):
 
         partido.fecha_hora = nueva_dt
         if nuevo_estadio:
-            partido.estadio = nuevo_estadio
+            partido.estadio = nuevo_estadio.strip()
+            estadio_obj = Estadio.objects.filter(organizacion=request.organizacion, nombre__iexact=nuevo_estadio.strip()).first()
+            partido.estadio_fk = estadio_obj
         if nuevo_arbitro_id:
             partido.arbitro_id = nuevo_arbitro_id
         if nuevo_vocal_id:

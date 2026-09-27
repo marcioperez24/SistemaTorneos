@@ -7,7 +7,7 @@ from django.utils.text import slugify
 
 from matches.models import (
     Torneo, GrupoTorneo, ClasificadoTorneo, LlaveEliminatoria, Partido, EquipoGrupoTorneo,
-    ResultadoFinalTorneo
+    ResultadoFinalTorneo, Estadio
 )
 from matches.services.sorteo_personalizado import (
     verificar_estado_clasificacion_grupos,
@@ -181,6 +181,7 @@ def configurar_sorteo_eliminatorio_view(request, torneo_id):
         'torneo': torneo,
         'clasificados': clasificados,
         'total_clasificados': len(clasificados),
+        'estadios': Estadio.objects.filter(organizacion=torneo.organizacion, activo=True).order_by('nombre'),
     }
     return render(request, 'matches/configurar_sorteo_eliminatorio.html', context)
 

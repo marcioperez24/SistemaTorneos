@@ -1,3 +1,4 @@
+import datetime
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -6,7 +7,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from users.models import Organizacion
 from teams.models import Categoria, Equipo, FichaJugador
-from matches.models import Torneo, GrupoTorneo, EquipoGrupoTorneo, Partido, EventoPartido, BitacoraTorneo
+from matches.models import Torneo, GrupoTorneo, EquipoGrupoTorneo, Partido, EventoPartido, BitacoraTorneo, Estadio
 
 User = get_user_model()
 
@@ -1785,6 +1786,158 @@ class Fase8SecurityAndAuditTests(TestCase):
         response = self.client.get(url)
         # El middleware debe limpiar la org inválida y asignar org_a (donde el usuario es miembro activo)
         self.assertEqual(self.client.session.get('current_organizacion_id'), self.org_a.id)
+
+
+class EstadiosYPreciosTorneoTests(TestCase):
+
+    def setUp(self):
+        from users.models import UsuarioOrganizacion
+        from decimal import Decimal
+        self.user = User.objects.create_user(username="admin_estadios", password="password123", role="superadmin")
+        self.org = Organizacion.objects.create(nombre="Liga Central Ambato", codigo="LCA")
+        UsuarioOrganizacion.objects.create(usuario=self.user, organizacion=self.org, rol='admin', activo=True)
+
+        self.cat = Categoria.objects.create(nombre="Senior", organizacion=self.org)
+        self.dirigente = User.objects.create_user(username="dirigente_estadios", password="password123", role="dirigente")
+        self.eq1 = Equipo.objects.create(nombre="Independiente", categoria=self.cat, organizacion=self.org, dirigente=self.dirigente)
+        self.eq2 = Equipo.objects.create(nombre="Macará Jr", categoria=self.cat, organizacion=self.org, dirigente=self.dirigente)
+
+        self.torneo = Torneo.objects.create(
+            nombre="Torneo Anual 2026",
+            tipo="liga",
+            categoria=self.cat,
+            organizacion=self.org,
+            temporada="2026",
+            costo_amarilla=Decimal('50.00'),
+            costo_roja=Decimal('150.00')
+        )
+        self.torneo.equipos.add(self.eq1, self.eq2)
+
+        self.partido = Partido.objects.create(
+            equipo_local=self.eq1,
+            equipo_visitante=self.eq2,
+            fecha_hora=timezone.now() + datetime.timedelta(days=1),
+            estadio="Estadio Por Defecto",
+            torneo=self.torneo,
+            organizacion=self.org,
+            jornada=1
+        )
+
+        self.client.login(username="admin_estadios", password="password123")
+        session = self.client.session
+        session['current_organizacion_id'] = self.org.id
+        session.save()
+
+    def test_01_crud_estadio(self):
+        # 1. Crear estadio
+        resp_create = self.client.post(reverse('gestion_estadios'), {
+            'nombre': 'Estadio Bellavista',
+            'direccion': 'Av. Bolivariana',
+            'ciudad': 'Ambato',
+            'capacidad': 16000,
+            'activo': 'on'
+        })
+        self.assertEqual(resp_create.status_code, 302)
+        estadio = Estadio.objects.get(nombre='ESTADIO BELLAVISTA', organizacion=self.org)
+        self.assertEqual(estadio.ciudad, 'AMBATO')
+        self.assertTrue(estadio.activo)
+
+        # 2. Editar estadio
+        resp_edit = self.client.post(reverse('editar_estadio', kwargs={'estadio_id': estadio.id}), {
+            'nombre': 'Estadio Bellavista Renovado',
+            'direccion': 'Av. Bolivariana y El Rey',
+            'ciudad': 'Ambato',
+            'capacidad': 18000,
+            'activo': 'on'
+        })
+        self.assertEqual(resp_edit.status_code, 302)
+        estadio.refresh_from_db()
+        self.assertEqual(estadio.nombre, 'ESTADIO BELLAVISTA RENOVADO')
+        self.assertEqual(estadio.capacidad, 18000)
+
+        # 3. Eliminar estadio
+        resp_del = self.client.post(reverse('eliminar_estadio', kwargs={'estadio_id': estadio.id}))
+        self.assertEqual(resp_del.status_code, 302)
+        self.assertFalse(Estadio.objects.filter(id=estadio.id).exists())
+
+    def test_02_editar_partido_con_estadio_asignado(self):
+        estadio = Estadio.objects.create(
+            nombre='Estadio Neptalí Barona',
+            organizacion=self.org,
+            ciudad='Ambato'
+        )
+
+        nueva_fecha = (timezone.now() + datetime.timedelta(days=3)).strftime('%Y-%m-%dT15:00')
+        resp = self.client.post(reverse('editar_partido', kwargs={'partido_id': self.partido.id}), {
+            'fecha_hora': nueva_fecha,
+            'estadio': 'Estadio Neptalí Barona',
+        })
+        self.assertEqual(resp.status_code, 302)
+        self.partido.refresh_from_db()
+        self.assertEqual(self.partido.estadio, 'Estadio Neptalí Barona'.upper())
+        self.assertEqual(self.partido.estadio_fk, estadio)
+
+    def test_03_editar_precios_tarjetas_torneo(self):
+        from decimal import Decimal
+        resp = self.client.post(reverse('editar_torneo', kwargs={'torneo_id': self.torneo.id}), {
+            'nombre': 'Torneo Anual 2026 - Actualizado',
+            'temporada': 'Temporada 2026-B',
+            'modalidad': 'Fútbol 11',
+            'max_jugadores_por_equipo': 30,
+            'limite_amarillas_suspension': 4,
+            'costo_amarilla': '75.50',
+            'costo_roja': '200.00',
+            'es_publico': 'on',
+        })
+        self.assertEqual(resp.status_code, 302)
+        self.torneo.refresh_from_db()
+        self.assertEqual(self.torneo.nombre, 'Torneo Anual 2026 - Actualizado'.upper())
+        self.assertEqual(self.torneo.costo_amarilla, Decimal('75.50'))
+        self.assertEqual(self.torneo.costo_roja, Decimal('200.00'))
+
+    def test_04_multas_tarjetas_usan_precios_editados(self):
+        from decimal import Decimal
+        from teams.models import FichaJugador
+        from matches.models import EventoPartido
+        from finances.models import MultaTarjeta
+
+        # Actualizar precios
+        self.torneo.costo_amarilla = Decimal('80.00')
+        self.torneo.costo_roja = Decimal('220.00')
+        self.torneo.save()
+
+        jugador_user = User.objects.create_user(username="jugador_test", password="password123")
+        ficha = FichaJugador.objects.create(
+            user=jugador_user,
+            organizacion=self.org,
+            equipo=self.eq1,
+            torneo=self.torneo,
+            estado_validacion='aprobado',
+            numero_camiseta=10
+        )
+
+        # Evento Amarilla
+        ev_amarilla = EventoPartido.objects.create(
+            partido=self.partido,
+            equipo=self.eq1,
+            jugador=jugador_user,
+            tipo='amarilla',
+            minuto=35
+        )
+        multa_amarilla = MultaTarjeta.objects.get(evento=ev_amarilla)
+        self.assertEqual(multa_amarilla.monto, Decimal('80.00'))
+
+        # Evento Roja
+        ev_roja = EventoPartido.objects.create(
+            partido=self.partido,
+            equipo=self.eq1,
+            jugador=jugador_user,
+            tipo='roja',
+            minuto=70
+        )
+        multa_roja = MultaTarjeta.objects.get(evento=ev_roja)
+        self.assertEqual(multa_roja.monto, Decimal('220.00'))
+
 
 
 

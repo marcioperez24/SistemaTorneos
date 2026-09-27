@@ -247,8 +247,27 @@
                                                                 <input type="time" name="hora" value="{{ p.fecha_hora|date:'H:i' }}" class="form-control fs-8" required>
                                                             </div>
                                                             <div class="col-12">
-                                                                <label class="form-label fw-semibold text-secondary">Estadio / Cancha</label>
-                                                                <input type="text" name="estadio" value="{{ p.estadio }}" class="form-control fs-8" required>
+                                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                    <label class="form-label fw-semibold text-secondary mb-0">Estadio / Cancha</label>
+                                                                    <a href="{% url 'gestion_estadios' %}" target="_blank" class="small text-decoration-none fs-9 text-primary">
+                                                                        <i class="fa-solid fa-plus-circle me-1"></i>Crear / Ver estadios
+                                                                    </a>
+                                                                </div>
+                                                                <div class="row g-2">
+                                                                    <div class="col-7">
+                                                                        <select class="form-select fs-8" id="selectEstadio{{ p.id }}" onchange="if(this.value){ document.getElementById('inputEstadio{{ p.id }}').value = this.value; }">
+                                                                            <option value="">-- Escoger Estadio --</option>
+                                                                            {% for est in estadios %}
+                                                                                <option value="{{ est.nombre }}" {% if p.estadio == est.nombre %}selected{% endif %}>
+                                                                                    {{ est.nombre }}{% if est.ciudad %} ({{ est.ciudad }}){% endif %}
+                                                                                </option>
+                                                                            {% endfor %}
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="col-5">
+                                                                        <input type="text" name="estadio" id="inputEstadio{{ p.id }}" value="{{ p.estadio }}" class="form-control fs-8" placeholder="O escribir nombre..." required>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                             <div class="col-12 col-md-6">
                                                                 <label class="form-label fw-semibold text-secondary">Árbitro</label>

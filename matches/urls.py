@@ -30,9 +30,15 @@ urlpatterns = [
     path('vocales/', views.gestion_vocales, name='gestion_vocales'),
     path('vocales/eliminar/<int:vocal_id>/', views.eliminar_vocal, name='eliminar_vocal'),
     
+    # Gestión de Estadios y Canchas
+    path('estadios/', views.gestion_estadios, name='gestion_estadios'),
+    path('estadios/<int:estadio_id>/editar/', views.editar_estadio, name='editar_estadio'),
+    path('estadios/<int:estadio_id>/eliminar/', views.eliminar_estadio, name='eliminar_estadio'),
+    
     # Gestión de Torneos y Ligas
     path('torneos/', views.gestion_torneos, name='gestion_torneos'),
     path('torneos/<int:torneo_id>/', views.detalle_torneo, name='detalle_torneo'),
+    path('torneos/<int:torneo_id>/editar/', views.editar_torneo, name='editar_torneo'),
     path('torneos/eliminar/<int:torneo_id>/', views.eliminar_torneo, name='eliminar_torneo'),
     path('torneos/<int:torneo_id>/generar/', views.generar_fixture_torneo, name='generar_fixture_torneo'),
     path('torneos/<int:torneo_id>/sortear-grupos/', views.sortear_grupos_torneo, name='sortear_grupos_torneo'),

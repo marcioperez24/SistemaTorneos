@@ -101,14 +101,34 @@ class VocalForm(forms.ModelForm):
         return user
 
 
-from .models import Torneo
+from .models import Torneo, Estadio
+
+class EstadioForm(forms.ModelForm):
+    class Meta:
+        model = Estadio
+        fields = ['nombre', 'direccion', 'ciudad', 'capacidad', 'activo']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Estadio Bellavista'}),
+            'direccion': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Av. Bolivariana y El Rey'}),
+            'ciudad': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Ambato'}),
+            'capacidad': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej. 16000'}),
+            'activo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        labels = {
+            'nombre': 'Nombre del Estadio / Cancha',
+            'direccion': 'Dirección / Ubicación',
+            'ciudad': 'Ciudad',
+            'capacidad': 'Capacidad (Aprox.)',
+            'activo': 'Estadio Activo / Habilitado',
+        }
+
 
 class TorneoForm(forms.ModelForm):
     class Meta:
         model = Torneo
         fields = [
             'nombre', 'tipo', 'categoria', 'temporada', 'modalidad', 
-            'max_jugadores_por_equipo', 'limite_amarillas_suspension', 'costo_amarilla', 
+            'max_jugadores_por_equipo', 'limite_amarillas_suspension', 'costo_amarilla', 'costo_roja',
             'numero_grupos', 'clasificados_por_grupo', 'fase_eliminatoria_inicial',
             'equipos'
         ]
@@ -121,6 +141,7 @@ class TorneoForm(forms.ModelForm):
             'max_jugadores_por_equipo': forms.NumberInput(attrs={'class': 'form-control', 'min': '5', 'max': '50'}),
             'limite_amarillas_suspension': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'max': '10'}),
             'costo_amarilla': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01'}),
+            'costo_roja': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01'}),
             'numero_grupos': forms.NumberInput(attrs={'class': 'form-control', 'min': '2', 'max': '16', 'value': '2'}),
             'clasificados_por_grupo': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'max': '8', 'value': '2'}),
             'fase_eliminatoria_inicial': forms.Select(attrs={'class': 'form-select'}),
@@ -135,6 +156,7 @@ class TorneoForm(forms.ModelForm):
             'max_jugadores_por_equipo': 'Máximo de Jugadores por Equipo',
             'limite_amarillas_suspension': 'Límite de Amarillas para Suspensión',
             'costo_amarilla': 'Costo de Tarjeta Amarilla ($)',
+            'costo_roja': 'Costo de Tarjeta Roja ($)',
             'numero_grupos': 'Cantidad de Grupos (Fase 1)',
             'clasificados_por_grupo': 'Clasificados por Grupo a Eliminatorias',
             'fase_eliminatoria_inicial': 'Fase Eliminatoria Inicial (Playoffs)',
@@ -153,6 +175,35 @@ class TorneoForm(forms.ModelForm):
             self.instance.organizacion = organizacion
             self.fields['equipos'].queryset = self.fields['equipos'].queryset.filter(organizacion=organizacion)
             self.fields['categoria'].queryset = self.fields['categoria'].queryset.filter(organizacion=organizacion)
+
+
+class TorneoEdicionForm(forms.ModelForm):
+    class Meta:
+        model = Torneo
+        fields = [
+            'nombre', 'temporada', 'modalidad', 'max_jugadores_por_equipo', 
+            'limite_amarillas_suspension', 'costo_amarilla', 'costo_roja', 'es_publico'
+        ]
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre del torneo'}),
+            'temporada': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Temporada 2026'}),
+            'modalidad': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Fútbol 11'}),
+            'max_jugadores_por_equipo': forms.NumberInput(attrs={'class': 'form-control', 'min': '5', 'max': '50'}),
+            'limite_amarillas_suspension': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'max': '10'}),
+            'costo_amarilla': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01'}),
+            'costo_roja': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'step': '0.01'}),
+            'es_publico': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        labels = {
+            'nombre': 'Nombre del Torneo / Liga',
+            'temporada': 'Temporada / Año',
+            'modalidad': 'Modalidad',
+            'max_jugadores_por_equipo': 'Máximo de Jugadores por Equipo',
+            'limite_amarillas_suspension': 'Límite Amarillas para Suspensión',
+            'costo_amarilla': 'Costo de Tarjeta Amarilla ($)',
+            'costo_roja': 'Costo de Tarjeta Roja ($)',
+            'es_publico': 'Torneo Visible en Portal Público',
+        }
 
 
 from .models import GrupoTorneo, EquipoGrupoTorneo, Equipo

@@ -16,6 +16,7 @@ from matches.services.panel_personalizado import (
 from matches.services.estadisticas_personalizado import (
     calcular_posiciones_grupo, calcular_estadisticas_jugadores_grupo
 )
+from matches.forms import TorneoEdicionForm
 
 
 @login_required
@@ -63,6 +64,7 @@ def centro_control_torneo_view(request, torneo_id):
         'es_admin': es_admin,
         'grupos_activos': GrupoTorneo.objects.filter(torneo=torneo, activo=True),
         'equipos_torneo': torneo.equipos.all(),
+        'torneo_edicion_form': TorneoEdicionForm(instance=torneo),
     }
     return render(request, 'matches/panel_torneo_personalizado.html', context)
 

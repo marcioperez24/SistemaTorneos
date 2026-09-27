@@ -32,12 +32,26 @@
                     <span><i class="fa-solid fa-calendar me-1 text-info"></i>Temporada: <strong>{{ torneo.temporada }}</strong></span>
                     <span>•</span>
                     <span><i class="fa-solid fa-gamepad me-1 text-warning"></i>Partidos Totales: <strong>{{ total_partidos }}</strong></span>
+                    <span>•</span>
+                    <span class="badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill px-2.5 py-1">
+                        <i class="fa-solid fa-square text-warning me-1"></i>Amarilla: ${{ torneo.costo_amarilla }}
+                    </span>
+                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1">
+                        <i class="fa-solid fa-square text-danger me-1"></i>Roja: ${{ torneo.costo_roja }}
+                    </span>
                 </div>
             </div>
         </div>
         
         <!-- Action Buttons (Full width toolbar) -->
         <div class="d-flex align-items-center gap-2 flex-wrap w-100 w-xl-auto">
+            <!-- Modal Editar Precios Button -->
+            {% if user.role in 'superadmin,comision' %}
+                <button type="button" class="btn btn-outline-info text-dark rounded-pill px-3 py-2 fw-semibold fs-8 flex-grow-1 flex-xl-grow-0" data-bs-toggle="modal" data-bs-target="#modalEditarPreciosTorneo">
+                    <i class="fa-solid fa-pen-to-square me-1.5 text-info"></i>Editar Precios / Torneo
+                </button>
+            {% endif %}
+
             <!-- Modal Equipos Button -->
             <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2 fw-semibold fs-8 flex-grow-1 flex-xl-grow-0" data-bs-toggle="modal" data-bs-target="#modalEquiposTorneo">
                 <i class="fa-solid fa-people-group me-1.5 text-success"></i>Equipos ({{ equipos|length }})
@@ -70,6 +84,7 @@
                 <button type="button" class="btn btn-custom-primary rounded-pill px-3 py-2 shadow-sm fs-8 flex-grow-1 flex-xl-grow-0" data-bs-toggle="modal" data-bs-target="#modalCrearPartido">
                     <i class="fa-solid fa-circle-plus me-1.5"></i>Programar Partido
                 </button>
+            {% endif %}
         </div>
     </div>
 
@@ -444,8 +459,21 @@
                         
                         <!-- Estadio -->
                         <div class="col-6 mb-3">
-                            <label class="form-label small fw-bold text-secondary mb-1">Estadio/Campo</label>
-                            <input type="text" name="estadio" class="form-control py-2 fs-7" placeholder="Ej. Campo Central" value="Campo Central" required>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label small fw-bold text-secondary mb-0">Estadio/Campo</label>
+                                <a href="{% url 'gestion_estadios' %}" target="_blank" class="small text-decoration-none fs-9 text-primary">
+                                    <i class="fa-solid fa-plus-circle me-1"></i>Estadios
+                                </a>
+                            </div>
+                            <div class="input-group">
+                                <select class="form-select py-2 fs-8" onchange="if(this.value){ document.getElementById('input_estadio_crear_partido').value = this.value; }">
+                                    <option value="">-- Escoger --</option>
+                                    {% for est in estadios %}
+                                        <option value="{{ est.nombre }}">{{ est.nombre }}{% if est.ciudad %} ({{ est.ciudad }}){% endif %}</option>
+                                    {% endfor %}
+                                </select>
+                                <input type="text" name="estadio" id="input_estadio_crear_partido" class="form-control py-2 fs-7" placeholder="Ej. Campo Central" value="{% if estadios.first %}{{ estadios.first.nombre }}{% else %}Campo Central{% endif %}" required>
+                            </div>
                         </div>
                     </div>
 
@@ -556,6 +584,101 @@
                     <button type="button" class="btn btn-light fs-8 py-2" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-success fs-8 py-2 px-3">
                         <i class="fa-solid fa-wand-magic-sparkles me-1.5"></i>Generar Calendario de Grupo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- MODAL EDITAR PRECIOS Y CONFIGURACIÓN DEL TORNEO -->
+{% if user.role in 'superadmin,comision' %}
+<div class="modal fade" id="modalEditarPreciosTorneo" tabindex="-1" aria-labelledby="modalEditarPreciosTorneoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <form method="POST" action="{% url 'editar_torneo' torneo.id %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'detalle_torneo' torneo.id %}">
+                <div class="modal-header border-bottom p-4 bg-light rounded-top-4">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary text-white rounded-3 p-2.5 me-3 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                            <i class="fa-solid fa-sliders fa-lg"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-dark" id="modalEditarPreciosTorneoLabel">Configuración y Precios de Sanciones</h5>
+                            <p class="text-muted small mb-0">{{ torneo.nombre }} &bull; {{ torneo.temporada }}</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold text-secondary fs-8">Nombre del Torneo</label>
+                            <input type="text" name="nombre" value="{{ torneo.nombre }}" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary fs-8">Temporada / Año</label>
+                            <input type="text" name="temporada" value="{{ torneo.temporada }}" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary fs-8">Modalidad</label>
+                            <input type="text" name="modalidad" value="{{ torneo.modalidad }}" class="form-control" required>
+                        </div>
+                        
+                        <!-- Precios de Tarjetas Destacados -->
+                        <div class="col-12 mt-3">
+                            <div class="p-3 rounded-3 bg-light border border-2 border-primary-subtle">
+                                <h6 class="fw-bold text-dark mb-2 d-flex align-items-center">
+                                    <i class="fa-solid fa-file-invoice-dollar text-primary me-2"></i>Tarifas de Multas por Tarjetas del Torneo
+                                </h6>
+                                <p class="text-muted small mb-3">Los valores configurados aquí se aplicarán a las multas registradas en tesorería cuando los árbitros o vocales saquen tarjetas en este torneo.</p>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold text-warning-emphasis fs-8">
+                                            <i class="fa-solid fa-square text-warning me-1"></i>Costo de Tarjeta Amarilla ($) *
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-warning-subtle fw-bold text-dark">$</span>
+                                            <input type="number" step="0.01" min="0" name="costo_amarilla" value="{{ torneo.costo_amarilla|stringformat:'.2f' }}" class="form-control fw-bold" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold text-danger fs-8">
+                                            <i class="fa-solid fa-square text-danger me-1"></i>Costo de Tarjeta Roja ($) *
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-danger-subtle fw-bold text-danger">$</span>
+                                            <input type="number" step="0.01" min="0" name="costo_roja" value="{{ torneo.costo_roja|stringformat:'.2f' }}" class="form-control fw-bold" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary fs-8">Límite de Amarillas para Suspensión</label>
+                            <input type="number" min="1" max="10" name="limite_amarillas_suspension" value="{{ torneo.limite_amarillas_suspension }}" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-secondary fs-8">Máximo de Jugadores por Equipo</label>
+                            <input type="number" min="5" max="50" name="max_jugadores_por_equipo" value="{{ torneo.max_jugadores_por_equipo }}" class="form-control" required>
+                        </div>
+                        <div class="col-12 mt-2">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="es_publico" id="checkPublicoTorneo" {% if torneo.es_publico %}checked{% endif %}>
+                                <label class="form-check-label fw-semibold text-dark fs-8" for="checkPublicoTorneo">
+                                    Portal Público Activo (Permite ver fixture y resultados externamente)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top p-3 bg-light rounded-bottom-4">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-custom-primary rounded-pill px-4 fw-bold">
+                        <i class="fa-solid fa-floppy-disk me-1"></i>Guardar Precios y Cambios
                     </button>
                 </div>
             </form>

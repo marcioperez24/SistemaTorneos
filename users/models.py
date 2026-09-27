@@ -46,6 +46,7 @@ class CustomUser(AbstractUser):
                 'arbitros': ['comision', 'superadmin', 'admin', 'organizador'],
                 'vocales': ['comision', 'superadmin', 'admin', 'organizador'],
                 'torneos': ['comision', 'superadmin', 'admin', 'organizador'],
+                'estadios': ['comision', 'superadmin', 'admin', 'organizador'],
                 'categorias': ['comision', 'superadmin', 'admin', 'organizador'],
                 'tesoreria': ['tesorero', 'tesoreria', 'superadmin', 'admin', 'organizador'],
                 'usuarios': ['superadmin', 'admin', 'organizador'],
