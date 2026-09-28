@@ -562,8 +562,8 @@ def editar_partido(request, partido_id):
             partido.fecha_hora = fecha_hora
         if estadio:
             partido.estadio = estadio.strip()
-            estadio_obj = Estadio.objects.filter(organizacion=request.organizacion, nombre__iexact=estadio.strip()).first()
-            partido.estadio_fk = estadio_obj
+            org = getattr(request, 'organizacion', None) or partido.organizacion
+            partido.estadio_fk = Estadio.buscar_por_nombre(org, estadio)
             
         if arbitro_id:
             partido.arbitro = User.objects.get(id=arbitro_id)
@@ -1288,7 +1288,8 @@ def crear_partido_torneo(request, torneo_id):
         eq_visitante_id = request.POST.get('equipo_visitante')
         fecha_hora = request.POST.get('fecha_hora')
         estadio = (request.POST.get('estadio') or 'Campo Principal').strip()
-        estadio_obj = Estadio.objects.filter(organizacion=request.organizacion, nombre__iexact=estadio).first()
+        org = getattr(request, 'organizacion', None) or torneo.organizacion
+        estadio_obj = Estadio.buscar_por_nombre(org, estadio)
         vocal_id = request.POST.get('vocal')
         arbitro_id = request.POST.get('arbitro')
         fase = request.POST.get('fase', 'regular')

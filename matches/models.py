@@ -174,6 +174,25 @@ class Estadio(models.Model):
             return f"{self.nombre} ({self.ciudad})"
         return self.nombre
 
+    @classmethod
+    def buscar_por_nombre(cls, organizacion, nombre):
+        if not nombre or not organizacion:
+            return None
+        nombre_clean = str(nombre).strip()
+        # 1. Búsqueda directa en mayúsculas (concordante con señal auto_uppercase_fields)
+        est = cls.objects.filter(organizacion=organizacion, nombre=nombre_clean.upper()).first()
+        if est:
+            return est
+        # 2. Búsqueda case-insensitive estándar en BD
+        est = cls.objects.filter(organizacion=organizacion, nombre__iexact=nombre_clean).first()
+        if est:
+            return est
+        # 3. Fallback con casefold() para compatibilidad Unicode (p. ej. í / Í en SQLite/CI)
+        for e in cls.objects.filter(organizacion=organizacion):
+            if e.nombre.strip().casefold() == nombre_clean.casefold():
+                return e
+        return None
+
 
 class Partido(models.Model):
     ESTADOS = (

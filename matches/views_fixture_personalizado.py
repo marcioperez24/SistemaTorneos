@@ -257,8 +257,8 @@ def reprogramar_partido_personalizado(request, torneo_id, partido_id):
         partido.fecha_hora = nueva_dt
         if nuevo_estadio:
             partido.estadio = nuevo_estadio.strip()
-            estadio_obj = Estadio.objects.filter(organizacion=request.organizacion, nombre__iexact=nuevo_estadio.strip()).first()
-            partido.estadio_fk = estadio_obj
+            org = getattr(request, 'organizacion', None) or torneo.organizacion
+            partido.estadio_fk = Estadio.buscar_por_nombre(org, nuevo_estadio)
         if nuevo_arbitro_id:
             partido.arbitro_id = nuevo_arbitro_id
         if nuevo_vocal_id:
