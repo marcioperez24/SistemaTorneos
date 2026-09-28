@@ -9,13 +9,15 @@
                 <div class="mb-4 text-danger">
                     <i class="fa-solid fa-triangle-exclamation fa-5x"></i>
                 </div>
-                <h2 class="fw-bold mb-3">Enlace Inválido o Expirado</h2>
+                <h2 class="fw-bold mb-3">{{ titulo|default:"No se puede completar el registro" }}</h2>
                 <p class="lead text-secondary mb-4">{{ error }}</p>
+                {% if es_expirado %}
                 <div class="alert alert-secondary border-0 py-3 shadow-sm mb-4">
                     <i class="fa-regular fa-lightbulb me-2 text-warning"></i>
                     Los enlaces de invitación de jugadores generados por los dirigentes de club tienen una validez estricta de 72 horas debido a políticas de seguridad y registro oportuno.
                 </div>
                 <p class="text-muted">Por favor, comunícate con el dirigente de tu club y solicítale que genere un nuevo enlace de registro.</p>
+                {% endif %}
                 <a href="{% url 'login' %}" class="btn btn-secondary mt-2 px-5 py-2.5">Regresar al Inicio</a>
             </div>
         </div>

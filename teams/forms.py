@@ -108,6 +108,7 @@ class PlayerRegistrationForm(forms.ModelForm):
 
     def save(self, commit=True, equipo=None, organizacion=None):
         cedula = self.cleaned_data.get('nro_cedula', '').strip()
+        org = organizacion or (equipo.organizacion if equipo and hasattr(equipo, 'organizacion') else None)
         
         if self.user:
             user = self.user
@@ -116,40 +117,66 @@ class PlayerRegistrationForm(forms.ModelForm):
             user.telefono = self.cleaned_data.get('telefono', user.telefono)
             user.save()
         else:
-            username = self.cleaned_data.get('username') or f"jug_{cedula}"
+            username = self.cleaned_data.get('username') or (f"jug_{cedula}" if cedula else "jug_usuario")
             email = self.cleaned_data.get('email') or f"{username}@torneos.com"
             password = self.cleaned_data.get('password') or cedula or "123456"
             
-            # Verificar si ya existe un usuario por username o cedula
-            existing_user = User.objects.filter(username=username).first()
-            if not existing_user and cedula:
+            # 1. Buscar si ya existe un usuario por cédula en FichaJugador o FichaDT
+            existing_user = None
+            if cedula:
                 f_jug = FichaJugador.objects.filter(nro_cedula=cedula).first()
                 if f_jug:
                     existing_user = f_jug.user
+                else:
+                    f_dt = FichaDT.objects.filter(nro_cedula=cedula).first()
+                    if f_dt:
+                        existing_user = f_dt.user
+                        
+            # 2. Si no por cédula, buscar por username
+            if not existing_user:
+                existing_user = User.objects.filter(username=username).first()
                     
             if existing_user:
                 user = existing_user
-                user.first_name = self.cleaned_data.get('first_name', user.first_name)
-                user.last_name = self.cleaned_data.get('last_name', user.last_name)
-                user.telefono = self.cleaned_data.get('telefono', user.telefono)
+                if self.cleaned_data.get('first_name'):
+                    user.first_name = self.cleaned_data['first_name']
+                if self.cleaned_data.get('last_name'):
+                    user.last_name = self.cleaned_data['last_name']
+                if self.cleaned_data.get('telefono'):
+                    user.telefono = self.cleaned_data['telefono']
                 user.save()
             else:
+                base_username = username
+                counter = 1
+                while User.objects.filter(username=username).exists():
+                    username = f"{base_username}_{counter}"
+                    counter += 1
+
                 user = User.objects.create_user(
                     username=username,
                     email=email,
                     password=password,
-                    first_name=self.cleaned_data['first_name'],
-                    last_name=self.cleaned_data['last_name'],
+                    first_name=self.cleaned_data.get('first_name', ''),
+                    last_name=self.cleaned_data.get('last_name', ''),
                     role='jugador'
                 )
-                user.telefono = self.cleaned_data['telefono']
-                user.save()
+                if self.cleaned_data.get('telefono'):
+                    user.telefono = self.cleaned_data['telefono']
+                    user.save()
         
-        # 2. Crear la FichaJugador
+        # Vincular usuario a la organización
+        if org and user:
+            from users.models import UsuarioOrganizacion
+            UsuarioOrganizacion.objects.get_or_create(
+                usuario=user,
+                organizacion=org,
+                defaults={'rol': 'jugador', 'activo': True}
+            )
+
+        # Crear la FichaJugador
         ficha = super().save(commit=False)
         ficha.user = user
         ficha.equipo = equipo
-        org = organizacion or (equipo.organizacion if equipo and hasattr(equipo, 'organizacion') else None)
         if org:
             ficha.organizacion = org
         ficha.estado_validacion = 'pendiente'
@@ -224,6 +251,7 @@ class DTRegistrationForm(forms.ModelForm):
 
     def save(self, commit=True, equipo=None, organizacion=None):
         cedula = self.cleaned_data.get('nro_cedula', '').strip()
+        org = organizacion or (equipo.organizacion if equipo and hasattr(equipo, 'organizacion') else None)
         
         if self.user:
             user = self.user
@@ -232,39 +260,64 @@ class DTRegistrationForm(forms.ModelForm):
             user.telefono = self.cleaned_data.get('telefono', user.telefono)
             user.save()
         else:
-            username = self.cleaned_data.get('username') or f"dt_{cedula}"
+            username = self.cleaned_data.get('username') or (f"dt_{cedula}" if cedula else "dt_usuario")
             email = self.cleaned_data.get('email') or f"{username}@torneos.com"
             password = self.cleaned_data.get('password') or cedula or "123456"
             
-            existing_user = User.objects.filter(username=username).first()
-            if not existing_user and cedula:
+            existing_user = None
+            if cedula:
                 f_dt = FichaDT.objects.filter(nro_cedula=cedula).first()
                 if f_dt:
                     existing_user = f_dt.user
+                else:
+                    f_jug = FichaJugador.objects.filter(nro_cedula=cedula).first()
+                    if f_jug:
+                        existing_user = f_jug.user
+                        
+            if not existing_user:
+                existing_user = User.objects.filter(username=username).first()
                     
             if existing_user:
                 user = existing_user
-                user.first_name = self.cleaned_data.get('first_name', user.first_name)
-                user.last_name = self.cleaned_data.get('last_name', user.last_name)
-                user.telefono = self.cleaned_data.get('telefono', user.telefono)
+                if self.cleaned_data.get('first_name'):
+                    user.first_name = self.cleaned_data['first_name']
+                if self.cleaned_data.get('last_name'):
+                    user.last_name = self.cleaned_data['last_name']
+                if self.cleaned_data.get('telefono'):
+                    user.telefono = self.cleaned_data['telefono']
                 user.save()
             else:
+                base_username = username
+                counter = 1
+                while User.objects.filter(username=username).exists():
+                    username = f"{base_username}_{counter}"
+                    counter += 1
+
                 user = User.objects.create_user(
                     username=username,
                     email=email,
                     password=password,
-                    first_name=self.cleaned_data['first_name'],
-                    last_name=self.cleaned_data['last_name'],
+                    first_name=self.cleaned_data.get('first_name', ''),
+                    last_name=self.cleaned_data.get('last_name', ''),
                     role='dt'
                 )
-                user.telefono = self.cleaned_data['telefono']
-                user.save()
+                if self.cleaned_data.get('telefono'):
+                    user.telefono = self.cleaned_data['telefono']
+                    user.save()
         
-        # 2. Crear la FichaDT
+        # Vincular usuario a la organización
+        if org and user:
+            from users.models import UsuarioOrganizacion
+            UsuarioOrganizacion.objects.get_or_create(
+                usuario=user,
+                organizacion=org,
+                defaults={'rol': 'dt', 'activo': True}
+            )
+
+        # Crear la FichaDT
         ficha = super().save(commit=False)
         ficha.user = user
         ficha.equipo = equipo
-        org = organizacion or (equipo.organizacion if equipo and hasattr(equipo, 'organizacion') else None)
         if org:
             ficha.organizacion = org
         ficha.estado_validacion = 'pendiente'

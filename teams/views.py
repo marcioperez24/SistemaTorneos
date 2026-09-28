@@ -5,12 +5,15 @@ from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta
 import urllib.parse
-from django.db import models
+from django.db import models, transaction, IntegrityError
+import logging
 from .models import Equipo, InvitacionEquipo, FichaJugador, FichaDT, Categoria
 from .forms import EquipoForm, PlayerRegistrationForm, DTRegistrationForm, CategoriaForm
 from django.contrib.auth.forms import AuthenticationForm
 from matches.models import Torneo
 from finances.models import PagoInscripcion, MultaTarjeta, CobroEquipo
+
+logger = logging.getLogger(__name__)
 
 def clean_phone_for_whatsapp(phone):
     if not phone:
@@ -251,39 +254,79 @@ def registro_jugador(request, token):
     
     if not invitacion.esta_valida():
         return render(request, 'teams/registro_error.html', {
+            'titulo': 'Enlace Expirado o Inactivo',
             'error': 'Este enlace de invitación ha expirado o ya no está activo.',
+            'es_expirado': True,
             'hide_navbar': True
         })
         
     tipo = invitacion.tipo
+    org = invitacion.organizacion or (invitacion.equipo.organizacion if invitacion.equipo else None)
+    if not org:
+        from users.models import Organizacion
+        org = Organizacion.objects.first()
     
-    # Si el usuario ya está autenticado (tiene cuenta en el sistema)
+    # 1. Si el usuario ya está autenticado (tiene cuenta en el sistema)
     if request.user.is_authenticated:
         # Validar si ya está registrado en este torneo (independientemente del equipo)
-        if tipo == 'dt':
-            ya_registrado_torneo = FichaDT.objects.filter(user=request.user, torneo=invitacion.torneo).exists()
+        if invitacion.torneo:
+            if tipo == 'dt':
+                ficha_existente = FichaDT.objects.filter(user=request.user, torneo=invitacion.torneo).select_related('equipo').first()
+            else:
+                ficha_existente = FichaJugador.objects.filter(user=request.user, torneo=invitacion.torneo).select_related('equipo').first()
+                
+            if ficha_existente:
+                nombre_torneo = invitacion.torneo.nombre if invitacion.torneo else "el torneo"
+                if ficha_existente.equipo == invitacion.equipo:
+                    request.session['last_registro_ficha_id'] = ficha_existente.id
+                    request.session['last_registro_tipo'] = tipo
+                    messages.info(request, f'Ya te encuentras registrado en el equipo {invitacion.equipo.nombre} para {nombre_torneo}.')
+                    return redirect('registro_exito')
+                else:
+                    return render(request, 'teams/registro_error.html', {
+                        'titulo': 'Ya registrado en otro equipo',
+                        'error': f'Ya te encuentras registrado en el equipo "{ficha_existente.equipo.nombre if ficha_existente.equipo else "otro club"}" para el torneo {nombre_torneo}. Un participante no puede estar en dos equipos distintos en el mismo torneo.',
+                        'hide_navbar': True
+                    })
         else:
-            ya_registrado_torneo = FichaJugador.objects.filter(user=request.user, torneo=invitacion.torneo).exists()
+            # Si la invitación no está ligada a un torneo específico, verificar si ya está en este equipo
+            if tipo == 'dt':
+                ficha_en_equipo = FichaDT.objects.filter(user=request.user, equipo=invitacion.equipo).first()
+            else:
+                ficha_en_equipo = FichaJugador.objects.filter(user=request.user, equipo=invitacion.equipo).first()
+            if ficha_en_equipo:
+                request.session['last_registro_ficha_id'] = ficha_en_equipo.id
+                request.session['last_registro_tipo'] = tipo
+                messages.info(request, f'Ya te encuentras registrado en el equipo {invitacion.equipo.nombre}.')
+                return redirect('registro_exito')
             
-        if ya_registrado_torneo:
-            return render(request, 'teams/registro_error.html', {
-                'error': f'Ya te encuentras registrado en otro equipo para el torneo {invitacion.torneo.nombre}. Un jugador/DT no puede estar en dos equipos distintos en el mismo torneo.',
-                'hide_navbar': True
-            })
-            
-        if tipo == 'jugador' and invitacion.torneo:
-            # Validar límite de jugadores
-            num_jugadores_actuales = FichaJugador.objects.filter(
-                equipo=invitacion.equipo, 
-                torneo=invitacion.torneo,
-                es_lesionado=False
-            ).exclude(estado_validacion='rechazado').count()
-            
-            if num_jugadores_actuales >= invitacion.torneo.max_jugadores_por_equipo:
-                return render(request, 'teams/registro_error.html', {
-                    'error': f'El equipo {invitacion.equipo.nombre} ya ha alcanzado el límite máximo de jugadores ({invitacion.torneo.max_jugadores_por_equipo}) permitidos en el torneo {invitacion.torneo.nombre}.',
-                    'hide_navbar': True
-                })
+        if tipo == 'jugador':
+            if invitacion.torneo:
+                # Validar límite de jugadores por torneo
+                num_jugadores_actuales = FichaJugador.objects.filter(
+                    equipo=invitacion.equipo, 
+                    torneo=invitacion.torneo,
+                    es_lesionado=False
+                ).exclude(estado_validacion='rechazado').count()
+                
+                if num_jugadores_actuales >= invitacion.torneo.max_jugadores_por_equipo:
+                    return render(request, 'teams/registro_error.html', {
+                        'titulo': 'Límite de Jugadores Alcanzado',
+                        'error': f'El equipo {invitacion.equipo.nombre} ya ha alcanzado el límite máximo de jugadores ({invitacion.torneo.max_jugadores_por_equipo}) permitidos en el torneo {invitacion.torneo.nombre}.',
+                        'hide_navbar': True
+                    })
+            elif invitacion.equipo and invitacion.equipo.max_jugadores:
+                # Validar límite por plantilla del equipo
+                num_jugadores_actuales = FichaJugador.objects.filter(
+                    equipo=invitacion.equipo,
+                    es_lesionado=False
+                ).exclude(estado_validacion='rechazado').count()
+                if num_jugadores_actuales >= invitacion.equipo.max_jugadores:
+                    return render(request, 'teams/registro_error.html', {
+                        'titulo': 'Plantilla Completa',
+                        'error': f'El equipo {invitacion.equipo.nombre} ya ha alcanzado el límite de su plantilla ({invitacion.equipo.max_jugadores} jugadores).',
+                        'hide_navbar': True
+                    })
             
         # Buscar su registro anterior para copiar archivos
         if tipo == 'dt':
@@ -292,56 +335,90 @@ def registro_jugador(request, token):
             ficha_anterior = FichaJugador.objects.filter(user=request.user).order_by('-id').first()
             
         # Si tiene un registro anterior, mostramos la pantalla simplificada y rápida
-        # Si tiene un registro anterior, mostramos la pantalla simplificada y rápida
         if ficha_anterior:
             if request.method == 'POST':
                 if not request.POST.get('acepto_lopdp'):
                     messages.error(request, 'Debes autorizar el tratamiento de tus datos personales (LOPDP) para continuar.')
                     return redirect(request.path)
-                org = invitacion.equipo.organizacion if invitacion.equipo else invitacion.organizacion
-                if tipo == 'dt':
-                    nueva_ficha = FichaDT(
-                        user=request.user,
-                        equipo=invitacion.equipo,
-                        torneo=invitacion.torneo,
-                        organizacion=org,
-                        estado_validacion='pendiente',
-                        fecha_firma=timezone.now(),
-                        firma_digital=True,
-                        firma_imagen=request.POST.get('firma_imagen')
-                    )
-                    nueva_ficha.foto = ficha_anterior.foto
-                    nueva_ficha.cedula_frontal = ficha_anterior.cedula_frontal
-                    nueva_ficha.cedula_posterior = ficha_anterior.cedula_posterior
-                    nueva_ficha.nro_cedula = ficha_anterior.nro_cedula
-                    nueva_ficha.tipo_sangre = ficha_anterior.tipo_sangre
-                    nueva_ficha.contacto_emergencia = ficha_anterior.contacto_emergencia
-                    nueva_ficha.telefono_emergencia = ficha_anterior.telefono_emergencia
-                    nueva_ficha.save()
-                else:
-                    nueva_ficha = FichaJugador(
-                        user=request.user,
-                        equipo=invitacion.equipo,
-                        torneo=invitacion.torneo,
-                        organizacion=org,
-                        numero_camiseta=request.POST.get('numero_camiseta'),
-                        estado_validacion='pendiente',
-                        fecha_firma=timezone.now(),
-                        firma_digital=True,
-                        firma_imagen=request.POST.get('firma_imagen')
-                    )
-                    nueva_ficha.foto = ficha_anterior.foto
-                    nueva_ficha.cedula_frontal = ficha_anterior.cedula_frontal
-                    nueva_ficha.cedula_posterior = ficha_anterior.cedula_posterior
-                    nueva_ficha.nro_cedula = ficha_anterior.nro_cedula
-                    nueva_ficha.tipo_sangre = ficha_anterior.tipo_sangre
-                    nueva_ficha.contacto_emergencia = ficha_anterior.contacto_emergencia
-                    nueva_ficha.telefono_emergencia = ficha_anterior.telefono_emergencia
-                    nueva_ficha.save()
-                    
-                request.session['last_registro_ficha_id'] = nueva_ficha.id
-                request.session['last_registro_tipo'] = tipo
-                return redirect('registro_exito')
+                
+                nc_raw = request.POST.get('numero_camiseta')
+                numero_camiseta = int(str(nc_raw).strip()) if (nc_raw and str(nc_raw).strip().isdigit()) else None
+
+                try:
+                    with transaction.atomic():
+                        firma_img = request.POST.get('firma_imagen') or getattr(ficha_anterior, 'firma_imagen', None)
+                        if tipo == 'dt':
+                            nueva_ficha, created = FichaDT.objects.get_or_create(
+                                user=request.user,
+                                organizacion=org,
+                                torneo=invitacion.torneo,
+                                defaults={
+                                    'equipo': invitacion.equipo,
+                                    'estado_validacion': 'pendiente',
+                                    'fecha_firma': timezone.now(),
+                                    'firma_digital': True,
+                                    'firma_imagen': firma_img,
+                                    'foto': ficha_anterior.foto,
+                                    'cedula_frontal': ficha_anterior.cedula_frontal,
+                                    'cedula_posterior': ficha_anterior.cedula_posterior,
+                                    'nro_cedula': ficha_anterior.nro_cedula,
+                                    'tipo_sangre': ficha_anterior.tipo_sangre,
+                                    'contacto_emergencia': ficha_anterior.contacto_emergencia,
+                                    'telefono_emergencia': ficha_anterior.telefono_emergencia,
+                                }
+                            )
+                            if not created:
+                                nueva_ficha.equipo = invitacion.equipo
+                                nueva_ficha.fecha_firma = timezone.now()
+                                if firma_img:
+                                    nueva_ficha.firma_imagen = firma_img
+                                nueva_ficha.save()
+                        else:
+                            nueva_ficha, created = FichaJugador.objects.get_or_create(
+                                user=request.user,
+                                organizacion=org,
+                                torneo=invitacion.torneo,
+                                defaults={
+                                    'equipo': invitacion.equipo,
+                                    'numero_camiseta': numero_camiseta,
+                                    'estado_validacion': 'pendiente',
+                                    'fecha_firma': timezone.now(),
+                                    'firma_digital': True,
+                                    'firma_imagen': firma_img,
+                                    'foto': ficha_anterior.foto,
+                                    'cedula_frontal': ficha_anterior.cedula_frontal,
+                                    'cedula_posterior': ficha_anterior.cedula_posterior,
+                                    'nro_cedula': ficha_anterior.nro_cedula,
+                                    'tipo_sangre': ficha_anterior.tipo_sangre,
+                                    'contacto_emergencia': ficha_anterior.contacto_emergencia,
+                                    'telefono_emergencia': ficha_anterior.telefono_emergencia,
+                                }
+                            )
+                            if not created:
+                                nueva_ficha.equipo = invitacion.equipo
+                                nueva_ficha.fecha_firma = timezone.now()
+                                if numero_camiseta is not None:
+                                    nueva_ficha.numero_camiseta = numero_camiseta
+                                if firma_img:
+                                    nueva_ficha.firma_imagen = firma_img
+                                nueva_ficha.save()
+
+                        # Vinculación con UsuarioOrganizacion
+                        if org:
+                            from users.models import UsuarioOrganizacion
+                            UsuarioOrganizacion.objects.get_or_create(
+                                usuario=request.user,
+                                organizacion=org,
+                                defaults={'rol': tipo, 'activo': True}
+                            )
+
+                        request.session['last_registro_ficha_id'] = nueva_ficha.id
+                        request.session['last_registro_tipo'] = tipo
+                        return redirect('registro_exito')
+                except Exception as e:
+                    logger.exception("Error al guardar ficha en registro_existente: %s", e)
+                    messages.error(request, f'No se pudo completar el registro: {str(e)}')
+                    return redirect(request.path)
                 
             return render(request, 'teams/registro_existente.html', {
                 'equipo': invitacion.equipo,
@@ -350,11 +427,12 @@ def registro_jugador(request, token):
                 'hide_navbar': True
             })
             
-    # Si no tiene cuenta o está logueado pero es su primera ficha (ej. admin o nuevo usuario)
+    # 2. Si no tiene cuenta o está logueado pero es su primera ficha
     if request.method == 'POST':
         if not request.POST.get('acepto_lopdp'):
             messages.error(request, 'Debes autorizar el tratamiento de tus datos personales (LOPDP) para continuar.')
             return redirect(request.path)
+
         nro_cedula = request.POST.get('nro_cedula', '').strip()
         existing_user = None
         if nro_cedula:
@@ -375,32 +453,115 @@ def registro_jugador(request, token):
             
         if form.is_valid():
             # Check tournament constraints again for unauthenticated flow
-            if tipo == 'dt':
-                ya_registrado_torneo = FichaDT.objects.filter(user=user_to_use, torneo=invitacion.torneo).exists() if user_to_use else False
-            else:
-                ya_registrado_torneo = FichaJugador.objects.filter(user=user_to_use, torneo=invitacion.torneo).exists() if user_to_use else False
-                
-            if ya_registrado_torneo:
-                messages.error(request, f'Ya te encuentras registrado en el torneo {invitacion.torneo.nombre}.')
-                return redirect(request.path)
-                
-            if tipo == 'jugador' and invitacion.torneo:
-                num_jugadores_actuales = FichaJugador.objects.filter(equipo=invitacion.equipo, torneo=invitacion.torneo).count()
-                if num_jugadores_actuales >= invitacion.torneo.max_jugadores_por_equipo:
-                    messages.error(request, f'El equipo ya alcanzó el máximo de jugadores ({invitacion.torneo.max_jugadores_por_equipo}) permitidos en este torneo.')
-                    return redirect(request.path)
+            if invitacion.torneo and user_to_use:
+                if tipo == 'dt':
+                    ficha_existente = FichaDT.objects.filter(user=user_to_use, torneo=invitacion.torneo).select_related('equipo').first()
+                else:
+                    ficha_existente = FichaJugador.objects.filter(user=user_to_use, torneo=invitacion.torneo).select_related('equipo').first()
                     
-            org = invitacion.equipo.organizacion if invitacion.equipo else invitacion.organizacion
-            ficha = form.save(commit=False, equipo=invitacion.equipo, organizacion=org)
-            ficha.torneo = invitacion.torneo
-            ficha.organizacion = org
-            # Firmando digitalmente con la fecha actual
-            ficha.fecha_firma = timezone.now()
-            ficha.save()
+                if ficha_existente:
+                    nombre_torneo = invitacion.torneo.nombre
+                    if ficha_existente.equipo == invitacion.equipo:
+                        request.session['last_registro_ficha_id'] = ficha_existente.id
+                        request.session['last_registro_tipo'] = tipo
+                        messages.info(request, f'Ya te encuentras registrado en el equipo {invitacion.equipo.nombre} para el torneo {nombre_torneo}.')
+                        return redirect('registro_exito')
+                    else:
+                        messages.error(request, f'Ya te encuentras registrado en el equipo "{ficha_existente.equipo.nombre if ficha_existente.equipo else "otro club"}" para el torneo {nombre_torneo}.')
+                        return redirect(request.path)
+            elif user_to_use:
+                # Si no tiene torneo asignado, verificar si ya está en este equipo
+                if tipo == 'dt':
+                    ficha_existente = FichaDT.objects.filter(user=user_to_use, equipo=invitacion.equipo).first()
+                else:
+                    ficha_existente = FichaJugador.objects.filter(user=user_to_use, equipo=invitacion.equipo).first()
+                if ficha_existente:
+                    request.session['last_registro_ficha_id'] = ficha_existente.id
+                    request.session['last_registro_tipo'] = tipo
+                    messages.info(request, f'Ya te encuentras registrado en el equipo {invitacion.equipo.nombre}.')
+                    return redirect('registro_exito')
+                    
+            if tipo == 'jugador':
+                if invitacion.torneo:
+                    num_jugadores_actuales = FichaJugador.objects.filter(
+                        equipo=invitacion.equipo, 
+                        torneo=invitacion.torneo,
+                        es_lesionado=False
+                    ).exclude(estado_validacion='rechazado').count()
+                    if num_jugadores_actuales >= invitacion.torneo.max_jugadores_por_equipo:
+                        messages.error(request, f'El equipo ya alcanzó el máximo de jugadores ({invitacion.torneo.max_jugadores_por_equipo}) permitidos en el torneo {invitacion.torneo.nombre}.')
+                        return redirect(request.path)
+                elif invitacion.equipo and invitacion.equipo.max_jugadores:
+                    num_jugadores_actuales = FichaJugador.objects.filter(
+                        equipo=invitacion.equipo,
+                        es_lesionado=False
+                    ).exclude(estado_validacion='rechazado').count()
+                    if num_jugadores_actuales >= invitacion.equipo.max_jugadores:
+                        messages.error(request, f'El equipo ya alcanzó el límite máximo de jugadores ({invitacion.equipo.max_jugadores}) permitidos.')
+                        return redirect(request.path)
+                    
+            try:
+                with transaction.atomic():
+                    ficha = form.save(commit=False, equipo=invitacion.equipo, organizacion=org)
+                    ficha.torneo = invitacion.torneo
+                    ficha.organizacion = org
+                    ficha.fecha_firma = timezone.now()
 
-            request.session['last_registro_ficha_id'] = ficha.id
-            request.session['last_registro_tipo'] = tipo
-            return redirect('registro_exito')
+                    # Prevenir colisión de unique_together ('organizacion', 'user', 'torneo')
+                    ModelClass = FichaDT if tipo == 'dt' else FichaJugador
+                    ficha_previa = ModelClass.objects.filter(
+                        organizacion=org,
+                        user=ficha.user,
+                        torneo=invitacion.torneo
+                    ).first()
+
+                    if ficha_previa:
+                        ficha_previa.equipo = invitacion.equipo
+                        ficha_previa.fecha_firma = timezone.now()
+                        if getattr(ficha, 'numero_camiseta', None) is not None:
+                            ficha_previa.numero_camiseta = ficha.numero_camiseta
+                        if ficha.foto:
+                            ficha_previa.foto = ficha.foto
+                        if ficha.cedula_frontal:
+                            ficha_previa.cedula_frontal = ficha.cedula_frontal
+                        if ficha.cedula_posterior:
+                            ficha_previa.cedula_posterior = ficha.cedula_posterior
+                        if ficha.nro_cedula:
+                            ficha_previa.nro_cedula = ficha.nro_cedula
+                        if ficha.tipo_sangre:
+                            ficha_previa.tipo_sangre = ficha.tipo_sangre
+                        if ficha.contacto_emergencia:
+                            ficha_previa.contacto_emergencia = ficha.contacto_emergencia
+                        if ficha.telefono_emergencia:
+                            ficha_previa.telefono_emergencia = ficha.telefono_emergencia
+                        if ficha.firma_digital:
+                            ficha_previa.firma_digital = ficha.firma_digital
+                            ficha_previa.firma_imagen = ficha.firma_imagen
+                        ficha_previa.save()
+                        ficha = ficha_previa
+                    else:
+                        ficha.save()
+
+                    # Asegurar vinculación con UsuarioOrganizacion
+                    if org and ficha.user:
+                        from users.models import UsuarioOrganizacion
+                        UsuarioOrganizacion.objects.get_or_create(
+                            usuario=ficha.user,
+                            organizacion=org,
+                            defaults={'rol': tipo, 'activo': True}
+                        )
+
+                    request.session['last_registro_ficha_id'] = ficha.id
+                    request.session['last_registro_tipo'] = tipo
+                    return redirect('registro_exito')
+            except IntegrityError as e:
+                logger.exception("IntegrityError en registro_jugador: %s", e)
+                messages.error(request, 'Ya existe un registro con estos datos en el sistema.')
+                return redirect(request.path)
+            except Exception as e:
+                logger.exception("Error en registro_jugador: %s", e)
+                messages.error(request, f'Ocurrió un error al procesar el registro: {str(e)}')
+                return redirect(request.path)
     else:
         form_user = request.user if request.user.is_authenticated else None
         if tipo == 'dt':
