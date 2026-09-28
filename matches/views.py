@@ -360,7 +360,13 @@ def registrar_evento(request, partido_id):
         jugador_id = request.POST.get('jugador_id')
         
         equipo = get_object_or_404(Equipo, id=equipo_id)
-        jugador = get_object_or_404(User, id=jugador_id) if jugador_id else None
+        jugador = None
+        if jugador_id:
+            jugador = User.objects.filter(id=jugador_id).first()
+            if not jugador:
+                ficha_ref = FichaJugador.objects.filter(id=jugador_id).select_related('user').first()
+                if ficha_ref and ficha_ref.user:
+                    jugador = ficha_ref.user
         
         # En caso de sustitución
         jugador_entra = None
@@ -368,12 +374,20 @@ def registrar_evento(request, partido_id):
         if tipo == 'cambio':
             jugador_entra_id = request.POST.get('jugador_entra_id')
             if jugador_entra_id:
-                jugador_entra = get_object_or_404(User, id=jugador_entra_id)
-                ficha_sale = FichaJugador.objects.filter(user=jugador, equipo=equipo, torneo=partido.torneo).first()
-                ficha_entra = FichaJugador.objects.filter(user=jugador_entra, equipo=equipo, torneo=partido.torneo).first()
+                jugador_entra = User.objects.filter(id=jugador_entra_id).first()
+                if not jugador_entra:
+                    ficha_e_ref = FichaJugador.objects.filter(id=jugador_entra_id).select_related('user').first()
+                    if ficha_e_ref and ficha_e_ref.user:
+                        jugador_entra = ficha_e_ref.user
+
+                ficha_sale = FichaJugador.objects.filter(user=jugador, equipo=equipo, torneo=partido.torneo).first() if jugador else None
+                ficha_entra = FichaJugador.objects.filter(user=jugador_entra, equipo=equipo, torneo=partido.torneo).first() if jugador_entra else None
                 n_sale = f"#{ficha_sale.numero_camiseta}" if (ficha_sale and ficha_sale.numero_camiseta) else ""
                 n_entra = f"#{ficha_entra.numero_camiseta}" if (ficha_entra and ficha_entra.numero_camiseta) else ""
-                detalle_str = f"Entra {jugador_entra.get_full_name() or jugador_entra.username} {n_entra} por {jugador.get_full_name() or jugador.username} {n_sale}"
+                
+                nom_entra = (jugador_entra.get_full_name() or jugador_entra.username) if jugador_entra else "Jugador"
+                nom_sale = (jugador.get_full_name() or jugador.username) if jugador else "Jugador"
+                detalle_str = f"Entra {nom_entra} {n_entra} por {nom_sale} {n_sale}"
                 
                 # Actualizar alineación en vivo del partido
                 lineup = partido.alineacion_local if partido.equipo_local == equipo else partido.alineacion_visitante
@@ -381,10 +395,10 @@ def registrar_evento(request, partido_id):
                     pos_key_to_replace = None
                     for pos_key, p_info in lineup['players'].items():
                         p_id = p_info.get('id') if p_info else None
-                        if p_id is not None and (int(p_id) == jugador.id or (ficha_sale and int(p_id) == ficha_sale.id)):
+                        if p_id is not None and ((jugador and int(p_id) == jugador.id) or (ficha_sale and int(p_id) == ficha_sale.id)):
                             pos_key_to_replace = pos_key
                             break
-                    if pos_key_to_replace is not None:
+                    if pos_key_to_replace is not None and jugador_entra:
                         lineup['players'][pos_key_to_replace] = {
                             'id': ficha_entra.id if ficha_entra else jugador_entra.id,
                             'nombre': jugador_entra.get_full_name() or jugador_entra.username,
@@ -407,12 +421,13 @@ def registrar_evento(request, partido_id):
         )
         
         if tipo in ['amarilla', 'roja']:
-            if tipo == 'amarilla':
-                # Buscar ficha jugador para el equipo y torneo
+            ficha = None
+            if jugador:
                 ficha = FichaJugador.objects.filter(user=jugador, equipo=equipo, torneo=partido.torneo).first()
                 if not ficha:
                     ficha = FichaJugador.objects.filter(user=jugador, equipo=equipo).order_by('-id').first()
-                
+
+            if tipo == 'amarilla':
                 if ficha:
                     # Contar amarillas en el torneo actual
                     amarillas_count = EventoPartido.objects.filter(
@@ -421,10 +436,16 @@ def registrar_evento(request, partido_id):
                         jugador=jugador
                     ).count()
                     
-                    if amarillas_count > 0 and amarillas_count % partido.torneo.limite_amarillas_suspension == 0:
+                    limite = partido.torneo.limite_amarillas_suspension if partido.torneo else 3
+                    if amarillas_count > 0 and amarillas_count % limite == 0:
                         ficha.partidos_suspension += 1
                         ficha.save()
                         messages.warning(request, f"⚠️ ¡ALERTA! El jugador ha acumulado {amarillas_count} amarillas y se le ha aplicado 1 partido de suspensión.")
+            elif tipo == 'roja':
+                if ficha:
+                    ficha.partidos_suspension += 1
+                    ficha.save()
+                    messages.warning(request, f"🟥 ¡EXPULSIÓN! El jugador ha recibido tarjeta roja directa y se le aplica 1 partido de suspensión.")
         
         # Si es gol, sumamos al marcador
         if tipo == 'gol':

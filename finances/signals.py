@@ -7,13 +7,14 @@ from .models import MultaTarjeta
 
 @receiver(post_save, sender=EventoPartido)
 def generar_multa_tarjeta(sender, instance, created, **kwargs):
-    if created and instance.tipo in ['amarilla', 'roja']:
+    tipo_str = str(instance.tipo).lower().strip() if instance.tipo else ''
+    if tipo_str in ['amarilla', 'roja']:
         partido = instance.partido
         if not partido:
             return
 
         torneo = partido.torneo
-        if instance.tipo == 'amarilla':
+        if tipo_str == 'amarilla':
             if torneo and torneo.costo_amarilla is not None:
                 monto = Decimal(str(torneo.costo_amarilla))
             else:
@@ -35,7 +36,10 @@ def generar_multa_tarjeta(sender, instance, created, **kwargs):
                 if f:
                     equipo = f.equipo
 
-        if jugador and equipo:
+        if not equipo and partido:
+            equipo = partido.equipo_local
+
+        if equipo:
             with transaction.atomic():
                 MultaTarjeta.objects.get_or_create(
                     evento=instance,

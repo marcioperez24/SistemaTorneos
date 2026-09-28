@@ -78,7 +78,12 @@
     <div class="tab-content" id="pills-tabContent">
         <!-- Panel 1: Inscripciones -->
         <div class="tab-pane fade show active" id="pane-inscripciones">
-            <h4 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-shield-halved me-2 text-primary"></i>Cuotas de Inscripción de Equipos</h4>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h4 class="fw-bold text-secondary mb-0"><i class="fa-solid fa-shield-halved me-2 text-primary"></i>Cuotas de Inscripción de Equipos</h4>
+                    <p class="text-muted small mb-0">Personaliza y gestiona el valor de la cuota de inscripción para cada club.</p>
+                </div>
+            </div>
             <div class="card card-custom p-3 bg-white">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
@@ -105,11 +110,23 @@
                                                     {{ pago.equipo.nombre|slice:":2"|upper }}
                                                 </div>
                                             {% endif %}
-                                            <span class="fw-bold text-dark">{{ pago.equipo.nombre }}</span>
+                                            <div>
+                                                <span class="fw-bold text-dark d-block">{{ pago.equipo.nombre }}</span>
+                                                {% if pago.notas %}
+                                                    <small class="text-muted fst-italic fs-9">{{ pago.notas|truncatechars:35 }}</small>
+                                                {% endif %}
+                                            </div>
                                         </div>
                                     </td>
                                     <td>{{ pago.equipo.get_categoria_display }}</td>
-                                    <td class="text-center font-monospace fw-semibold">$ {{ pago.monto|floatformat:2 }}</td>
+                                    <td class="text-center">
+                                        <div class="d-inline-flex align-items-center gap-1">
+                                            <span class="font-monospace fw-bold text-dark fs-6">$ {{ pago.monto|floatformat:2 }}</span>
+                                            <button type="button" class="btn btn-sm btn-link text-primary p-0" title="Modificar monto de cuota" data-bs-toggle="modal" data-bs-target="#modalEditarCuota" data-pago-id="{{ pago.id }}" data-equipo-nombre="{{ pago.equipo.nombre }}" data-monto="{{ pago.monto|stringformat:'.2f' }}" data-notas="{{ pago.notas|default:'' }}">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </button>
+                                        </div>
+                                    </td>
                                     <td class="text-center">
                                         {% if pago.estado == 'pagado' %}
                                             <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1.5"><i class="fa-solid fa-circle-check me-1"></i>Pagado</span>
@@ -121,13 +138,27 @@
                                     <td class="text-center text-muted font-monospace fs-8">{{ pago.fecha_pago|date:"d/m/Y H:i"|default:"-" }}</td>
                                     <td class="text-end">
                                         {% if pago.estado == 'pendiente' %}
-                                            <button type="button" class="btn btn-success btn-sm px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#modalPagarInscripcion" data-pago-id="{{ pago.id }}" data-equipo-nombre="{{ pago.equipo.nombre }}">
-                                                <i class="fa-solid fa-cash-register me-1"></i>Registrar Pago
-                                            </button>
+                                            <div class="d-inline-flex gap-1.5">
+                                                <button type="button" class="btn btn-outline-primary btn-sm px-2.5 rounded-pill" data-bs-toggle="modal" data-bs-target="#modalEditarCuota" data-pago-id="{{ pago.id }}" data-equipo-nombre="{{ pago.equipo.nombre }}" data-monto="{{ pago.monto|stringformat:'.2f' }}" data-notas="{{ pago.notas|default:'' }}" title="Modificar monto de cuota">
+                                                    <i class="fa-solid fa-pen-to-square me-1"></i>Editar Cuota
+                                                </button>
+                                                <button type="button" class="btn btn-success btn-sm px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#modalPagarInscripcion" data-pago-id="{{ pago.id }}" data-equipo-nombre="{{ pago.equipo.nombre }}" data-monto="{{ pago.monto|stringformat:'.2f' }}">
+                                                    <i class="fa-solid fa-cash-register me-1"></i>Registrar Pago
+                                                </button>
+                                            </div>
                                         {% else %}
-                                            <span class="text-success small fw-semibold"><i class="fa-solid fa-check-double me-1"></i>Completo</span>
+                                            <div class="d-inline-flex align-items-center gap-1.5">
+                                                <span class="badge bg-success-subtle text-success rounded-pill px-2.5 py-1"><i class="fa-solid fa-check-double me-1"></i>Completo</span>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm px-2 py-0.5 rounded-pill" data-bs-toggle="modal" data-bs-target="#modalEditarCuota" data-pago-id="{{ pago.id }}" data-equipo-nombre="{{ pago.equipo.nombre }}" data-monto="{{ pago.monto|stringformat:'.2f' }}" data-notas="{{ pago.notas|default:'' }}" title="Ajustar Cuota">
+                                                    <i class="fa-solid fa-pencil"></i>
+                                                </button>
+                                            </div>
                                         {% endif %}
                                     </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-muted">No se registran equipos para cobro de cuotas.</td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -138,13 +169,33 @@
 
         <!-- Panel 2: Multas por Tarjetas -->
         <div class="tab-pane fade" id="pane-multas">
-            <h4 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-square-full me-2 text-warning"></i>Multas Automáticas por Tarjetas (Match Day)</h4>
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+                <div>
+                    <h4 class="fw-bold text-secondary mb-0"><i class="fa-solid fa-square-full me-2 text-warning"></i>Multas y Sanciones por Tarjetas</h4>
+                    <p class="text-muted small mb-0">Control de sanciones por tarjetas rojas, amarillas y faltas disciplinarias.</p>
+                </div>
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <!-- Filtros Rápidos -->
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-secondary active btn-filtro-multa" data-filtro="todos">Todas</button>
+                        <button type="button" class="btn btn-outline-danger btn-filtro-multa" data-filtro="roja">Rojas 🟥</button>
+                        <button type="button" class="btn btn-outline-warning text-dark btn-filtro-multa" data-filtro="amarilla">Amarillas 🟨</button>
+                        <button type="button" class="btn btn-outline-secondary btn-filtro-multa" data-filtro="pendiente">Pendientes</button>
+                        <button type="button" class="btn btn-outline-secondary btn-filtro-multa" data-filtro="pagado">Cobradas</button>
+                    </div>
+                    <!-- Botón Registrar Multa Manual -->
+                    <button type="button" class="btn btn-danger btn-sm px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#modalMultaManual">
+                        <i class="fa-solid fa-circle-plus me-1.5"></i>Registrar Multa
+                    </button>
+                </div>
+            </div>
+
             <div class="card card-custom p-3 bg-white">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+                    <table class="table table-hover align-middle mb-0" id="tabla-multas">
                         <thead class="table-light text-uppercase fs-8">
                             <tr>
-                                <th>Jugador Sancionado</th>
+                                <th>Jugador / Sancionado</th>
                                 <th>Equipo / Club</th>
                                 <th class="text-center">Incidencia</th>
                                 <th class="text-center">Monto Multa</th>
@@ -155,39 +206,55 @@
                         </thead>
                         <tbody>
                             {% for multa in multas %}
-                                <tr>
+                                <tr class="fila-multa" data-motivo="{{ multa.motivo }}" data-estado="{{ multa.estado }}">
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white me-2.5" style="width: 32px; height: 32px;">
-                                                <i class="fa-regular fa-user"></i>
+                                                {% if multa.motivo == 'roja' %}
+                                                    <i class="fa-solid fa-user-xmark text-danger"></i>
+                                                {% else %}
+                                                    <i class="fa-regular fa-user"></i>
+                                                {% endif %}
                                             </div>
                                             <div>
-                                                <span class="fw-bold text-dark d-block fs-7">{{ multa.jugador.get_full_name|default:multa.jugador.username }}</span>
-                                                <small class="text-muted d-block fs-9 font-monospace">Ref: Partido #{{ multa.partido.id }}</small>
+                                                {% if multa.jugador %}
+                                                    <span class="fw-bold text-dark d-block fs-7">{{ multa.jugador.get_full_name|default:multa.jugador.username }}</span>
+                                                {% else %}
+                                                    <span class="fw-bold text-dark d-block fs-7 fst-italic">Sanción a Equipo / Banca</span>
+                                                {% endif %}
+                                                <small class="text-muted d-block fs-9 font-monospace">
+                                                    {% if multa.partido %}
+                                                        Ref: Partido #{{ multa.partido.id }} ({{ multa.partido.torneo.nombre|default:"Torneo" }})
+                                                    {% else %}
+                                                        Ref: Sanción Administrativa
+                                                    {% endif %}
+                                                </small>
                                             </div>
                                         </div>
                                     </td>
                                     <td class="fw-semibold text-secondary">{{ multa.equipo.nombre }}</td>
                                     <td class="text-center">
                                         {% if multa.motivo == 'amarilla' %}
-                                            <span class="badge bg-warning text-dark py-1.5 px-3 rounded-pill"><i class="fa-solid fa-square-full me-1"></i>Amarilla ($ 50)</span>
+                                            <span class="badge bg-warning text-dark py-1.5 px-3 rounded-pill"><i class="fa-solid fa-square-full me-1"></i>Tarjeta Amarilla</span>
+                                        {% elif multa.motivo == 'roja' %}
+                                            <span class="badge bg-danger py-1.5 px-3 rounded-pill"><i class="fa-solid fa-square-full me-1"></i>Tarjeta Roja</span>
                                         {% else %}
-                                            <span class="badge bg-danger py-1.5 px-3 rounded-pill"><i class="fa-solid fa-square-full me-1"></i>Roja ($ 150)</span>
+                                            <span class="badge bg-secondary py-1.5 px-3 rounded-pill"><i class="fa-solid fa-gavel me-1"></i>{{ multa.get_motivo_display }}</span>
                                         {% endif %}
                                     </td>
-                                    <td class="text-center font-monospace fw-bold text-dark">$ {{ multa.monto|floatformat:2 }}</td>
+                                    <td class="text-center font-monospace fw-bold text-dark fs-6">$ {{ multa.monto|floatformat:2 }}</td>
                                     <td class="text-center">
-                                        {% if multa.estado == 'pagated' or multa.estado == 'pagado' %}
+                                        {% if multa.estado == 'pagado' %}
                                             <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1.5"><i class="fa-solid fa-check me-1"></i>Cobrado</span>
                                         {% else %}
-                                            <span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-1.5"><i class="fa-solid fa-clock me-1"></i>Cobro Pendiente</span>
+                                            <span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-1.5"><i class="fa-solid fa-clock me-1"></i>Pendiente</span>
                                         {% endif %}
                                     </td>
                                     <td class="text-center text-muted font-monospace fs-8">{{ multa.fecha_pago|date:"d/m/Y H:i"|default:"-" }}</td>
                                     <td class="text-end">
                                         {% if multa.estado == 'pendiente' %}
                                             <a href="{% url 'pagar_multa' multa.id %}" class="btn btn-outline-success btn-sm px-3 rounded-pill">
-                                                <i class="fa-solid fa-check me-1"></i>Cobrar $ {{ multa.monto|floatformat:0 }}
+                                                <i class="fa-solid fa-check me-1"></i>Cobrar $ {{ multa.monto|floatformat:2 }}
                                             </a>
                                         {% else %}
                                             <span class="text-success small fw-semibold"><i class="fa-solid fa-check-double me-1"></i>Cobrado</span>
@@ -195,7 +262,7 @@
                                     </td>
                                 </tr>
                             {% empty %}
-                                <tr>
+                                <tr id="tr-multas-vacia">
                                     <td colspan="7" class="text-center py-4 text-muted">No se registran multas por tarjetas amarillas o rojas en los partidos jugados.</td>
                                 </tr>
                             {% endfor %}
@@ -288,6 +355,45 @@
     </div>
 </div>
 
+<!-- Modal para Modificar Cuota de Inscripción de Equipo -->
+<div class="modal fade" id="modalEditarCuota" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold text-primary"><i class="fa-solid fa-pen-to-square me-2"></i>Modificar Cuota de Equipo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="" method="POST" id="form-editar-cuota">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3 bg-light p-3 rounded-3">
+                        <span class="text-muted small">Club / Equipo:</span>
+                        <h5 class="fw-bold text-dark mb-0 mt-1 uppercase" id="lbl-editar-equipo">CLUB</h5>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary">Monto de la Cuota ($)</label>
+                        <div class="input-group">
+                            <span class="input-group-text font-monospace fw-bold">$</span>
+                            <input type="number" step="0.01" min="0" class="form-control font-monospace fw-bold fs-5 text-primary" name="monto" id="input-editar-monto" required>
+                        </div>
+                        <small class="text-muted">Establece el monto específico de la cuota de inscripción para este equipo.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary">Notas / Observaciones (Opcional)</label>
+                        <textarea class="form-control" name="notas" id="input-editar-notas" rows="2" placeholder="Ej. Descuento aplicado por acuerdo directivo..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary px-4">Guardar Cuota</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- Modal para Registrar Pago de Inscripción -->
 <div class="modal fade" id="modalPagarInscripcion" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -300,8 +406,17 @@
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="mb-3 bg-light p-3 rounded-3 fs-7">
-                        Equipo: <strong class="text-dark uppercase d-block mt-1" id="lbl-pago-equipo">CLUB</strong>
-                        Monto Fijo: <strong class="text-primary font-monospace d-block mt-1">$ 1,500.00</strong>
+                        <span class="text-muted small">Club / Equipo:</span>
+                        <h5 class="fw-bold text-dark uppercase mb-0 mt-1" id="lbl-pago-equipo">CLUB</h5>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary">Monto a Cobrar ($)</label>
+                        <div class="input-group">
+                            <span class="input-group-text font-monospace fw-bold">$</span>
+                            <input type="number" step="0.01" min="0" class="form-control font-monospace fw-bold fs-5 text-success" name="monto" id="input-pago-monto" required>
+                        </div>
+                        <small class="text-muted">Puedes ajustar el monto cobrado directamente aquí antes de confirmar el pago.</small>
                     </div>
                     
                     <div class="mb-3">
@@ -322,18 +437,125 @@
     </div>
 </div>
 
+<!-- Modal para Registrar Multa Manual -->
+<div class="modal fade" id="modalMultaManual" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold text-danger"><i class="fa-solid fa-gavel me-2"></i>Registrar Multa / Sanción Manual</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{% url 'registrar_multa_manual' %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary">Equipo Sancionado</label>
+                        <select class="form-select" name="equipo_id" required>
+                            <option value="">-- Selecciona el Equipo --</option>
+                            {% for eq in equipos %}
+                                <option value="{{ eq.id }}">{{ eq.nombre }} ({{ eq.get_categoria_display }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary">Tipo de Sanción / Motivo</label>
+                        <select class="form-select" name="motivo" id="select-motivo-manual" required>
+                            <option value="roja" selected>Tarjeta Roja Directa / Expulsión</option>
+                            <option value="amarilla">Tarjeta Amarilla / Amonestación</option>
+                            <option value="sancion">Sanción Disciplinaria / Administrativa</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary">Monto de la Multa ($)</label>
+                        <div class="input-group">
+                            <span class="input-group-text font-monospace fw-bold">$</span>
+                            <input type="number" step="0.01" min="0" class="form-control font-monospace fw-bold fs-5 text-danger" name="monto" id="input-monto-manual" value="150.00" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger px-4">Registrar Multa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
+    // Dinamismo del modal para Modificar Cuota de Inscripción
+    const modalEditarCuota = document.getElementById('modalEditarCuota');
+    if (modalEditarCuota) {
+        modalEditarCuota.addEventListener('show.bs.modal', function (event) {
+            const trigger = event.relatedTarget;
+            const pagoId = trigger.getAttribute('data-pago-id');
+            const equipoNombre = trigger.getAttribute('data-equipo-nombre');
+            const monto = trigger.getAttribute('data-monto');
+            const notas = trigger.getAttribute('data-notas');
+
+            const form = modalEditarCuota.querySelector('#form-editar-cuota');
+            form.action = `/finanzas/inscripcion/${pagoId}/modificar-cuota/`;
+
+            modalEditarCuota.querySelector('#lbl-editar-equipo').textContent = equipoNombre.toUpperCase();
+            modalEditarCuota.querySelector('#input-editar-monto').value = parseFloat(monto).toFixed(2);
+            modalEditarCuota.querySelector('#input-editar-notas').value = notas || '';
+        });
+    }
+
     // Dinamismo del modal para prellenar datos del pago de inscripción
     const modalPago = document.getElementById('modalPagarInscripcion');
-    modalPago.addEventListener('show.bs.modal', function (event) {
-        const trigger = event.relatedTarget;
-        const pagoId = trigger.getAttribute('data-pago-id');
-        const equipoNombre = trigger.getAttribute('data-equipo-nombre');
+    if (modalPago) {
+        modalPago.addEventListener('show.bs.modal', function (event) {
+            const trigger = event.relatedTarget;
+            const pagoId = trigger.getAttribute('data-pago-id');
+            const equipoNombre = trigger.getAttribute('data-equipo-nombre');
+            const monto = trigger.getAttribute('data-monto');
 
-        const form = modalPago.querySelector('#form-pagar-inscripcion');
-        form.action = `/finanzas/inscripcion/${pagoId}/pagar/`;
-        
-        modalPago.querySelector('#lbl-pago-equipo').textContent = equipoNombre.toUpperCase();
+            const form = modalPago.querySelector('#form-pagar-inscripcion');
+            form.action = `/finanzas/inscripcion/${pagoId}/pagar/`;
+            
+            modalPago.querySelector('#lbl-pago-equipo').textContent = equipoNombre.toUpperCase();
+            modalPago.querySelector('#input-pago-monto').value = parseFloat(monto).toFixed(2);
+        });
+    }
+
+    // Ajuste dinámico de monto al cambiar motivo en modal multa manual
+    const selectMotivo = document.getElementById('select-motivo-manual');
+    const inputMontoManual = document.getElementById('input-monto-manual');
+    if (selectMotivo && inputMontoManual) {
+        selectMotivo.addEventListener('change', function() {
+            if (this.value === 'roja') {
+                inputMontoManual.value = '150.00';
+            } else if (this.value === 'amarilla') {
+                inputMontoManual.value = '50.00';
+            }
+        });
+    }
+
+    // Filtros de multas interactivos
+    document.querySelectorAll('.btn-filtro-multa').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.btn-filtro-multa').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+
+            const filtro = this.getAttribute('data-filtro');
+            const filas = document.querySelectorAll('.fila-multa');
+
+            filas.forEach(fila => {
+                const motivo = fila.getAttribute('data-motivo');
+                const estado = fila.getAttribute('data-estado');
+
+                if (filtro === 'todos') {
+                    fila.style.display = '';
+                } else if (filtro === 'roja' || filtro === 'amarilla') {
+                    fila.style.display = (motivo === filtro) ? '' : 'none';
+                } else if (filtro === 'pendiente' || filtro === 'pagado') {
+                    fila.style.display = (estado === filtro) ? '' : 'none';
+                }
+            });
+        });
     });
 </script>
 {% endblock %}

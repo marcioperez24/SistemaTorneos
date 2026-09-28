@@ -4,8 +4,8 @@ from django.contrib import messages
 from django.utils import timezone
 from .models import PagoInscripcion, MultaTarjeta, MovimientoCaja
 from teams.models import Equipo
+from matches.models import EventoPartido
 from django.db.models import Sum
-
 from decimal import Decimal
 
 @login_required
@@ -21,6 +21,44 @@ def resumen_financiero(request):
             equipo=eq,
             defaults={'monto': Decimal('1500.00'), 'estado': 'pendiente', 'organizacion': request.organizacion}
         )
+
+    # Sincronizar automáticamente cualquier tarjeta roja o amarilla existente que no tenga multa generada
+    eventos_tarjeta = EventoPartido.objects.filter(
+        partido__organizacion=request.organizacion,
+        tipo__in=['amarilla', 'roja', 'AMARILLA', 'ROJA']
+    ).exclude(multa_tarjeta__isnull=False).select_related('partido', 'partido__torneo', 'equipo', 'jugador')
+
+    for ev in eventos_tarjeta:
+        tipo_str = str(ev.tipo).lower().strip()
+        torneo = ev.partido.torneo if ev.partido else None
+        if tipo_str == 'amarilla':
+            costo = torneo.costo_amarilla if (torneo and torneo.costo_amarilla is not None) else Decimal('50.00')
+        else:
+            costo = torneo.costo_roja if (torneo and torneo.costo_roja is not None) else Decimal('150.00')
+
+        eq = ev.equipo
+        if not eq and ev.jugador:
+            fichas = getattr(ev.jugador, 'fichas_jugador', None)
+            if fichas:
+                f = fichas.filter(torneo=torneo).first() if torneo else fichas.first()
+                if f:
+                    eq = f.equipo
+        if not eq and ev.partido:
+            eq = ev.partido.equipo_local
+
+        if eq:
+            MultaTarjeta.objects.get_or_create(
+                evento=ev,
+                defaults={
+                    'partido': ev.partido,
+                    'equipo': eq,
+                    'jugador': ev.jugador,
+                    'organizacion': request.organizacion,
+                    'monto': Decimal(str(costo)),
+                    'motivo': tipo_str,
+                    'estado': 'pendiente'
+                }
+            )
 
     # Totales y Cálculos Financieros
     total_inscripciones = PagoInscripcion.objects.filter(organizacion=request.organizacion, estado='pagado').aggregate(Sum('monto'))['monto__sum'] or Decimal('0.00')
@@ -38,7 +76,7 @@ def resumen_financiero(request):
 
     # Consultas detalladas
     pagos_inscripcion = PagoInscripcion.objects.filter(organizacion=request.organizacion).select_related('equipo')
-    multas = MultaTarjeta.objects.filter(organizacion=request.organizacion).select_related('jugador', 'equipo', 'partido')
+    multas = MultaTarjeta.objects.filter(organizacion=request.organizacion).select_related('jugador', 'equipo', 'partido').order_by('-id')
     movimientos = MovimientoCaja.objects.filter(organizacion=request.organizacion).select_related('registrado_por').order_by('-fecha')[:50]
 
     context = {
@@ -49,9 +87,34 @@ def resumen_financiero(request):
         'balance': balance_caja,
         'pagos_inscripcion': pagos_inscripcion,
         'multas': multas,
-        'movimientos': movimientos
+        'movimientos': movimientos,
+        'equipos': equipos,
     }
     return render(request, 'finances/resumen.html', context)
+
+
+@login_required
+def modificar_cuota_equipo(request, pago_id):
+    if request.user.role not in ['tesorero', 'tesoreria', 'superadmin']:
+        messages.error(request, "No tienes autorización para modificar cuotas.")
+        return redirect('club_portal')
+        
+    pago = get_object_or_404(PagoInscripcion, id=pago_id, organizacion=request.organizacion)
+    if request.method == 'POST':
+        try:
+            nuevo_monto = Decimal(request.POST.get('monto', '0'))
+            if nuevo_monto < Decimal('0'):
+                messages.error(request, "El monto de la cuota no puede ser negativo.")
+                return redirect('resumen_financiero')
+            pago.monto = nuevo_monto
+            if 'notas' in request.POST:
+                pago.notas = request.POST.get('notas')
+            pago.save()
+            messages.success(request, f"Cuota de inscripción de '{pago.equipo.nombre}' actualizada a $ {pago.monto:.2f}.")
+        except Exception as e:
+            messages.error(request, f"Error al modificar monto de cuota: {str(e)}")
+            
+    return redirect('resumen_financiero')
 
 
 @login_required
@@ -62,6 +125,14 @@ def registrar_pago_inscripcion(request, pago_id):
         
     pago = get_object_or_404(PagoInscripcion, id=pago_id, organizacion=request.organizacion)
     if request.method == 'POST':
+        monto_post = request.POST.get('monto')
+        if monto_post:
+            try:
+                nuevo_monto = Decimal(monto_post)
+                if nuevo_monto >= Decimal('0'):
+                    pago.monto = nuevo_monto
+            except Exception:
+                pass
         metodo = request.POST.get('metodo_pago', 'efectivo')
         pago.estado = 'pagado'
         pago.metodo_pago = metodo
@@ -77,7 +148,7 @@ def registrar_pago_inscripcion(request, pago_id):
             registrado_por=request.user
         )
 
-        messages.success(request, f"¡Pago de inscripción del club {pago.equipo.nombre} registrado con éxito!")
+        messages.success(request, f"¡Pago de inscripción del club {pago.equipo.nombre} registrado con éxito ($ {pago.monto:.2f})!")
     return redirect('resumen_financiero')
 
 
@@ -92,16 +163,46 @@ def pagar_multa(request, multa_id):
     multa.fecha_pago = timezone.now()
     multa.save()
 
+    jugador_nom = (multa.jugador.get_full_name() or multa.jugador.username) if multa.jugador else (multa.equipo.nombre if multa.equipo else "Equipo")
+
     # Registrar en la Bitácora de Caja
     MovimientoCaja.objects.create(
         organizacion=request.organizacion,
         tipo='ingreso',
         monto=multa.monto,
-        concepto=f"Cobro Multa ({multa.get_motivo_display()}) - Jugador: {multa.jugador.get_full_name() or multa.jugador.username}",
+        concepto=f"Cobro Multa ({multa.get_motivo_display()}) - {jugador_nom}",
         registrado_por=request.user
     )
 
-    messages.success(request, f"Multa cobrada y registrada con éxito.")
+    messages.success(request, f"Multa cobrada y registrada con éxito ($ {multa.monto:.2f}).")
+    return redirect('resumen_financiero')
+
+
+@login_required
+def registrar_multa_manual(request):
+    if request.user.role not in ['tesorero', 'tesoreria', 'superadmin']:
+        messages.error(request, "No tienes autorización para registrar multas.")
+        return redirect('club_portal')
+        
+    if request.method == 'POST':
+        equipo_id = request.POST.get('equipo_id')
+        equipo = get_object_or_404(Equipo, id=equipo_id, organizacion=request.organizacion)
+        motivo = request.POST.get('motivo', 'roja')
+        monto = request.POST.get('monto')
+        
+        try:
+            monto_dec = Decimal(monto) if monto else Decimal('150.00')
+            multa = MultaTarjeta.objects.create(
+                organizacion=request.organizacion,
+                equipo=equipo,
+                motivo=motivo,
+                monto=monto_dec,
+                estado='pendiente'
+            )
+            messages.success(request, f"Sanción / Multa ({multa.get_motivo_display()}) registrada con éxito para {equipo.nombre} por $ {monto_dec:.2f}.")
+        except Exception as e:
+            messages.error(request, f"Error al registrar multa: {str(e)}")
+            
     return redirect('resumen_financiero')
 
 
