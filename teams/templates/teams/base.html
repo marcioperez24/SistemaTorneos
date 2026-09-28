@@ -972,6 +972,13 @@
                 sidebarOverlay.classList.remove('show');
             });
         }
+
+        // Garantizar que todos los modales se abran en document.body para evitar parpadeos y problemas de z-index/stacking context
+        document.addEventListener('show.bs.modal', function(e) {
+            if (e.target && e.target.classList.contains('modal') && e.target.parentElement !== document.body) {
+                document.body.appendChild(e.target);
+            }
+        });
     </script>
     <!-- Bootstrap 5.3 JS Bundle (includes Popper) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
