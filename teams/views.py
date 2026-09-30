@@ -348,6 +348,17 @@ def registro_jugador(request, token):
                 nc_raw = request.POST.get('numero_camiseta')
                 numero_camiseta = int(str(nc_raw).strip()) if (nc_raw and str(nc_raw).strip().isdigit()) else None
 
+                if tipo == 'jugador' and numero_camiseta is not None:
+                    qs_cam = FichaJugador.objects.filter(
+                        equipo=invitacion.equipo,
+                        numero_camiseta=numero_camiseta
+                    ).exclude(user=request.user).exclude(estado_validacion='rechazado')
+                    if qs_cam.exists():
+                        jugador_ocupante = qs_cam.first()
+                        nombre_ocupante = jugador_ocupante.user.get_full_name() or jugador_ocupante.user.username
+                        messages.error(request, f"El dorsal #{numero_camiseta} ya está ocupado por {nombre_ocupante} en el equipo '{invitacion.equipo.nombre}'. Por favor elige otro número.")
+                        return redirect(request.path)
+
                 try:
                     with transaction.atomic():
                         firma_img = request.POST.get('firma_imagen') or getattr(ficha_anterior, 'firma_imagen', None)
@@ -453,7 +464,7 @@ def registro_jugador(request, token):
         if tipo == 'dt':
             form = DTRegistrationForm(request.POST, request.FILES, user=user_to_use)
         else:
-            form = PlayerRegistrationForm(request.POST, request.FILES, user=user_to_use)
+            form = PlayerRegistrationForm(request.POST, request.FILES, user=user_to_use, equipo=invitacion.equipo)
             
         if form.is_valid():
             # Check tournament constraints again for unauthenticated flow
@@ -571,7 +582,7 @@ def registro_jugador(request, token):
         if tipo == 'dt':
             form = DTRegistrationForm(user=form_user)
         else:
-            form = PlayerRegistrationForm(user=form_user)
+            form = PlayerRegistrationForm(user=form_user, equipo=invitacion.equipo)
             
     template_name = 'teams/registro_dt.html' if tipo == 'dt' else 'teams/registro_jugador.html'
     return render(request, template_name, {
@@ -628,22 +639,56 @@ def secretaria_dashboard(request):
                         .select_related('user', 'equipo')
                         .order_by('-id')[:25])
     
+    # Historial reciente (sidebar rápido)
     historial = []
-    for hj in historial_jugadores:
+    for hj in historial_jugadores[:25]:
         hj.es_dt = False
         historial.append(hj)
-    for hdt in historial_dt:
+    for hdt in historial_dt[:25]:
         hdt.es_dt = True
         historial.append(hdt)
-        
     historial.sort(key=lambda x: x.id, reverse=True)
     historial = historial[:25]
+    
+    # Historial completo (para el modal "Ver Todos los Aceptados y Rechazados")
+    todos_validados_jug = FichaJugador.objects.filter(
+        organizacion=request.organizacion
+    ).exclude(estado_validacion='pendiente').select_related('user', 'equipo').order_by('-id')
+    
+    todos_validados_dt = FichaDT.objects.filter(
+        organizacion=request.organizacion
+    ).exclude(estado_validacion='pendiente').select_related('user', 'equipo').order_by('-id')
+    
+    todos_validados = []
+    aprobados_count = 0
+    rechazados_count = 0
+    for vj in todos_validados_jug:
+        vj.es_dt = False
+        if vj.estado_validacion == 'aprobado':
+            aprobados_count += 1
+        elif vj.estado_validacion == 'rechazado':
+            rechazados_count += 1
+        todos_validados.append(vj)
+        
+    for vdt in todos_validados_dt:
+        vdt.es_dt = True
+        if vdt.estado_validacion == 'aprobado':
+            aprobados_count += 1
+        elif vdt.estado_validacion == 'rechazado':
+            rechazados_count += 1
+        todos_validados.append(vdt)
+        
+    todos_validados.sort(key=lambda x: x.id, reverse=True)
     
     context = {
         'pendientes': pendientes,
         'jugador_actual': pendientes[0] if pendientes else None,
         'total_pendientes': len(pendientes),
-        'historial': historial
+        'historial': historial,
+        'todos_validados': todos_validados,
+        'aprobados_count': aprobados_count,
+        'rechazados_count': rechazados_count,
+        'total_validados': len(todos_validados),
     }
     return render(request, 'teams/secretaria_dashboard.html', context)
 

@@ -74,6 +74,7 @@ class PlayerRegistrationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
+        self.equipo = kwargs.pop('equipo', None)
         super().__init__(*args, **kwargs)
         if self.user:
             # Eliminar campos de cuenta ya que ya está logueado
@@ -84,6 +85,29 @@ class PlayerRegistrationForm(forms.ModelForm):
             self.fields['first_name'].initial = self.user.first_name
             self.fields['last_name'].initial = self.user.last_name
             self.fields['telefono'].initial = self.user.telefono
+
+    def clean_numero_camiseta(self):
+        numero = self.cleaned_data.get('numero_camiseta')
+        if numero is not None:
+            if numero < 1 or numero > 99:
+                raise forms.ValidationError("El número de camiseta debe estar entre 1 y 99.")
+            equipo = self.equipo or getattr(self.instance, 'equipo', None)
+            if equipo:
+                qs = FichaJugador.objects.filter(
+                    equipo=equipo,
+                    numero_camiseta=numero
+                ).exclude(estado_validacion='rechazado')
+                if self.instance and self.instance.pk:
+                    qs = qs.exclude(pk=self.instance.pk)
+                if self.user:
+                    qs = qs.exclude(user=self.user)
+                if qs.exists():
+                    jugador_ocupante = qs.first()
+                    nombre_ocupante = jugador_ocupante.user.get_full_name() or jugador_ocupante.user.username
+                    raise forms.ValidationError(
+                        f"El número de camiseta #{numero} ya está asignado a {nombre_ocupante} en el equipo '{equipo.nombre}'. Por favor, elige otro dorsal."
+                    )
+        return numero
 
     def clean_username(self):
         if self.user:

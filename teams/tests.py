@@ -151,3 +151,59 @@ class RegistroJugadorTests(TestCase):
         self.assertIsNotNone(ficha)
         self.assertEqual(ficha.equipo, self.equipo)
         self.assertIsNone(ficha.torneo)
+
+    def test_numero_camiseta_no_se_puede_repetir_mismo_equipo(self):
+        """No se puede registrar otro jugador con el mismo número de camiseta en el mismo equipo"""
+        FichaJugador.objects.create(
+            user=self.dirigente,
+            organizacion=self.org,
+            equipo=self.equipo,
+            nro_cedula='1700000001',
+            numero_camiseta=10,
+            estado_validacion='aprobado'
+        )
+        url = f'/invitacion/{self.invitacion_sin_torneo.token}/'
+        response = self.client.post(url, {
+            'first_name': 'Pedro',
+            'last_name': 'Suarez',
+            'nro_cedula': '1700000002',
+            'telefono': '0990000002',
+            'numero_camiseta': 10, # Ya ocupada en self.equipo
+            'firma_digital': True,
+            'acepto_lopdp': 'on',
+        })
+        # Debe fallar la validación y no redirigir a éxito
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['form'].has_error('numero_camiseta'))
+
+    def test_secretaria_dashboard_lista_pendientes_y_modal(self):
+        """secretaria_dashboard muestra la lista interactiva de pendientes y el modal con historial"""
+        self.dirigente.is_superuser = True
+        self.dirigente.role = 'superadmin'
+        self.dirigente.save()
+        UsuarioOrganizacion.objects.get_or_create(usuario=self.dirigente, organizacion=self.org, defaults={'rol': 'superadmin', 'activo': True})
+        
+        self.client.force_login(self.dirigente)
+        session = self.client.session
+        session['current_organizacion_id'] = self.org.id
+        session.save()
+        
+        # Crear ficha pendiente y ficha aprobada
+        user_p = User.objects.create_user(username='pend_user', password='password123', first_name='Juan', last_name='Pendiente')
+        user_a = User.objects.create_user(username='aprob_user', password='password123', first_name='Mario', last_name='Aprobado')
+        
+        FichaJugador.objects.create(
+            user=user_p, organizacion=self.org, equipo=self.equipo,
+            nro_cedula='1711111111', numero_camiseta=7, estado_validacion='pendiente'
+        )
+        FichaJugador.objects.create(
+            user=user_a, organizacion=self.org, equipo=self.equipo,
+            nro_cedula='1722222222', numero_camiseta=8, estado_validacion='aprobado'
+        )
+        
+        response = self.client.get('/secretaria/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'JUAN PENDIENTE')
+        self.assertContains(response, 'item-nav-jug-')
+        self.assertContains(response, 'modalHistorialCompleto')
+        self.assertContains(response, 'MARIO APROBADO')
