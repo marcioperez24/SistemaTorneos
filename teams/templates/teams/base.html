@@ -554,11 +554,25 @@
             width: 100vw;
             height: 100vh;
             background-color: #ffffff;
-            z-index: 9999;
+            z-index: 99999;
             display: flex;
             justify-content: center;
             align-items: center;
-            transition: opacity 0.6s ease, visibility 0.6s ease;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+            pointer-events: none;
+            animation: autoFadeOutLoader 0.4s ease 1s forwards;
+        }
+
+        @keyframes autoFadeOutLoader {
+            0%, 70% {
+                opacity: 1;
+                visibility: visible;
+            }
+            100% {
+                opacity: 0;
+                visibility: hidden;
+                display: none;
+            }
         }
         
         .loader-content {
@@ -643,12 +657,14 @@
 <body>
 
     <!-- Loading Overlay -->
+    {% if not hide_navbar and not hide_loader %}
     <div id="global-loader">
         <div class="loader-content">
             <div class="loader-spinner"></div>
             <img src="{% static 'teams/images/logo.png' %}" alt="Logo" class="loader-logo">
         </div>
     </div>
+    {% endif %}
 
     <!-- App Layout -->
     <div class="app-layout">
@@ -876,17 +892,28 @@
                 }
             }
         });
-        // Hide global loader on page load
-        window.addEventListener('load', function() {
+        // Robust global loader dismissal
+        function dismissGlobalLoader() {
             const loader = document.getElementById('global-loader');
-            if (loader) {
+            if (loader && !loader.dataset.dismissed) {
+                loader.dataset.dismissed = 'true';
                 loader.style.opacity = '0';
                 setTimeout(() => {
                     loader.style.visibility = 'hidden';
                     loader.style.display = 'none';
-                }, 600);
+                }, 400);
             }
-        });
+        }
+
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            dismissGlobalLoader();
+        } else {
+            document.addEventListener('DOMContentLoaded', dismissGlobalLoader);
+        }
+        window.addEventListener('load', dismissGlobalLoader);
+        window.addEventListener('pageshow', dismissGlobalLoader);
+        // Maximum display failsafe
+        setTimeout(dismissGlobalLoader, 600);
 
         // Register Service Worker for PWA
         if ('serviceWorker' in navigator) {
