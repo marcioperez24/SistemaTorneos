@@ -549,9 +549,11 @@ def registro_jugador(request, token):
                             ficha_previa.contacto_emergencia = ficha.contacto_emergencia
                         if ficha.telefono_emergencia:
                             ficha_previa.telefono_emergencia = ficha.telefono_emergencia
-                        if ficha.firma_digital:
-                            ficha_previa.firma_digital = ficha.firma_digital
+                        if ficha.firma_imagen:
                             ficha_previa.firma_imagen = ficha.firma_imagen
+                            ficha_previa.firma_digital = True
+                        elif getattr(ficha, 'firma_digital', False):
+                            ficha_previa.firma_digital = True
                         ficha_previa.save()
                         ficha = ficha_previa
                     else:

@@ -190,6 +190,7 @@
                         </div>
                         
                         {{ form.firma_imagen }}
+                        <input type="hidden" name="firma_digital" id="id_firma_digital" value="true">
                         {% if form.firma_imagen.errors %}
                             <div class="text-danger small mt-1">{{ form.firma_imagen.errors|first }}</div>
                         {% endif %}
@@ -339,8 +340,24 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Obtener Base64 de la firma
-        const dataURL = canvas.toDataURL('image/png');
+        // Obtener Base64 de la firma convirtiendo el trazo a tinta oscura profesional (#0f172a)
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.drawImage(canvas, 0, 0);
+
+        const imgData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+        const data = imgData.data;
+        for (let i = 0; i < data.length; i += 4) {
+            if (data[i + 3] > 10) {
+                data[i] = 15;     // R
+                data[i + 1] = 23; // G
+                data[i + 2] = 42; // B
+            }
+        }
+        tempCtx.putImageData(imgData, 0, 0);
+        const dataURL = tempCanvas.toDataURL('image/png');
         hiddenInput.value = dataURL;
         previewImg.src = dataURL;
         previewContainer.style.display = 'block';
@@ -348,6 +365,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Auto-aceptar la firma digital
         const checkbox = document.getElementById('id_firma_digital');
         if (checkbox) {
+            checkbox.value = 'true';
             checkbox.checked = true;
         }
         

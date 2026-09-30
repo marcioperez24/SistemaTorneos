@@ -130,6 +130,12 @@ class PlayerRegistrationForm(forms.ModelForm):
             email = f"{username}@torneos.com"
         return email
 
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('firma_imagen'):
+            cleaned_data['firma_digital'] = True
+        return cleaned_data
+
     def save(self, commit=True, equipo=None, organizacion=None):
         cedula = self.cleaned_data.get('nro_cedula', '').strip()
         org = organizacion or (equipo.organizacion if equipo and hasattr(equipo, 'organizacion') else None)
@@ -204,6 +210,8 @@ class PlayerRegistrationForm(forms.ModelForm):
         if org:
             ficha.organizacion = org
         ficha.estado_validacion = 'pendiente'
+        if ficha.firma_imagen:
+            ficha.firma_digital = True
         
         if commit:
             ficha.save()
@@ -272,6 +280,12 @@ class DTRegistrationForm(forms.ModelForm):
         if not email:
             email = f"{username}@torneos.com"
         return email
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('firma_imagen'):
+            cleaned_data['firma_digital'] = True
+        return cleaned_data
 
     def save(self, commit=True, equipo=None, organizacion=None):
         cedula = self.cleaned_data.get('nro_cedula', '').strip()
@@ -345,6 +359,8 @@ class DTRegistrationForm(forms.ModelForm):
         if org:
             ficha.organizacion = org
         ficha.estado_validacion = 'pendiente'
+        if ficha.firma_imagen:
+            ficha.firma_digital = True
         
         if commit:
             ficha.save()

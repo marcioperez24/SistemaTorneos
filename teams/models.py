@@ -187,7 +187,10 @@ class FichaJugador(models.Model):
         return f"{self.user.get_full_name() or self.user.username} - {equipo_str} ({self.get_estado_validacion_display()})"
 
     def save(self, *args, **kwargs):
-        from .utils import optimizar_imagen
+        from .utils import optimizar_imagen, normalizar_firma_base64
+        if self.firma_imagen:
+            self.firma_imagen = normalizar_firma_base64(self.firma_imagen)
+            self.firma_digital = True
         for field_name in ['foto', 'cedula_frontal', 'cedula_posterior']:
             field = getattr(self, field_name, None)
             if field and hasattr(field, 'file') and hasattr(field.file, 'content_type'):
@@ -270,7 +273,10 @@ class FichaDT(models.Model):
         return f"{self.user.get_full_name() or self.user.username} - {equipo_str} ({self.get_estado_validacion_display()})"
 
     def save(self, *args, **kwargs):
-        from .utils import optimizar_imagen
+        from .utils import optimizar_imagen, normalizar_firma_base64
+        if self.firma_imagen:
+            self.firma_imagen = normalizar_firma_base64(self.firma_imagen)
+            self.firma_digital = True
         for field_name in ['foto', 'cedula_frontal', 'cedula_posterior']:
             field = getattr(self, field_name, None)
             if field and hasattr(field, 'file') and hasattr(field.file, 'content_type'):

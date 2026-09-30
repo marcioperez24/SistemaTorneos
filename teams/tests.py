@@ -267,3 +267,47 @@ class RegistroJugadorTests(TestCase):
         self.assertEqual(f1.estado_validacion, 'rechazado')
         self.assertEqual(f2.estado_validacion, 'rechazado')
         self.assertEqual(f1.motivo_rechazo, 'Fotos de cédula no son legibles.')
+
+    def test_firma_digital_se_normaliza_a_tinta_oscura_y_se_muestra_en_secretaria(self):
+        """Firma en base64 con trazo claro se normaliza automáticamente a tinta oscura y se renderiza en secretaría"""
+        import io, base64
+        from PIL import Image
+
+        # Crear imagen transparente con trazo blanco (simulando firma en pizarra negra)
+        img = Image.new('RGBA', (60, 30), (0, 0, 0, 0))
+        for x in range(30):
+            img.putpixel((x, 15), (255, 255, 255, 255))
+        buf = io.BytesIO()
+        img.save(buf, format='PNG')
+        firma_blanca = 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode('utf-8')
+
+        u = User.objects.create_user(username='firmante', password='password123', first_name='Carlos', last_name='Firmante')
+        ficha = FichaJugador.objects.create(
+            user=u, organizacion=self.org, equipo=self.equipo,
+            nro_cedula='0999999999', estado_validacion='pendiente',
+            firma_imagen=firma_blanca
+        )
+        
+        # Verificar que se normalizó y se activó firma_digital=True
+        ficha.refresh_from_db()
+        self.assertTrue(ficha.firma_digital)
+        header, b64data = ficha.firma_imagen.split(',', 1)
+        im_res = Image.open(io.BytesIO(base64.b64decode(b64data)))
+        pixel_test = im_res.getpixel((10, 15))
+        self.assertEqual(pixel_test[:3], (15, 23, 42)) # Tinta oscura #0f172a
+
+        # Verificar renderizado en secretaría
+        self.dirigente.is_superuser = True
+        self.dirigente.role = 'superadmin'
+        self.dirigente.save()
+        UsuarioOrganizacion.objects.get_or_create(usuario=self.dirigente, organizacion=self.org, defaults={'rol': 'superadmin', 'activo': True})
+
+        self.client.force_login(self.dirigente)
+        session = self.client.session
+        session['current_organizacion_id'] = self.org.id
+        session.save()
+
+        response = self.client.get('/secretaria/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Aceptada y Firmada')
+        self.assertContains(response, 'data:image/png;base64,')
