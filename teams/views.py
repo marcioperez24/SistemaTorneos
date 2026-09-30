@@ -1,3 +1,4 @@
+from collections import defaultdict
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -84,15 +85,22 @@ def club_portal(request):
 
     # Equipos que administra o a los que pertenece
     if request.user.role in ['superadmin', 'comision'] or request.user.is_superuser:
-        equipos = Equipo.objects.filter(organizacion=request.organizacion)
+        equipos_qs = Equipo.objects.filter(organizacion=request.organizacion)
     elif request.user.role == 'jugador':
         # Mostrar únicamente el equipo al que pertenece el jugador
         if request.user.ficha_jugador.equipo:
-            equipos = Equipo.objects.filter(id=request.user.ficha_jugador.equipo.id)
+            equipos_qs = Equipo.objects.filter(id=request.user.ficha_jugador.equipo.id)
         else:
-            equipos = Equipo.objects.none()
+            equipos_qs = Equipo.objects.none()
     else:
-        equipos = Equipo.objects.filter(organizacion=request.organizacion, dirigente=request.user)
+        equipos_qs = Equipo.objects.filter(organizacion=request.organizacion, dirigente=request.user)
+    
+    equipos = list(equipos_qs.select_related('categoria', 'dirigente').prefetch_related(
+        'categorias',
+        'cuerpo_tecnico__user',
+        'jugadores__user',
+        'jugadores__torneo'
+    ))
     
     # Obtener el nuevo enlace de la sesión y eliminarlo para que solo aparezca una vez
     nuevo_enlace = request.session.pop('nuevo_enlace', None)
@@ -100,13 +108,13 @@ def club_portal(request):
     
     torneos = Torneo.objects.filter(organizacion=request.organizacion).order_by('-fecha_creacion')
     
-    # Procesar historial de pagos para cada equipo
-    for equipo in equipos:
-        historial = []
-        
+    # Procesar historial de pagos para cada equipo en bloque (evita cientos de queries N+1)
+    equipos_ids = [e.id for e in equipos]
+    pagos_by_equipo = defaultdict(list)
+    if equipos_ids:
         # 1. Inscripciones
-        for pago in PagoInscripcion.objects.filter(equipo=equipo):
-            historial.append({
+        for pago in PagoInscripcion.objects.filter(equipo_id__in=equipos_ids):
+            pagos_by_equipo[pago.equipo_id].append({
                 'concepto': "Inscripción de Torneo",
                 'monto': pago.monto,
                 'estado': pago.estado,
@@ -115,9 +123,9 @@ def club_portal(request):
             })
             
         # 2. Multas por tarjetas
-        for multa in MultaTarjeta.objects.filter(equipo=equipo).select_related('jugador'):
+        for multa in MultaTarjeta.objects.filter(equipo_id__in=equipos_ids).select_related('jugador'):
             nombre_jugador = multa.jugador.get_full_name() or multa.jugador.username
-            historial.append({
+            pagos_by_equipo[multa.equipo_id].append({
                 'concepto': f"{multa.get_motivo_display()} - {nombre_jugador}",
                 'monto': multa.monto,
                 'estado': multa.estado,
@@ -126,9 +134,9 @@ def club_portal(request):
             })
             
         # 3. Cobros Adicionales (Arbitraje, etc)
-        for cobro in CobroEquipo.objects.filter(equipo=equipo):
+        for cobro in CobroEquipo.objects.filter(equipo_id__in=equipos_ids):
             desc = f" ({cobro.descripcion})" if cobro.descripcion else ""
-            historial.append({
+            pagos_by_equipo[cobro.equipo_id].append({
                 'concepto': f"{cobro.get_concepto_display()}{desc}",
                 'monto': cobro.monto,
                 'estado': cobro.estado,
@@ -136,15 +144,11 @@ def club_portal(request):
                 'tipo': 'cobro_adicional'
             })
             
-        # Ordenar historial por fecha (los nulos al principio o usar timezone.now() para comparables)
-        def sort_date(item):
-            # Si no hay fecha (ej. pendiente), usar la fecha actual para que aparezcan primero
-            return item['fecha'] or timezone.now()
-            
-        historial.sort(key=sort_date, reverse=True)
+    now = timezone.now()
+    for equipo in equipos:
+        historial = pagos_by_equipo.get(equipo.id, [])
+        historial.sort(key=lambda item: item['fecha'] or now, reverse=True)
         equipo.historial_pagos = historial
-    
-    torneos = Torneo.objects.filter(organizacion=request.organizacion).order_by('-fecha_creacion')
     
     context = {
         'equipos': equipos,
@@ -614,8 +618,15 @@ def secretaria_dashboard(request):
     # FichaDT no tiene fecha_firma en la base de datos pero sí firma_digital, usemos el ID
     pendientes.sort(key=lambda x: x.id)
 
-    historial_jugadores = FichaJugador.objects.filter(organizacion=request.organizacion).exclude(estado_validacion='pendiente').select_related('user', 'equipo')
-    historial_dt = FichaDT.objects.filter(organizacion=request.organizacion).exclude(estado_validacion='pendiente').select_related('user', 'equipo')
+    # Historial reciente limitado a 25 registros en BD para máxima velocidad
+    historial_jugadores = list(FichaJugador.objects.filter(organizacion=request.organizacion)
+                               .exclude(estado_validacion='pendiente')
+                               .select_related('user', 'equipo')
+                               .order_by('-id')[:25])
+    historial_dt = list(FichaDT.objects.filter(organizacion=request.organizacion)
+                        .exclude(estado_validacion='pendiente')
+                        .select_related('user', 'equipo')
+                        .order_by('-id')[:25])
     
     historial = []
     for hj in historial_jugadores:
@@ -626,10 +637,12 @@ def secretaria_dashboard(request):
         historial.append(hdt)
         
     historial.sort(key=lambda x: x.id, reverse=True)
-    historial = historial[:50]
+    historial = historial[:25]
     
     context = {
         'pendientes': pendientes,
+        'jugador_actual': pendientes[0] if pendientes else None,
+        'total_pendientes': len(pendientes),
         'historial': historial
     }
     return render(request, 'teams/secretaria_dashboard.html', context)

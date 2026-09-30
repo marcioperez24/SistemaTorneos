@@ -76,6 +76,12 @@ class Equipo(models.Model):
             return dt.user.telefono or ""
         return self.telefono_entrenador or ""
 
+    def save(self, *args, **kwargs):
+        if self.logo and hasattr(self.logo, 'file') and hasattr(self.logo.file, 'content_type'):
+            from .utils import optimizar_imagen
+            optimizar_imagen(self.logo, max_dimension=600, quality=85)
+        super().save(*args, **kwargs)
+
 
 class InvitacionEquipo(models.Model):
     TIPO_CHOICES = (
@@ -180,6 +186,14 @@ class FichaJugador(models.Model):
         equipo_str = self.equipo.nombre if self.equipo else "Sin Equipo"
         return f"{self.user.get_full_name() or self.user.username} - {equipo_str} ({self.get_estado_validacion_display()})"
 
+    def save(self, *args, **kwargs):
+        from .utils import optimizar_imagen
+        for field_name in ['foto', 'cedula_frontal', 'cedula_posterior']:
+            field = getattr(self, field_name, None)
+            if field and hasattr(field, 'file') and hasattr(field.file, 'content_type'):
+                optimizar_imagen(field, max_dimension=1280, quality=80)
+        super().save(*args, **kwargs)
+
 
 class FichaDT(models.Model):
     ESTADOS_VALIDACION = (
@@ -254,3 +268,11 @@ class FichaDT(models.Model):
     def __str__(self):
         equipo_str = self.equipo.nombre if self.equipo else "Sin Equipo"
         return f"{self.user.get_full_name() or self.user.username} - {equipo_str} ({self.get_estado_validacion_display()})"
+
+    def save(self, *args, **kwargs):
+        from .utils import optimizar_imagen
+        for field_name in ['foto', 'cedula_frontal', 'cedula_posterior']:
+            field = getattr(self, field_name, None)
+            if field and hasattr(field, 'file') and hasattr(field.file, 'content_type'):
+                optimizar_imagen(field, max_dimension=1280, quality=80)
+        super().save(*args, **kwargs)
