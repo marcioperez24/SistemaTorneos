@@ -28,6 +28,8 @@ urlpatterns = [
     path('secretaria/', views.secretaria_dashboard, name='secretaria_dashboard'),
     path('secretaria/aprobar/<int:ficha_id>/', views.aprobar_jugador, name='aprobar_jugador'),
     path('secretaria/rechazar/<int:ficha_id>/', views.rechazar_jugador, name='rechazar_jugador'),
+    path('secretaria/aprobar-masivo/', views.aprobar_masivo, name='aprobar_masivo'),
+    path('secretaria/rechazar-masivo/', views.rechazar_masivo, name='rechazar_masivo'),
     
     # Carnet y Verificación Pública (QR)
     path('carnet/<int:ficha_id>/', views.ver_carnet, name='ver_carnet'),

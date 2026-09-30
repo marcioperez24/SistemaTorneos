@@ -177,7 +177,7 @@ class RegistroJugadorTests(TestCase):
         self.assertTrue(response.context['form'].has_error('numero_camiseta'))
 
     def test_secretaria_dashboard_lista_pendientes_y_modal(self):
-        """secretaria_dashboard muestra la lista interactiva de pendientes y el modal con historial"""
+        """secretaria_dashboard muestra la lista desplegable de pendientes y el modal con historial"""
         self.dirigente.is_superuser = True
         self.dirigente.role = 'superadmin'
         self.dirigente.save()
@@ -204,6 +204,66 @@ class RegistroJugadorTests(TestCase):
         response = self.client.get('/secretaria/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'JUAN PENDIENTE')
-        self.assertContains(response, 'item-nav-jug-')
+        self.assertContains(response, 'card-ficha-jug-')
         self.assertContains(response, 'modalHistorialCompleto')
         self.assertContains(response, 'MARIO APROBADO')
+        self.assertContains(response, 'btnAprobarMasivo')
+        self.assertContains(response, 'btnRechazarMasivo')
+
+    def test_aprobar_masivo_jugadores_y_dt(self):
+        """Aprobar masivo habilita en bloque a jugadores y directores técnicos seleccionados"""
+        self.dirigente.is_superuser = True
+        self.dirigente.role = 'superadmin'
+        self.dirigente.save()
+        UsuarioOrganizacion.objects.get_or_create(usuario=self.dirigente, organizacion=self.org, defaults={'rol': 'superadmin', 'activo': True})
+        
+        self.client.force_login(self.dirigente)
+        session = self.client.session
+        session['current_organizacion_id'] = self.org.id
+        session.save()
+
+        u1 = User.objects.create_user(username='j1', password='password123')
+        u2 = User.objects.create_user(username='j2', password='password123')
+        f1 = FichaJugador.objects.create(user=u1, organizacion=self.org, equipo=self.equipo, nro_cedula='1001', estado_validacion='pendiente')
+        f2 = FichaJugador.objects.create(user=u2, organizacion=self.org, equipo=self.equipo, nro_cedula='1002', estado_validacion='pendiente')
+
+        response = self.client.post('/secretaria/aprobar-masivo/', {
+            'fichas_jugador': [f1.id, f2.id]
+        })
+        self.assertEqual(response.status_code, 302)
+        
+        f1.refresh_from_db()
+        f2.refresh_from_db()
+        self.assertEqual(f1.estado_validacion, 'aprobado')
+        self.assertEqual(f2.estado_validacion, 'aprobado')
+        self.assertIsNotNone(f1.fecha_aprobacion)
+        self.assertEqual(f1.aprobado_por, self.dirigente)
+
+    def test_rechazar_masivo_jugadores(self):
+        """Rechazar masivo rechaza en bloque y asigna el motivo de rechazo a las fichas"""
+        self.dirigente.is_superuser = True
+        self.dirigente.role = 'superadmin'
+        self.dirigente.save()
+        UsuarioOrganizacion.objects.get_or_create(usuario=self.dirigente, organizacion=self.org, defaults={'rol': 'superadmin', 'activo': True})
+        
+        self.client.force_login(self.dirigente)
+        session = self.client.session
+        session['current_organizacion_id'] = self.org.id
+        session.save()
+
+        u1 = User.objects.create_user(username='r1', password='password123')
+        u2 = User.objects.create_user(username='r2', password='password123')
+        f1 = FichaJugador.objects.create(user=u1, organizacion=self.org, equipo=self.equipo, nro_cedula='2001', estado_validacion='pendiente')
+        f2 = FichaJugador.objects.create(user=u2, organizacion=self.org, equipo=self.equipo, nro_cedula='2002', estado_validacion='pendiente')
+
+        response = self.client.post('/secretaria/rechazar-masivo/', {
+            'fichas_jugador': [f1.id, f2.id],
+            'motivo_rechazo': 'Fotos de cédula no son legibles.'
+        })
+        self.assertEqual(response.status_code, 302)
+        
+        f1.refresh_from_db()
+        f2.refresh_from_db()
+        self.assertEqual(f1.estado_validacion, 'rechazado')
+        self.assertEqual(f2.estado_validacion, 'rechazado')
+        self.assertEqual(f1.motivo_rechazo, 'Fotos de cédula no son legibles.')

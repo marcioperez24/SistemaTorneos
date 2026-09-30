@@ -678,12 +678,14 @@ def secretaria_dashboard(request):
             rechazados_count += 1
         todos_validados.append(vdt)
         
+    clubes_unicos = sorted(list(set([p.equipo.nombre for p in pendientes if p.equipo and p.equipo.nombre])))
     todos_validados.sort(key=lambda x: x.id, reverse=True)
     
     context = {
         'pendientes': pendientes,
         'jugador_actual': pendientes[0] if pendientes else None,
         'total_pendientes': len(pendientes),
+        'clubes_unicos': clubes_unicos,
         'historial': historial,
         'todos_validados': todos_validados,
         'aprobados_count': aprobados_count,
@@ -752,6 +754,94 @@ def rechazar_jugador(request, ficha_id):
             mensaje = f"¡Hola {nombre_completo}! Tu registro como {rol_str} para el equipo '{equipo_nombre}' ha sido RECHAZADO.\n\nMotivo del rechazo: {motivo}\n\nPor favor, ingresa al portal del club para corregir tu información."
             url_mensaje = f"https://api.whatsapp.com/send?phone={telefono}&text={urllib.parse.quote(mensaje)}"
             return redirect(url_mensaje)
+            
+    return redirect('secretaria_dashboard')
+
+@login_required
+def aprobar_masivo(request):
+    if not request.user.has_module_access('secretaria'):
+        messages.error(request, "No autorizado.")
+        return redirect('club_portal')
+        
+    if request.method == 'POST':
+        jugador_ids = request.POST.getlist('fichas_jugador')
+        dt_ids = request.POST.getlist('fichas_dt')
+        
+        count_j = 0
+        count_dt = 0
+        ahora = timezone.now()
+        
+        if jugador_ids:
+            count_j = FichaJugador.objects.filter(
+                id__in=jugador_ids, 
+                organizacion=request.organizacion,
+                estado_validacion='pendiente'
+            ).update(
+                estado_validacion='aprobado',
+                motivo_rechazo=None,
+                fecha_aprobacion=ahora,
+                aprobado_por=request.user
+            )
+            
+        if dt_ids:
+            count_dt = FichaDT.objects.filter(
+                id__in=dt_ids, 
+                organizacion=request.organizacion,
+                estado_validacion='pendiente'
+            ).update(
+                estado_validacion='aprobado',
+                motivo_rechazo=None,
+                fecha_aprobacion=ahora,
+                aprobado_por=request.user
+            )
+            
+        total = count_j + count_dt
+        if total > 0:
+            messages.success(request, f"¡Éxito! Se han aprobado y habilitado {total} postulante(s) correctamente.")
+        else:
+            messages.warning(request, "No seleccionaste ninguna ficha para aprobar.")
+            
+    return redirect('secretaria_dashboard')
+
+@login_required
+def rechazar_masivo(request):
+    if not request.user.has_module_access('secretaria'):
+        messages.error(request, "No autorizado.")
+        return redirect('club_portal')
+        
+    if request.method == 'POST':
+        jugador_ids = request.POST.getlist('fichas_jugador')
+        dt_ids = request.POST.getlist('fichas_dt')
+        motivo = request.POST.get('motivo_rechazo', 'Documentación incompleta o ilegible.')
+        
+        count_j = 0
+        count_dt = 0
+        
+        if jugador_ids:
+            count_j = FichaJugador.objects.filter(
+                id__in=jugador_ids, 
+                organizacion=request.organizacion,
+                estado_validacion='pendiente'
+            ).update(
+                estado_validacion='rechazado',
+                motivo_rechazo=motivo
+            )
+            
+        if dt_ids:
+            count_dt = FichaDT.objects.filter(
+                id__in=dt_ids, 
+                organizacion=request.organizacion,
+                estado_validacion='pendiente'
+            ).update(
+                estado_validacion='rechazado',
+                motivo_rechazo=motivo
+            )
+            
+        total = count_j + count_dt
+        if total > 0:
+            messages.warning(request, f"Se han rechazado {total} postulante(s) con el motivo indicado.")
+        else:
+            messages.warning(request, "No seleccionaste ninguna ficha para rechazar.")
             
     return redirect('secretaria_dashboard')
 
