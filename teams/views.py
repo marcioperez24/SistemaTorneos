@@ -1297,7 +1297,7 @@ def cargar_equipos_excel(request):
 
 
 @login_required
-def carnets_equipo(request, equipo_id):
+def _preparar_contexto_carnets(request, equipo_id):
     equipo = get_object_or_404(Equipo, id=equipo_id, organizacion=request.organizacion)
     
     es_dirigente = (equipo.dirigente == request.user)
@@ -1306,8 +1306,7 @@ def carnets_equipo(request, equipo_id):
                 or request.user.has_module_access('equipos')
                 or request.user.has_module_access('secretaria'))
     if not (es_dirigente or es_staff):
-        messages.error(request, "No tienes permisos para ver los carnets de este equipo.")
-        return redirect('club_portal')
+        return None, equipo
 
     estado_filtro = request.GET.get('estado', 'aprobados')
     incluir_dt = request.GET.get('dt', '1') == '1'
@@ -1374,7 +1373,25 @@ def carnets_equipo(request, equipo_id):
         'incluir_dt': incluir_dt,
         'organizacion': request.organizacion,
     }
+    return context, equipo
+
+
+@login_required
+def carnets_equipo(request, equipo_id):
+    context, equipo = _preparar_contexto_carnets(request, equipo_id)
+    if context is None:
+        messages.error(request, "No tienes permisos para ver los carnets de este equipo.")
+        return redirect('club_portal')
     return render(request, 'teams/carnets_equipo.html', context)
+
+
+@login_required
+def imprimir_carnets_equipo(request, equipo_id):
+    context, equipo = _preparar_contexto_carnets(request, equipo_id)
+    if context is None:
+        messages.error(request, "No tienes permisos para imprimir los carnets de este equipo.")
+        return redirect('club_portal')
+    return render(request, 'teams/carnets_imprimir.html', context)
 
 
 @login_required

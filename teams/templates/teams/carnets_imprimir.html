@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impresión de Carnets - {{ equipo.nombre }}</title>
+    <!-- Google Fonts: Roboto -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <style>
+        :root {
+            --carnet-ribbon-bg: #e11d48; /* Fucsia Liga por defecto */
+            --carnet-ribbon-text: #ffffff;
+        }
+
+        body.theme-fucsia { --carnet-ribbon-bg: #e11d48; }
+        body.theme-azul { --carnet-ribbon-bg: #1e3a8a; }
+        body.theme-verde { --carnet-ribbon-bg: #059669; }
+        body.theme-negro { --carnet-ribbon-bg: #111827; }
+        body.theme-naranja { --carnet-ribbon-bg: #ea580c; }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f1f5f9;
+            color: #0f172a;
+            padding: 0;
+            margin: 0;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* BARRA SUPERIOR FLOTANTE (SOLO PANTALLA) */
+        .print-toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 9999;
+            background: #0f172a;
+            color: #ffffff;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .toolbar-info h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toolbar-info p {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin: 2px 0 0 0;
+        }
+
+        .toolbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-print {
+            background: #10b981;
+            color: #ffffff;
+            border: none;
+            padding: 8px 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            border-radius: 9999px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-print:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .btn-back {
+            background: #334155;
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 9999px;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-back:hover {
+            background: #475569;
+        }
+
+        .toolbar-controls {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 0.78rem;
+            color: #cbd5e1;
+        }
+
+        .color-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            cursor: pointer;
+            display: inline-block;
+            transition: transform 0.15s ease;
+        }
+
+        .color-dot:hover {
+            transform: scale(1.2);
+        }
+
+        /* HOJA DE IMPRESIÓN CENTRADA */
+        .sheet-container {
+            max-width: 210mm; /* A4 / Carta */
+            margin: 20px auto;
+            background: #ffffff;
+            padding: 10mm 6mm;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border-radius: 8px;
+        }
+
+        /* CUADRÍCULA DE 2 COLUMNAS */
+        .carnets-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            column-gap: 5mm;
+            row-gap: 5mm;
+            width: 100%;
+        }
+
+        /* ENVOLTORIO CON GUÍAS DE CORTE */
+        .carnet-wrapper {
+            position: relative;
+            padding: 2mm;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .carnet-wrapper.cut-lines {
+            border: 0.5pt dashed #94a3b8;
+            border-radius: 6px;
+        }
+
+        .cut-tag {
+            display: none;
+            position: absolute;
+            top: -7px;
+            right: 8px;
+            background: #ffffff;
+            padding: 0 4px;
+            font-size: 8px;
+            color: #64748b;
+            font-family: monospace;
+            font-weight: 700;
+        }
+
+        .carnet-wrapper.cut-lines .cut-tag {
+            display: block;
+        }
+
+        /* TARJETA DEL CARNET (DIMENSIONES EXACTAS: 92mm x 58mm) */
+        .carnet-card {
+            width: 100%;
+            height: 57mm;
+            background: #030712;
+            color: #ffffff;
+            border: 1.5pt solid #1f2937;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* 1. ENCABEZADO DE ORGANIZACIÓN */
+        .carnet-header {
+            background: #111827;
+            padding: 1.5mm 3mm;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 0.5pt solid #374151;
+            height: 9.5mm;
+        }
+
+        .org-text {
+            line-height: 1.1;
+        }
+
+        .org-name {
+            font-size: 6.8pt;
+            font-weight: 900;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            color: #f9fafb;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 60mm;
+        }
+
+        .org-sub {
+            font-size: 5.2pt;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            color: #9ca3af;
+        }
+
+        .org-logo {
+            width: 7mm;
+            height: 7mm;
+            object-fit: contain;
+            background: #ffffff;
+            border-radius: 1.5mm;
+            padding: 0.3mm;
+        }
+
+        /* 2. CINTILLO DEL TORNEO */
+        .carnet-ribbon {
+            background-color: var(--carnet-ribbon-bg);
+            color: var(--carnet-ribbon-text);
+            padding: 1.5mm 3mm;
+            text-align: center;
+            height: 9.5mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .ribbon-title {
+            font-size: 7.2pt;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            line-height: 1.05;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .ribbon-subtitle {
+            font-size: 5.6pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            line-height: 1.05;
+            opacity: 0.95;
+            margin-top: 0.3mm;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 3. CUERPO DE DATOS Y FOTO */
+        .carnet-body {
+            display: flex;
+            flex-direction: row;
+            padding: 1.5mm 3mm;
+            gap: 2.5mm;
+            flex-grow: 1;
+            height: 38mm;
+            align-items: stretch;
+        }
+
+        /* Columna de Datos (Izquierda) */
+        .data-col {
+            flex: 1 1 64%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .data-row {
+            display: flex;
+            align-items: baseline;
+            gap: 1.5mm;
+            line-height: 1.2;
+            border-bottom: 0.3pt dashed rgba(255, 255, 255, 0.1);
+            padding-bottom: 0.3mm;
+        }
+
+        .data-lbl {
+            font-size: 5.8pt;
+            font-weight: 900;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            min-width: 14mm;
+            flex-shrink: 0;
+        }
+
+        .data-val {
+            font-size: 6.8pt;
+            font-weight: 700;
+            color: #ffffff;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 38mm;
+        }
+
+        .data-val.dorsal {
+            font-size: 8.5pt;
+            font-weight: 900;
+            color: #38bdf8;
+            font-family: monospace;
+        }
+
+        .organizador-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 0.5mm;
+            border-top: 0.4pt solid rgba(255, 255, 255, 0.2);
+            margin-top: 0.3mm;
+        }
+
+        .organizador-lbl {
+            font-size: 5.2pt;
+            font-weight: 800;
+            color: #9ca3af;
+            text-transform: uppercase;
+        }
+
+        .organizador-status {
+            font-size: 5.2pt;
+            font-weight: 800;
+            padding: 0.3mm 1.5mm;
+            border-radius: 1mm;
+            background: #065f46;
+            color: #34d399;
+            text-transform: uppercase;
+            border: 0.3pt solid #047857;
+        }
+
+        /* Columna de Foto y QR (Derecha) */
+        .media-col {
+            flex: 0 0 25mm;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1mm;
+        }
+
+        .photo-frame {
+            width: 25mm;
+            height: 29mm;
+            border: 1pt solid #ffffff;
+            border-radius: 1.2mm;
+            overflow: hidden;
+            background: #1f2937;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .photo-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            height: 100%;
+            font-size: 5.5pt;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .photo-placeholder i {
+            font-size: 14pt;
+            margin-bottom: 1mm;
+            color: #4b5563;
+        }
+
+        .qr-strip {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1mm;
+            background: #ffffff;
+            padding: 0.4mm 1.5mm;
+            border-radius: 1mm;
+            width: 100%;
+            height: 5.5mm;
+        }
+
+        .qr-strip img {
+            width: 4.8mm;
+            height: 4.8mm;
+        }
+
+        .qr-tag {
+            font-size: 4.2pt;
+            font-weight: 900;
+            color: #111827;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+
+        /* ==========================================================
+           REGLAS DE IMPRESIÓN NATIVAS (PDF Y PAPEL FÍSICO)
+           ========================================================== */
+        @media print {
+            @page {
+                size: letter portrait;
+                margin: 6mm 5mm;
+            }
+
+            html, body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+            }
+
+            /* OCULTAR COMPLETAMENTE LA BARRA DE HERRAMIENTAS */
+            .no-print, .print-toolbar {
+                display: none !important;
+            }
+
+            .sheet-container {
+                max-width: 100% !important;
+                width: 100% !important;
+                padding: 0 !important;
+                margin: 0 auto !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                background: transparent !important;
+            }
+
+            .carnets-grid {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important; /* 2 COLUMNAS EXACTAS */
+                column-gap: 5mm !important;
+                row-gap: 5mm !important;
+                width: 100% !important;
+            }
+
+            .carnet-wrapper {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                padding: 1.5mm !important;
+            }
+
+            .carnet-card {
+                border: 0.75pt solid #000000 !important;
+                background: #030712 !important;
+                color: #ffffff !important;
+                box-shadow: none !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                height: 57mm !important;
+            }
+
+            .carnet-header {
+                background: #111827 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .carnet-ribbon {
+                background-color: var(--carnet-ribbon-bg) !important;
+                color: #ffffff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .photo-frame {
+                border: 0.75pt solid #ffffff !important;
+            }
+
+            .qr-strip {
+                background: #ffffff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+    </style>
+</head>
+<body class="theme-fucsia">
+
+    <!-- BARRA SUPERIOR DE ACCIONES (NO SALE EN LA IMPRESIÓN) -->
+    <div class="print-toolbar no-print">
+        <div class="toolbar-info">
+            <h1><i class="fa-solid fa-id-card text-success"></i> Carnets de Jugadores - {{ equipo.nombre }}</h1>
+            <p>{{ total_jugadores }} carnets listos &bull; Hoja optimizada a 2 columnas (8 por página aprox.) sin menús del sistema</p>
+        </div>
+
+        <div class="toolbar-actions">
+            <!-- Selector de Color de Cintillo -->
+            <div class="toolbar-controls">
+                <span>Color:</span>
+                <span class="color-dot" style="background:#e11d48;" title="Fucsia Liga" onclick="setTema('fucsia')"></span>
+                <span class="color-dot" style="background:#1e3a8a;" title="Azul Marino" onclick="setTema('azul')"></span>
+                <span class="color-dot" style="background:#059669;" title="Verde Campo" onclick="setTema('verde')"></span>
+                <span class="color-dot" style="background:#111827;" title="Negro Premium" onclick="setTema('negro')"></span>
+                <span class="color-dot" style="background:#ea580c;" title="Naranja" onclick="setTema('naranja')"></span>
+
+                <label style="cursor:pointer; display:flex; align-items:center; gap:4px; margin-left:8px;">
+                    <input type="checkbox" id="chkCorte" checked onchange="toggleCorte(this.checked)">
+                    <span>Guías ✂</span>
+                </label>
+
+                <label style="cursor:pointer; display:flex; align-items:center; gap:4px;">
+                    <input type="checkbox" id="chkQR" checked onchange="toggleQR(this.checked)">
+                    <span>QR</span>
+                </label>
+            </div>
+
+            <button type="button" class="btn-print" onclick="window.print()">
+                <i class="fa-solid fa-print"></i>
+                <span>Imprimir / Guardar PDF</span>
+            </button>
+
+            <a href="{% url 'carnets_equipo' equipo.id %}" class="btn-back">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span>Volver</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- CONTENEDOR DE HOJA IMPRIMIBLE -->
+    <div class="sheet-container">
+        <div class="carnets-grid">
+            {% for item in todos_los_carnets %}
+                <div class="carnet-wrapper cut-lines">
+                    <span class="cut-tag">✂ CORTE</span>
+                    <div class="carnet-card">
+                        <!-- 1. ENCABEZADO ORGANIZACIÓN -->
+                        <div class="carnet-header">
+                            <div class="org-text">
+                                <div class="org-name">{{ organizacion.nombre|default:"CLUB DE EMPRESARIOS"|upper }}</div>
+                                <div class="org-sub">{{ organizacion.nombre_comercial|default:"CÁMARA DE COMERCIO DE AMBATO"|upper }}</div>
+                            </div>
+                            {% if organizacion.logo %}
+                                <img src="{{ organizacion.logo.url }}" alt="Logo Org" class="org-logo">
+                            {% elif equipo.logo %}
+                                <img src="{{ equipo.logo.url }}" alt="Logo Equipo" class="org-logo">
+                            {% else %}
+                                <div class="org-logo" style="display:flex; align-items:center; justify-content:center; background:#1e293b; color:#fbbf24; font-size:8px;">
+                                    <i class="fa-solid fa-shield"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- 2. CINTILLO / BANNER DEL TORNEO -->
+                        <div class="carnet-ribbon">
+                            <div class="ribbon-title">
+                                {{ item.ficha.torneo.nombre|default:torneo.nombre|default:"TORNEO EMPRESARIAL"|upper }}
+                            </div>
+                            <div class="ribbon-subtitle">
+                                {% if item.ficha.torneo.modalidad %}
+                                    {{ item.ficha.torneo.modalidad|upper }}
+                                {% elif torneo.modalidad %}
+                                    {{ torneo.modalidad|upper }}
+                                {% else %}
+                                    SECTOR COMERCIO FÚTBOL 6vs6
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- 3. CUERPO: DATOS + FOTO -->
+                        <div class="carnet-body">
+                            <!-- Datos Izquierda -->
+                            <div class="data-col">
+                                <div class="data-row">
+                                    <span class="data-lbl">NOMBRE:</span>
+                                    <span class="data-val" title="{{ item.ficha.user.get_full_name|upper }}">
+                                        {{ item.ficha.user.get_full_name|default:item.ficha.user.username|upper }}
+                                    </span>
+                                </div>
+
+                                <div class="data-row">
+                                    <span class="data-lbl">CÉDULA:</span>
+                                    <span class="data-val font-monospace">{{ item.ficha.nro_cedula|default:"-" }}</span>
+                                </div>
+
+                                <div class="data-row">
+                                    <span class="data-lbl">EMPRESA:</span>
+                                    <span class="data-val" title="{{ equipo.nombre|upper }}">{{ equipo.nombre|upper }}</span>
+                                </div>
+
+                                <div class="data-row">
+                                    <span class="data-lbl">CAT.:</span>
+                                    <span class="data-val">
+                                        {% if item.es_dt %}
+                                            DIRECTOR TÉCNICO
+                                        {% else %}
+                                            {{ equipo.get_categoria_display|default:"SENIOR"|upper }}
+                                        {% endif %}
+                                    </span>
+                                </div>
+
+                                <div class="data-row">
+                                    <span class="data-lbl">No.:</span>
+                                    <span class="data-val dorsal">
+                                        {% if item.es_dt %}DT{% else %}{{ item.ficha.numero_camiseta|default:"-" }}{% endif %}
+                                    </span>
+                                </div>
+
+                                <div class="organizador-row">
+                                    <span class="organizador-lbl">ORGANIZADOR</span>
+                                    <span class="organizador-status">HABILITADO</span>
+                                </div>
+                            </div>
+
+                            <!-- Foto y QR Derecha -->
+                            <div class="media-col">
+                                <div class="photo-frame">
+                                    {% if item.ficha.foto %}
+                                        <img src="{{ item.ficha.foto.url }}" alt="{{ item.ficha.user.get_full_name }}">
+                                    {% else %}
+                                        <div class="photo-placeholder">
+                                            <i class="fa-solid fa-user"></i>
+                                            <span>FOTO</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="qr-strip">
+                                    <img src="{{ item.qr_url }}" alt="QR">
+                                    <span class="qr-tag">QR OFICIAL</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #64748b;">
+                    <h3>No hay carnets para imprimir con el filtro actual</h3>
+                    <p>Por favor regresa a la vista del equipo y asegúrate de tener jugadores registrados.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        function setTema(tema) {
+            document.body.className = 'theme-' + tema;
+        }
+
+        function toggleCorte(mostrar) {
+            const wrappers = document.querySelectorAll('.carnet-wrapper');
+            wrappers.forEach(w => {
+                if (mostrar) {
+                    w.classList.add('cut-lines');
+                } else {
+                    w.classList.remove('cut-lines');
+                }
+            });
+        }
+
+        function toggleQR(mostrar) {
+            const qrs = document.querySelectorAll('.qr-strip');
+            qrs.forEach(q => {
+                q.style.display = mostrar ? 'flex' : 'none';
+            });
+        }
+
+        // Si se pasa autoprint=1 en la URL, dispara el diálogo de impresión al cargar
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('autoprint') === '1') {
+                setTimeout(() => { window.print(); }, 500);
+            }
+        });
+    </script>
+</body>
+</html>

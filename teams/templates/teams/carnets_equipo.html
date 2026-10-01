@@ -339,9 +339,26 @@
             padding: 0;
         }
 
-        /* Ocultar elementos de interfaz */
-        .no-print, nav, footer, header, .navbar, .btn, .alert {
+        /* Ocultar elementos de interfaz y barra lateral del sistema */
+        .no-print, nav, footer, header, .navbar, .btn, .alert, .sidebar, .app-sidebar, aside, #sidebar, .sidebar-wrapper, .topbar {
             display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            visibility: hidden !important;
+        }
+
+        .app-layout {
+            display: block !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .main-content {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
         }
 
         .container {
@@ -477,11 +494,11 @@
                     </a>
                 </div>
 
-                <!-- Botón Imprimir en PDF / Físico -->
-                <button type="button" class="btn btn-success fw-bold px-3 py-2 shadow-sm d-flex align-items-center gap-2" onclick="window.print()">
+                <!-- Botón Imprimir en Template Especial Limpio -->
+                <a href="{% url 'imprimir_carnets_equipo' equipo.id %}?estado={{ estado_filtro }}{% if not incluir_dt %}&dt=0{% endif %}&autoprint=1" target="_blank" class="btn btn-success fw-bold px-3 py-2 shadow-sm d-flex align-items-center gap-2" title="Abrir plantilla especial de impresión limpia sin menús del sistema">
                     <i class="fa-solid fa-print"></i>
                     <span>Imprimir Carnets (PDF)</span>
-                </button>
+                </a>
 
                 <!-- Botón Descargar en Excel -->
                 <a href="{% url 'descargar_carnets_excel' equipo.id %}?estado={{ estado_filtro }}" class="btn btn-outline-success fw-bold px-3 py-2 shadow-sm d-flex align-items-center gap-2" title="Descargar en formato Excel exactamente como la hoja oficial">
