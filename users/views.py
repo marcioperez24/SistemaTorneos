@@ -12,7 +12,15 @@ def gestion_usuarios(request):
         messages.error(request, "No tienes permisos para acceder a la gestión de usuarios.")
         return redirect('club_portal')
 
-    usuarios = User.objects.filter(organizaciones__organizacion=request.organizacion).distinct().order_by('-id')
+    base_qs = User.objects.filter(organizaciones__organizacion=request.organizacion).distinct()
+
+    # Separar usuarios de staff/operadores de los jugadores deportivos
+    usuarios_staff = list(base_qs.exclude(role='jugador').order_by('-id'))
+    usuarios_jugadores = list(base_qs.filter(role='jugador').prefetch_related('fichas_jugador__equipo').order_by('-id'))
+    todos_los_usuarios = usuarios_staff + usuarios_jugadores
+
+    # Roles disponibles para crear usuarios de gestión (excluimos jugador)
+    role_choices_crear = [c for c in User.ROLE_CHOICES if c[0] != 'jugador']
     role_choices = User.ROLE_CHOICES
     
     modules = [
@@ -51,8 +59,14 @@ def gestion_usuarios(request):
                 permisos_roles[r_code][m_code] = r_code in defaults.get(m_code, [])
 
     context = {
-        'usuarios': usuarios,
+        'usuarios_staff': usuarios_staff,
+        'usuarios_jugadores': usuarios_jugadores,
+        'todos_los_usuarios': todos_los_usuarios,
+        'total_staff': len(usuarios_staff),
+        'total_jugadores': len(usuarios_jugadores),
+        'total_todos': len(todos_los_usuarios),
         'role_choices': role_choices,
+        'role_choices_crear': role_choices_crear,
         'modules': modules,
         'permisos_roles': permisos_roles,
     }

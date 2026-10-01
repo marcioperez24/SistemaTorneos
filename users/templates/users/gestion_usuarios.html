@@ -119,26 +119,50 @@
     <!-- Navigation Tabs -->
     <ul class="nav nav-pills flex-column flex-sm-row nav-fill bg-white p-2 rounded-4 shadow-sm mb-4 gap-2 gap-sm-0" id="pills-tab" role="tablist">
         <li class="nav-item">
-            <button class="nav-link active rounded-pill fw-semibold py-2.5 w-100" id="tab-usuarios" data-bs-toggle="pill" data-bs-target="#pane-usuarios" type="button">
-                <i class="fa-solid fa-users me-2"></i>Listado de Usuarios
+            <button class="nav-link active rounded-pill fw-semibold py-2.5 w-100" id="tab-staff" data-bs-toggle="pill" data-bs-target="#pane-staff" type="button">
+                <i class="fa-solid fa-user-shield me-2 text-primary"></i>Personal del Sistema / Operadores
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill ms-1.5 px-2">{{ total_staff }}</span>
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link rounded-pill fw-semibold py-2.5 w-100" id="tab-jugadores" data-bs-toggle="pill" data-bs-target="#pane-jugadores" type="button">
+                <i class="fa-solid fa-futbol me-2 text-success"></i>Jugadores Deportistas
+                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill ms-1.5 px-2">{{ total_jugadores }}</span>
             </button>
         </li>
         <li class="nav-item">
             <button class="nav-link rounded-pill fw-semibold py-2.5 w-100" id="tab-permisos" data-bs-toggle="pill" data-bs-target="#pane-permisos" type="button">
-                <i class="fa-solid fa-folder-open me-2"></i>Carpetas de Permisos por Rol
+                <i class="fa-solid fa-folder-open me-2 text-warning"></i>Carpetas de Permisos por Rol
             </button>
         </li>
     </ul>
 
     <div class="tab-content" id="pills-tabContent">
-        <!-- TAB 1: USER LIST -->
-        <div class="tab-pane fade show active" id="pane-usuarios">
-            <div class="card card-custom p-4 bg-white">
-                <h4 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-address-book me-2 text-primary"></i>Usuarios Registrados</h4>
+        <!-- TAB 1: PERSONAL DEL SISTEMA / STAFF -->
+        <div class="tab-pane fade show active" id="pane-staff">
+            <div class="card card-custom p-4 bg-white shadow-sm border-0 rounded-4">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+                    <div>
+                        <h4 class="fw-bold text-dark mb-1"><i class="fa-solid fa-user-shield me-2 text-primary"></i>Personal Administrativo y Operativo</h4>
+                        <p class="text-muted small mb-0">Usuarios con roles de gestión (Superadmins, Dirigentes, Vocales, Árbitros, Tesoreros, DTs, etc.).</p>
+                    </div>
+                    <div class="d-flex flex-column flex-sm-row gap-2">
+                        <div class="input-group input-group-sm" style="min-width: 220px;">
+                            <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                            <input type="text" id="searchStaffInput" class="form-control bg-light border-start-0" placeholder="Buscar personal...">
+                        </div>
+                        <select id="filterStaffRole" class="form-select form-select-sm" style="min-width: 170px;">
+                            <option value="">Todos los roles</option>
+                            {% for r_code, r_name in role_choices_crear %}
+                                <option value="{{ r_name|lower }}">{{ r_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
                 
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle" style="min-width: 800px;">
-                        <thead class="table-light text-uppercase fs-8">
+                    <table class="table table-hover align-middle mb-0" id="tableStaff" style="min-width: 800px;">
+                        <thead class="table-light text-uppercase fs-8 text-secondary">
                             <tr>
                                 <th>Usuario</th>
                                 <th>Nombres y Apellidos</th>
@@ -149,11 +173,11 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for u in usuarios %}
-                                <tr>
+                            {% for u in usuarios_staff %}
+                                <tr class="staff-row" data-role="{{ u.get_role_display|lower }}" data-text="{{ u.username|lower }} {{ u.get_full_name|lower }} {{ u.email|lower }}">
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold me-2.5" style="width: 38px; height: 38px; font-size: 14px;">
+                                            <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center fw-bold me-2.5 shadow-sm" style="width: 38px; height: 38px; font-size: 14px;">
                                                 {{ u.username|slice:":2"|upper }}
                                             </div>
                                             <div>
@@ -168,7 +192,7 @@
                                     <td>{{ u.email|default:"-" }}</td>
                                     <td class="font-monospace text-secondary">{{ u.telefono|default:"-" }}</td>
                                     <td>
-                                        <span class="badge bg-secondary py-1.5 px-3 rounded-pill text-dark">
+                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-1.5 px-3 rounded-pill fw-semibold">
                                             {{ u.get_role_display }}
                                         </span>
                                     </td>
@@ -187,10 +211,140 @@
                                                 </form>
                                             {% endif %}
                                         </div>
+                                    </td>
                                 </tr>
                             {% empty %}
                                 <tr>
-                                    <td colspan="6" class="text-center py-4 text-muted">No se registran usuarios en el sistema.</td>
+                                    <td colspan="6" class="text-center py-4 text-muted">No se registran usuarios de personal en el sistema.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: JUGADORES / DEPORTISTAS -->
+        <div class="tab-pane fade" id="pane-jugadores">
+            <div class="card card-custom p-4 bg-white shadow-sm border-0 rounded-4">
+                <div class="alert alert-info border-0 shadow-sm mb-4 d-flex align-items-start gap-3 rounded-3" style="background: #f0f7ff; border-left: 4px solid #0284c7 !important;">
+                    <i class="fa-solid fa-circle-info fa-xl text-primary mt-1"></i>
+                    <div>
+                        <strong class="text-dark d-block mb-1">¿Por qué los jugadores tienen usuario en la plataforma?</strong>
+                        <span class="text-secondary small">
+                            Cada deportista registrado en un equipo cuenta con un usuario con rol <code>Jugador</code> para que pueda 
+                            <strong>iniciar sesión, descargar su carnet digital oficial, consultar estadísticas y firmar sus fichas</strong>. 
+                            Se registran automáticamente desde el enlace de inscripción del club. Desde este panel puedes buscar cualquier jugador para <strong>restablecer su contraseña</strong> o actualizar sus datos de contacto.
+                        </span>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+                    <div>
+                        <h4 class="fw-bold text-dark mb-1"><i class="fa-solid fa-futbol me-2 text-success"></i>Jugadores Registrados</h4>
+                        <p class="text-muted small mb-0">Total registrados: <strong>{{ total_jugadores }}</strong> deportistas.</p>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="input-group input-group-sm" style="min-width: 260px;">
+                            <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                            <input type="text" id="searchJugadorInput" class="form-control bg-light border-start-0" placeholder="Buscar jugador, cédula o equipo...">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="tableJugadores" style="min-width: 900px;">
+                        <thead class="table-light text-uppercase fs-8 text-secondary">
+                            <tr>
+                                <th>Jugador / Usuario</th>
+                                <th>Nombres y Apellidos</th>
+                                <th>Cédula</th>
+                                <th>Equipo / Club</th>
+                                <th>Contacto</th>
+                                <th>Estado Carnet</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in usuarios_jugadores %}
+                                {% with ficha=u.fichas_jugador.first %}
+                                <tr class="jugador-row" data-text="{{ u.username|lower }} {{ u.get_full_name|lower }} {{ ficha.nro_cedula|lower|default:'' }} {{ ficha.equipo.nombre|lower|default:'' }} {{ u.email|lower|default:'' }}">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            {% if ficha.foto %}
+                                                <img src="{{ ficha.foto.url }}" alt="{{ u.username }}" class="rounded-circle object-fit-cover me-2.5 border shadow-sm" style="width: 38px; height: 38px;">
+                                            {% else %}
+                                                <div class="bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center fw-bold me-2.5 shadow-sm" style="width: 38px; height: 38px; font-size: 14px;">
+                                                    {{ u.username|slice:":2"|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <div>
+                                                <span class="fw-bold text-dark fs-6">{{ u.username }}</span>
+                                                {% if ficha.numero_camiseta %}
+                                                    <span class="badge bg-dark-subtle text-dark border ms-1 py-0.5 px-1.5 font-monospace">#{{ ficha.numero_camiseta }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="fw-semibold">{{ u.get_full_name|default:"-" }}</td>
+                                    <td class="font-monospace text-secondary">{{ ficha.nro_cedula|default:"-" }}</td>
+                                    <td>
+                                        {% if ficha.equipo %}
+                                            <span class="badge bg-light text-dark border px-2.5 py-1.5 fw-semibold">
+                                                <i class="fa-solid fa-shield-halved me-1 text-primary"></i>{{ ficha.equipo.nombre }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted small">Sin equipo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="small">
+                                            <div><i class="fa-regular fa-envelope me-1 text-muted"></i>{{ u.email|default:"-" }}</div>
+                                            {% if u.telefono %}
+                                                <div class="text-secondary font-monospace"><i class="fa-solid fa-phone me-1 text-muted"></i>{{ u.telefono }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if ficha %}
+                                            {% if ficha.estado_validacion == 'aprobado' %}
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle py-1.5 px-2.5 rounded-pill">
+                                                    <i class="fa-solid fa-check me-1"></i>Aprobado
+                                                </span>
+                                            {% elif ficha.estado_validacion == 'rechazado' %}
+                                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle py-1.5 px-2.5 rounded-pill">
+                                                    <i class="fa-solid fa-xmark me-1"></i>Rechazado
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle py-1.5 px-2.5 rounded-pill">
+                                                    <i class="fa-solid fa-clock me-1"></i>Pendiente
+                                                </span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="badge bg-secondary-subtle text-secondary py-1.5 px-2.5 rounded-pill">Sin ficha</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-inline-flex gap-2">
+                                            <button type="button" class="btn btn-outline-primary btn-sm px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#editUserModal{{ u.id }}" title="Editar datos o resetear contraseña">
+                                                <i class="fa-solid fa-key me-1"></i>Editar
+                                            </button>
+                                            
+                                            {% if u != user %}
+                                                <form action="{% url 'eliminar_usuario' u.id %}" method="POST" data-confirm="¿Estás seguro de que deseas eliminar permanentemente al jugador {{ u.username }}? Esta acción borrará también su ficha deportiva." class="m-0">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm px-2.5 rounded-pill" title="Eliminar cuenta">
+                                                        <i class="fa-solid fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endwith %}
+                            {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-muted">No se registran jugadores en esta organización.</td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -299,7 +453,7 @@
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-semibold text-secondary">Rol del Sistema</label>
                             <select class="form-select" name="role" required>
-                                {% for key, val in role_choices %}
+                                {% for key, val in role_choices_crear %}
                                     <option value="{{ key }}" {% if key == 'espectador' %}selected{% endif %}>{{ val }}</option>
                                 {% endfor %}
                             </select>
@@ -316,7 +470,7 @@
 </div>
 
 <!-- EDIT USER MODALS CONTAINER (Outside table to prevent flickering) -->
-{% for u in usuarios %}
+{% for u in todos_los_usuarios %}
     <!-- MODAL EDITAR USUARIO (Para cada usuario) -->
     <div class="modal fade" id="editUserModal{{ u.id }}" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -375,4 +529,45 @@
         </div>
     </div>
 {% endfor %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filtro en vivo para Personal / Staff
+        const searchStaffInput = document.getElementById('searchStaffInput');
+        const filterStaffRole = document.getElementById('filterStaffRole');
+        const staffRows = document.querySelectorAll('.staff-row');
+
+        function filterStaff() {
+            const query = (searchStaffInput ? searchStaffInput.value : '').toLowerCase().trim();
+            const roleFilter = (filterStaffRole ? filterStaffRole.value : '').toLowerCase().trim();
+
+            staffRows.forEach(row => {
+                const text = row.getAttribute('data-text') || '';
+                const role = row.getAttribute('data-role') || '';
+                const matchesQuery = !query || text.includes(query);
+                const matchesRole = !roleFilter || role.includes(roleFilter);
+                row.style.display = (matchesQuery && matchesRole) ? '' : 'none';
+            });
+        }
+
+        if (searchStaffInput) searchStaffInput.addEventListener('input', filterStaff);
+        if (filterStaffRole) filterStaffRole.addEventListener('change', filterStaff);
+
+        // Filtro en vivo para Jugadores
+        const searchJugadorInput = document.getElementById('searchJugadorInput');
+        const jugadorRows = document.querySelectorAll('.jugador-row');
+
+        if (searchJugadorInput) {
+            searchJugadorInput.addEventListener('input', function() {
+                const query = this.value.toLowerCase().trim();
+                jugadorRows.forEach(row => {
+                    const text = row.getAttribute('data-text') || '';
+                    row.style.display = (!query || text.includes(query)) ? '' : 'none';
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}
 {% endblock %}
