@@ -1,21 +1,22 @@
 {% extends 'teams/base.html' %}
+{% load static %}
+
 {% block title %}Carnets Oficiales - {{ equipo.nombre }} | {{ organizacion.nombre }}{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* Variables de Estilo */
+    /* Variables de Estilo & Temas del Carnet */
     :root {
-        --carnet-ribbon-bg: #e11d48; /* Fucsia / Rosa según la referencia */
+        --carnet-ribbon-bg: #e11d48; /* Fucsia Liga por defecto */
         --carnet-ribbon-text: #ffffff;
-        --carnet-border-color: #cbd5e1;
     }
 
-    /* Temas para el cintillo */
     body.theme-fucsia { --carnet-ribbon-bg: #e11d48; }
     body.theme-azul { --carnet-ribbon-bg: #1e3a8a; }
     body.theme-verde { --carnet-ribbon-bg: #059669; }
-    body.theme-negro { --carnet-ribbon-bg: #111827; }
+    body.theme-negro { --carnet-ribbon-bg: #0f172a; }
     body.theme-naranja { --carnet-ribbon-bg: #ea580c; }
+    body.theme-dorado { --carnet-ribbon-bg: #d97706; }
 
     /* Barra de herramientas superior */
     .carnets-toolbar {
@@ -27,20 +28,13 @@
         margin-bottom: 25px;
     }
 
-    /* Contenedor Cuadrícula de Carnets */
+    /* Contenedor Cuadrícula de Carnets Verticales (3 a 4 columnas en pantalla) */
     .carnets-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-        max-width: 1000px;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 20px;
+        max-width: 1200px;
         margin: 0 auto;
-    }
-
-    @media (max-width: 767px) {
-        .carnets-grid {
-            grid-template-columns: 1fr;
-            gap: 20px;
-        }
     }
 
     /* Envoltorio de cada carnet con guías de corte */
@@ -48,11 +42,13 @@
         position: relative;
         padding: 6px;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
+        display: flex;
+        justify-content: center;
     }
 
     .carnet-item-wrapper.show-cut-lines {
-        border: 1px dashed #cbd5e1;
-        border-radius: 12px;
+        border: 1px dashed #94a3b8;
+        border-radius: 14px;
         background: #fafafa;
     }
 
@@ -64,267 +60,322 @@
         background: #ffffff;
         padding: 0 6px;
         font-size: 11px;
-        color: #94a3b8;
+        color: #64748b;
         font-family: monospace;
+        font-weight: bold;
     }
 
     .show-cut-lines .cut-indicator {
         display: block;
     }
 
-    /* Tarjeta del Carnet (Diseño Idéntico a la Hoja Oficial) */
-    .carnet-card {
-        background: #030712; /* Fondo oscuro elegante como en la referencia */
-        color: #ffffff;
-        border: 2px solid #1f2937;
-        border-radius: 10px;
-        box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-        overflow: hidden;
+    /* ==============================================================
+       DISEÑO UNIFICADO DEL CARNET VERTICAL (BLANCO, ELEGANTE, UN SOLO LADO)
+       ============================================================== */
+    .carnet-card-vertical {
+        background: #ffffff;
+        color: #0f172a;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 12px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
         display: flex;
         flex-direction: column;
+        overflow: hidden;
+        position: relative;
+        box-sizing: border-box;
         width: 100%;
-        min-height: 220px;
+        max-width: 255px;
+        height: 410px;
+        margin: 0 auto;
         page-break-inside: avoid;
         break-inside: avoid;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .carnet-card-vertical:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(0,0,0,0.12);
     }
 
     /* 1. Encabezado de la Organización */
-    .carnet-org-header {
-        background: #111827;
-        padding: 8px 12px;
+    .c-header {
+        background: #f8fafc;
+        padding: 6px 10px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        border-bottom: 1px solid #374151;
+        border-bottom: 1px solid #e2e8f0;
+        min-height: 38px;
     }
 
-    .carnet-org-text {
+    .c-header-left {
         line-height: 1.15;
+        overflow: hidden;
     }
 
-    .carnet-org-title {
-        font-size: 0.72rem;
+    .c-org-title {
+        display: block;
+        font-size: 0.66rem;
         font-weight: 800;
         letter-spacing: 0.5px;
         text-transform: uppercase;
-        color: #f9fafb;
-        margin: 0;
+        color: #0f172a;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 185px;
     }
 
-    .carnet-org-sub {
-        font-size: 0.58rem;
+    .c-org-sub {
+        display: block;
+        font-size: 0.54rem;
         font-weight: 600;
-        color: #9ca3af;
+        color: #64748b;
         letter-spacing: 0.3px;
         text-transform: uppercase;
-        margin: 0;
     }
 
-    .carnet-org-logo {
-        width: 28px;
-        height: 28px;
+    .c-header-logo {
+        width: 26px;
+        height: 26px;
         object-fit: contain;
-        background: #ffffff;
-        border-radius: 6px;
-        padding: 2px;
+        flex-shrink: 0;
     }
 
-    /* 2. Cintillo / Banner del Torneo (Fucsia o personalizado) */
-    .carnet-ribbon {
+    .c-header-logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    /* 2. Cintillo / Ribbon Personalizable */
+    .c-ribbon {
         background-color: var(--carnet-ribbon-bg);
         color: var(--carnet-ribbon-text);
-        padding: 6px 12px;
+        padding: 5px 8px;
         text-align: center;
         transition: background-color 0.2s ease;
     }
 
-    .carnet-ribbon-title {
-        font-size: 0.8rem;
+    .c-ribbon-title {
+        font-size: 0.72rem;
         font-weight: 900;
         text-transform: uppercase;
-        letter-spacing: 0.6px;
+        letter-spacing: 0.5px;
         line-height: 1.1;
         margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
-    .carnet-ribbon-subtitle {
-        font-size: 0.65rem;
+    .c-ribbon-sub {
+        font-size: 0.58rem;
         font-weight: 700;
         text-transform: uppercase;
-        letter-spacing: 0.4px;
+        letter-spacing: 0.3px;
         line-height: 1.1;
         margin: 1px 0 0 0;
         opacity: 0.95;
     }
 
-    /* 3. Cuerpo del Carnet: Datos (Izquierda) + Foto & QR (Derecha) */
-    .carnet-body-grid {
+    /* 3. Área de Foto Central y Dorsal */
+    .c-photo-wrapper {
+        padding: 8px 10px 3px;
         display: flex;
-        flex-direction: row;
-        padding: 10px 12px;
-        gap: 12px;
-        flex-grow: 1;
-        align-items: stretch;
+        justify-content: center;
+        position: relative;
     }
 
-    .carnet-data-col {
-        flex: 1 1 65%;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        gap: 4px;
-    }
-
-    .carnet-row {
-        display: flex;
-        align-items: baseline;
-        gap: 6px;
-        line-height: 1.25;
-        border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
-        padding-bottom: 2px;
-    }
-
-    .carnet-row:last-of-type {
-        border-bottom: none;
-    }
-
-    .carnet-label {
-        font-size: 0.63rem;
-        font-weight: 800;
-        color: #9ca3af;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
-        min-width: 58px;
-        flex-shrink: 0;
-    }
-
-    .carnet-value {
-        font-size: 0.72rem;
-        font-weight: 700;
-        color: #ffffff;
-        text-transform: uppercase;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .carnet-value.dorsal {
-        font-size: 0.95rem;
-        font-weight: 900;
-        color: #38bdf8;
-        font-family: monospace;
-    }
-
-    .carnet-organizador {
-        margin-top: 4px;
-        padding-top: 4px;
-        border-top: 1px solid rgba(255, 255, 255, 0.15);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .organizador-tag {
-        font-size: 0.58rem;
-        font-weight: 800;
-        letter-spacing: 0.5px;
-        color: #9ca3af;
-        text-transform: uppercase;
-    }
-
-    .organizador-badge {
-        font-size: 0.58rem;
-        font-weight: 800;
-        padding: 1.5px 6px;
-        border-radius: 4px;
-        background: #065f46;
-        color: #34d399;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
-        border: 1px solid #047857;
-    }
-
-    .organizador-badge.pendiente {
-        background: #78350f;
-        color: #fde68a;
-        border-color: #92400e;
-    }
-
-    /* Columna Derecha: Foto y QR */
-    .carnet-media-col {
-        flex: 0 0 100px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: space-between;
-        gap: 6px;
-    }
-
-    .carnet-photo-frame {
-        width: 92px;
-        height: 110px;
+    .c-photo-frame {
+        width: 84px;
+        height: 102px;
         border: 2px solid #ffffff;
-        border-radius: 6px;
+        border-radius: 8px;
         overflow: hidden;
-        background: #1f2937;
+        background: #f1f5f9;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+        position: relative;
     }
 
-    .carnet-photo-frame img {
+    .c-photo-frame img {
         width: 100%;
         height: 100%;
         object-fit: cover;
     }
 
-    .carnet-photo-placeholder {
+    .c-photo-placeholder {
+        color: #94a3b8;
+        font-size: 2.2rem;
+    }
+
+    .c-dorsal-badge {
+        position: absolute;
+        bottom: 2px;
+        right: 2px;
+        background-color: var(--carnet-ribbon-bg);
+        color: #ffffff;
+        font-weight: 900;
+        font-family: monospace;
+        font-size: 0.8rem;
+        padding: 1px 6px;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        border: 1px solid #ffffff;
+    }
+
+    /* 4. Identidad del Jugador */
+    .c-identity-section {
+        padding: 2px 10px;
+        text-align: center;
+    }
+
+    .c-player-name {
+        font-size: 0.8rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        color: #0f172a;
+        line-height: 1.15;
+        margin: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .c-player-role {
+        font-size: 0.56rem;
+        font-weight: 800;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+        color: var(--carnet-ribbon-bg);
+        display: inline-block;
+        margin-top: 1px;
+    }
+
+    /* 5. Grilla de Datos Técnicos */
+    .c-data-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        margin: 4px 10px;
+        padding: 4px 8px;
         display: flex;
         flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        color: #6b7280;
-        height: 100%;
-        font-size: 0.65rem;
-        font-weight: 700;
+        gap: 2px;
+    }
+
+    .c-data-row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        font-size: 0.63rem;
+        line-height: 1.2;
+    }
+
+    .c-label {
+        font-weight: 800;
+        color: #64748b;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        font-size: 0.56rem;
+        letter-spacing: 0.3px;
     }
 
-    .carnet-photo-placeholder i {
-        font-size: 1.8rem;
-        margin-bottom: 4px;
-        color: #4b5563;
+    .c-val {
+        font-weight: 700;
+        color: #0f172a;
+        text-transform: uppercase;
+        text-align: right;
+        max-width: 150px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    .carnet-qr-box {
+    .c-val.font-mono {
+        font-family: monospace;
+        font-size: 0.7rem;
+    }
+
+    /* 6. Footer con QR y Estado */
+    .c-footer-bar {
+        margin-top: auto;
+        padding: 4px 10px 6px;
+        border-top: 1px solid #e2e8f0;
+        background: #ffffff;
         display: flex;
         align-items: center;
-        gap: 4px;
+        justify-content: space-between;
+        gap: 6px;
+    }
+
+    .c-qr-wrapper {
         background: #ffffff;
-        padding: 2px 5px;
+        padding: 2px;
+        border: 1px solid #cbd5e1;
         border-radius: 4px;
-        width: 100%;
-        justify-content: center;
+        flex-shrink: 0;
     }
 
-    .carnet-qr-box img {
-        width: 22px;
-        height: 22px;
+    .c-qr-wrapper img {
+        width: 36px;
+        height: 36px;
+        display: block;
     }
 
-    .carnet-qr-text {
-        font-size: 0.48rem;
+    .c-footer-info {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 1px;
+    }
+
+    .c-badge-status {
+        font-size: 0.56rem;
         font-weight: 800;
-        color: #111827;
-        line-height: 1;
+        letter-spacing: 0.3px;
+        padding: 1.5px 6px;
+        border-radius: 20px;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+    }
+
+    .c-badge-status.aprobado {
+        background: #ecfdf5;
+        color: #059669;
+        border: 1px solid #a7f3d0;
+    }
+
+    .c-badge-status.pendiente {
+        background: #fffbeb;
+        color: #d97706;
+        border: 1px solid #fde68a;
+    }
+
+    .c-meta-line {
+        font-size: 0.5rem;
+        color: #64748b;
+        font-family: monospace;
+        margin-top: 1px;
+    }
+
+    .c-watermark {
+        font-size: 0.46rem;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        color: #94a3b8;
         text-transform: uppercase;
     }
 
-    /* ==============================================
+    /* ==============================================================
        ESTILOS PARA IMPRESIÓN (PDF / PAPEL FÍSICO)
-       ============================================== */
+       ============================================================== */
     @media print {
         @page {
             size: letter portrait;
@@ -339,42 +390,26 @@
             padding: 0;
         }
 
-        /* Ocultar elementos de interfaz y barra lateral del sistema */
-        .no-print, nav, footer, header, .navbar, .btn, .alert, .sidebar, .app-sidebar, aside, #sidebar, .sidebar-wrapper, .topbar {
+        .no-print, nav, footer, header, .navbar, .btn, .alert, .sidebar, .app-sidebar, aside, #sidebar, .topbar {
             display: none !important;
-            width: 0 !important;
-            height: 0 !important;
-            visibility: hidden !important;
         }
 
-        .app-layout {
+        .app-layout, .main-content, .container {
             display: block !important;
             width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-        }
-
-        .main-content {
-            margin: 0 !important;
-            padding: 0 !important;
-            width: 100% !important;
             max-width: 100% !important;
-        }
-
-        .container {
-            max-width: 100% !important;
-            width: 100% !important;
-            padding: 0 !important;
             margin: 0 !important;
+            padding: 0 !important;
         }
 
+        /* 3 Columnas de Carnets Verticales por Hoja (9 por página) */
         .carnets-grid {
             display: grid !important;
-            grid-template-columns: 1fr 1fr !important; /* 2 columnas exactas */
-            column-gap: 6mm !important;
+            grid-template-columns: repeat(3, 56mm) !important;
+            justify-content: center !important;
+            column-gap: 5mm !important;
             row-gap: 5mm !important;
             width: 100% !important;
-            max-width: 100% !important;
             margin: 0 !important;
         }
 
@@ -396,62 +431,49 @@
             color: #64748b !important;
         }
 
-        .carnet-card {
-            border: 1pt solid #000000 !important;
-            background: #030712 !important;
-            color: #ffffff !important;
+        .carnet-card-vertical {
+            width: 54mm !important;
+            height: 86mm !important;
             box-shadow: none !important;
+            border: 0.8pt solid #000000 !important;
+            border-radius: 3.2mm !important;
+            background: #ffffff !important;
+            color: #000000 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-            min-height: 58mm !important;
-            height: 58mm !important;
         }
 
-        .carnet-org-header {
-            background: #111827 !important;
+        .c-header {
+            background: #f8fafc !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-            padding: 1.5mm 3mm !important;
         }
 
-        .carnet-ribbon {
+        .c-ribbon {
             background-color: var(--carnet-ribbon-bg) !important;
             color: #ffffff !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-            padding: 1.5mm 3mm !important;
         }
 
-        .carnet-body-grid {
-            padding: 2mm 3mm !important;
-            gap: 3mm !important;
+        .c-data-box {
+            background: #f8fafc !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
 
-        .carnet-label {
-            font-size: 6pt !important;
-            color: #d1d5db !important;
-            min-width: 18mm !important;
-        }
-
-        .carnet-value {
-            font-size: 7.2pt !important;
+        .c-dorsal-badge {
+            background-color: var(--carnet-ribbon-bg) !important;
             color: #ffffff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
 
-        .carnet-photo-frame {
-            width: 25mm !important;
-            height: 31mm !important;
-            border: 1pt solid #ffffff !important;
-        }
-
-        .carnet-qr-box {
-            background: #ffffff !important;
-            padding: 0.5mm 1.5mm !important;
-        }
-
-        .carnet-qr-box img {
-            width: 6mm !important;
-            height: 6mm !important;
+        .c-badge-status.aprobado {
+            background: #ecfdf5 !important;
+            color: #059669 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
     }
 </style>
@@ -468,7 +490,7 @@
                         <i class="fa-solid fa-arrow-left me-1"></i>Volver al Portal
                     </a>
                     <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2.5 py-1">
-                        <i class="fa-solid fa-id-card me-1"></i>Carnets Oficiales
+                        <i class="fa-solid fa-id-card me-1"></i>Carnets Oficiales Verticales
                     </span>
                 </div>
                 <h3 class="fw-bold text-dark mt-2 mb-0 d-flex align-items-center gap-2">
@@ -478,7 +500,7 @@
                     {{ equipo.nombre }}
                 </h3>
                 <p class="text-muted small mb-0 mt-0.5">
-                    {{ torneo.nombre|default:"Torneo Oficial" }} &bull; Categoría: <strong>{{ equipo.get_categoria_display }}</strong> &bull; Total: <strong>{{ total_jugadores }}</strong> jugador(es) mostrados.
+                    {{ torneo.nombre|default:"Torneo Oficial" }} &bull; Categoría: <strong>{{ equipo.get_categoria_display }}</strong> &bull; Total: <strong>{{ total_jugadores }}</strong> carnet(s) mostrados.
                 </p>
             </div>
 
@@ -501,7 +523,7 @@
                 </a>
 
                 <!-- Botón Descargar en Excel -->
-                <a href="{% url 'descargar_carnets_excel' equipo.id %}?estado={{ estado_filtro }}" class="btn btn-outline-success fw-bold px-3 py-2 shadow-sm d-flex align-items-center gap-2" title="Descargar en formato Excel exactamente como la hoja oficial">
+                <a href="{% url 'descargar_carnets_excel' equipo.id %}?estado={{ estado_filtro }}" class="btn btn-outline-success fw-bold px-3 py-2 shadow-sm d-flex align-items-center gap-2" title="Descargar en formato Excel">
                     <i class="fa-solid fa-file-excel"></i>
                     <span>Exportar Excel</span>
                 </a>
@@ -512,7 +534,7 @@
         <hr class="my-3 opacity-25">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 small text-secondary">
             <!-- Paleta de Color de Cintillo -->
-            <div class="d-flex align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
                 <span class="fw-bold"><i class="fa-solid fa-palette me-1 text-primary"></i>Color de Cintillo:</span>
                 <button type="button" class="btn btn-sm rounded-pill px-2.5 py-0.5 text-white" style="background:#e11d48; font-size:11px;" onclick="cambiarTema('fucsia')">
                     Fucsia Liga
@@ -523,11 +545,14 @@
                 <button type="button" class="btn btn-sm rounded-pill px-2.5 py-0.5 text-white" style="background:#059669; font-size:11px;" onclick="cambiarTema('verde')">
                     Verde Campo
                 </button>
-                <button type="button" class="btn btn-sm rounded-pill px-2.5 py-0.5 text-white" style="background:#111827; font-size:11px;" onclick="cambiarTema('negro')">
+                <button type="button" class="btn btn-sm rounded-pill px-2.5 py-0.5 text-white" style="background:#0f172a; font-size:11px;" onclick="cambiarTema('negro')">
                     Negro Premium
                 </button>
                 <button type="button" class="btn btn-sm rounded-pill px-2.5 py-0.5 text-white" style="background:#ea580c; font-size:11px;" onclick="cambiarTema('naranja')">
                     Naranja
+                </button>
+                <button type="button" class="btn btn-sm rounded-pill px-2.5 py-0.5 text-white" style="background:#d97706; font-size:11px;" onclick="cambiarTema('dorado')">
+                    Dorado
                 </button>
             </div>
 
@@ -559,160 +584,150 @@
         </div>
     </div>
 
-    <!-- CUADRÍCULA DE CARNETS (2 COLUMNAS, EXACTA AL FORMATO OFICIAL) -->
+    <!-- CUADRÍCULA DE CARNETS VERTICALES BLANCOS (1 SOLO LADO) -->
     <div class="carnets-grid" id="carnetsGrid">
         {% for item in todos_los_carnets %}
             <div class="carnet-item-wrapper show-cut-lines">
                 <span class="cut-indicator"><i class="fa-solid fa-scissors"></i> CORTE</span>
-                <div class="carnet-card">
+                <div class="carnet-card-vertical">
+                    
                     <!-- 1. ENCABEZADO DE ORGANIZACIÓN -->
-                    <div class="carnet-org-header">
-                        <div class="carnet-org-text">
-                            <h6 class="carnet-org-title">{{ organizacion.nombre|default:"CLUB DE EMPRESARIOS"|upper }}</h6>
-                            <p class="carnet-org-sub">{{ organizacion.nombre_comercial|default:"CÁMARA DE COMERCIO DE AMBATO"|upper }}</p>
+                    <div class="c-header">
+                        <div class="c-header-left">
+                            <span class="c-org-title">{{ organizacion.nombre|default:"LIGA DEPORTIVA EMPRESARIAL"|upper }}</span>
+                            <span class="c-org-sub">{{ organizacion.nombre_comercial|default:"CÁMARA DE COMERCIO DE AMBATO"|upper }}</span>
                         </div>
-                        {% if organizacion.logo %}
-                            <img src="{{ organizacion.logo.url }}" alt="{{ organizacion.nombre }}" class="carnet-org-logo">
-                        {% elif equipo.logo %}
-                            <img src="{{ equipo.logo.url }}" alt="{{ equipo.nombre }}" class="carnet-org-logo">
-                        {% else %}
-                            <div class="bg-dark text-white rounded d-flex align-items-center justify-content-center fw-bold" style="width: 26px; height: 26px; font-size: 11px;">
-                                <i class="fa-solid fa-trophy text-warning"></i>
-                            </div>
-                        {% endif %}
+                        <div class="c-header-logo">
+                            {% if organizacion.logo %}
+                                <img src="{{ organizacion.logo.url }}" alt="{{ organizacion.nombre }}">
+                            {% elif equipo.logo %}
+                                <img src="{{ equipo.logo.url }}" alt="{{ equipo.nombre }}">
+                            {% else %}
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 24px; height: 24px; font-size: 10px;">
+                                    <i class="fa-solid fa-trophy text-warning"></i>
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
 
-                    <!-- 2. CINTILLO / BANNER DEL TORNEO -->
-                    <div class="carnet-ribbon">
-                        <h5 class="carnet-ribbon-title">
+                    <!-- 2. CINTILLO / BANNER DEL TORNEO (COLOR PERSONALIZABLE) -->
+                    <div class="c-ribbon">
+                        <h5 class="c-ribbon-title">
                             {{ item.ficha.torneo.nombre|default:torneo.nombre|default:"TORNEO EMPRESARIAL"|upper }}
                         </h5>
-                        <p class="carnet-ribbon-subtitle">
+                        <p class="c-ribbon-sub">
                             {% if item.ficha.torneo.modalidad %}
-                                {{ item.ficha.torneo.modalidad|upper }}
+                                {{ item.ficha.torneo.modalidad|upper }} &bull; {{ equipo.get_categoria_display|upper }}
                             {% elif torneo.modalidad %}
-                                {{ torneo.modalidad|upper }}
+                                {{ torneo.modalidad|upper }} &bull; {{ equipo.get_categoria_display|upper }}
                             {% else %}
-                                SECTOR COMERCIO FÚTBOL 6vs6
+                                FÚTBOL 6 &bull; {{ equipo.get_categoria_display|default:"COMERCIAL"|upper }}
                             {% endif %}
                         </p>
                     </div>
 
-                    <!-- 3. CUERPO DEL CARNET -->
-                    <div class="carnet-body-grid">
-                        <!-- Columna Izquierda: Datos del Jugador -->
-                        <div class="carnet-data-col">
-                            <div class="carnet-row">
-                                <span class="carnet-label">NOMBRE:</span>
-                                <span class="carnet-value" title="{{ item.ficha.user.get_full_name|upper }}">
-                                    {{ item.ficha.user.get_full_name|default:item.ficha.user.username|upper }}
-                                </span>
-                            </div>
-
-                            <div class="carnet-row">
-                                <span class="carnet-label">CÉDULA:</span>
-                                <span class="carnet-value font-monospace">
-                                    {{ item.ficha.nro_cedula|default:"-" }}
-                                </span>
-                            </div>
-
-                            <div class="carnet-row">
-                                <span class="carnet-label">EMPRESA:</span>
-                                <span class="carnet-value" title="{{ equipo.nombre|upper }}">
-                                    {{ equipo.nombre|upper }}
-                                </span>
-                            </div>
-
-                            <div class="carnet-row">
-                                <span class="carnet-label">CAT:</span>
-                                <span class="carnet-value">
-                                    {% if item.es_dt %}
-                                        DIRECTOR TÉCNICO
-                                    {% else %}
-                                        {{ equipo.get_categoria_display|default:"SENIOR"|upper }}
-                                    {% endif %}
-                                </span>
-                            </div>
-
-                            <div class="carnet-row">
-                                <span class="carnet-label">No.:</span>
-                                <span class="carnet-value dorsal">
-                                    {% if item.es_dt %}
-                                        DT
-                                    {% else %}
-                                        {{ item.ficha.numero_camiseta|default:"-" }}
-                                    {% endif %}
-                                </span>
-                            </div>
-
-                            <!-- Firma / Organizador -->
-                            <div class="carnet-organizador">
-                                <span class="organizador-tag">ORGANIZADOR</span>
-                                {% if item.ficha.estado_validacion == 'aprobado' %}
-                                    <span class="organizador-badge">
-                                        <i class="fa-solid fa-circle-check me-0.5"></i>HABILITADO
-                                    </span>
-                                {% else %}
-                                    <span class="organizador-badge pendiente">
-                                        <i class="fa-solid fa-clock me-0.5"></i>EN REVISIÓN
-                                    </span>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <!-- Columna Derecha: Foto y Código QR -->
-                        <div class="carnet-media-col">
-                            <div class="carnet-photo-frame">
-                                {% if item.ficha.foto %}
-                                    <img src="{{ item.ficha.foto.url }}" alt="{{ item.ficha.user.get_full_name }}">
-                                {% else %}
-                                    <div class="carnet-photo-placeholder">
-                                        <i class="fa-solid fa-user"></i>
-                                        <span>FOTO</span>
-                                    </div>
-                                {% endif %}
-                            </div>
-
-                            <!-- QR Dinámico de Validación -->
-                            <div class="carnet-qr-box qr-container">
-                                <img src="{{ item.qr_url }}" alt="QR Verificación" loading="lazy">
-                                <div class="carnet-qr-text">
-                                    <span>QR OFICIAL</span>
+                    <!-- 3. FOTO CENTRAL CON DORSAL / ROL -->
+                    <div class="c-photo-wrapper">
+                        <div class="c-photo-frame">
+                            {% if item.ficha.foto %}
+                                <img src="{{ item.ficha.foto.url }}" alt="{{ item.ficha.user.get_full_name }}">
+                            {% else %}
+                                <div class="c-photo-placeholder">
+                                    <i class="fa-solid fa-user"></i>
                                 </div>
-                            </div>
+                            {% endif %}
+
+                            {% if item.es_dt %}
+                                <span class="c-dorsal-badge">DT</span>
+                            {% elif item.ficha.numero_camiseta %}
+                                <span class="c-dorsal-badge">#{{ item.ficha.numero_camiseta }}</span>
+                            {% endif %}
                         </div>
                     </div>
+
+                    <!-- 4. IDENTIDAD DEL JUGADOR -->
+                    <div class="c-identity-section">
+                        <h4 class="c-player-name" title="{{ item.ficha.user.get_full_name|default:item.ficha.user.username|upper }}">
+                            {{ item.ficha.user.get_full_name|default:item.ficha.user.username|upper }}
+                        </h4>
+                        <span class="c-player-role">
+                            {% if item.es_dt %}DIRECTOR TÉCNICO{% else %}JUGADOR HABILITADO{% endif %}
+                        </span>
+                    </div>
+
+                    <!-- 5. GRILLA DE DATOS TÉCNICOS (BLANCO/GRIS SUAVE) -->
+                    <div class="c-data-box">
+                        <div class="c-data-row">
+                            <span class="c-label">CÉDULA:</span>
+                            <span class="c-val font-mono">{{ item.ficha.nro_cedula|default:item.ficha.user.username|default:"-" }}</span>
+                        </div>
+                        <div class="c-data-row">
+                            <span class="c-label">EMPRESA:</span>
+                            <span class="c-val" title="{{ equipo.nombre|upper }}">{{ equipo.nombre|upper }}</span>
+                        </div>
+                        <div class="c-data-row">
+                            <span class="c-label">CAT:</span>
+                            <span class="c-val">
+                                {% if item.es_dt %}
+                                    STAFF TÉCNICO
+                                {% else %}
+                                    {{ equipo.get_categoria_display|default:"COMERCIAL"|upper }}
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% if item.ficha.tipo_sangre %}
+                        <div class="c-data-row">
+                            <span class="c-label">SANGRE:</span>
+                            <span class="c-val font-mono">{{ item.ficha.tipo_sangre }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- 6. FOOTER CON QR Y ESTADO -->
+                    <div class="c-footer-bar">
+                        <div class="c-qr-wrapper qr-container">
+                            <img src="{{ item.qr_url }}" alt="QR Verificación" loading="lazy">
+                        </div>
+                        <div class="c-footer-info">
+                            {% if item.ficha.estado_validacion == 'aprobado' %}
+                                <span class="c-badge-status aprobado">
+                                    <i class="fa-solid fa-circle-check"></i> HABILITADO
+                                </span>
+                            {% else %}
+                                <span class="c-badge-status pendiente">
+                                    <i class="fa-solid fa-clock"></i> EN REVISIÓN
+                                </span>
+                            {% endif %}
+                            <div class="c-meta-line">
+                                <span>ID: #{{ item.ficha.id }}</span> &bull; <span>TEMP: {{ torneo.temporada|default:"2026" }}</span>
+                            </div>
+                            <div class="c-watermark">CREDENCIAL OFICIAL</div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         {% empty %}
-            <div class="col-12 text-center py-5 bg-white rounded-4 shadow-sm">
-                <i class="fa-solid fa-id-card-clip fa-3x text-muted mb-3"></i>
-                <h4 class="fw-bold text-dark">No hay carnets disponibles para este filtro</h4>
-                <p class="text-secondary mb-3">
-                    {% if estado_filtro == 'aprobados' %}
-                        No hay jugadores aprobados aún en este equipo. Puedes cambiar el filtro a "Todos" para ver a los inscritos en revisión.
-                    {% else %}
-                        Este equipo todavía no tiene jugadores registrados en su plantilla.
-                    {% endif %}
-                </p>
-                <a href="{% url 'club_portal' %}" class="btn btn-primary rounded-pill px-4">
-                    <i class="fa-solid fa-arrow-left me-1"></i>Regresar al Portal
-                </a>
+            <div class="text-center py-5 w-100">
+                <i class="fa-solid fa-id-card text-muted fs-1 mb-3"></i>
+                <h5 class="text-secondary fw-bold">No se encontraron fichas de jugadores</h5>
+                <p class="text-muted small">No hay fichas que coincidan con los filtros seleccionados.</p>
+                <a href="?estado=todos" class="btn btn-sm btn-primary rounded-pill px-3">Ver Todos los Registros</a>
             </div>
         {% endfor %}
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
+<!-- SCRIPTS DE INTERACCIÓN -->
 <script>
-    // Cambiar color de cintillo dinámicamente
-    function cambiarTema(nombreTema) {
-        document.body.className = document.body.className.replace(/\btheme-\S+/g, '');
-        document.body.classList.add('theme-' + nombreTema);
+    function cambiarTema(color) {
+        document.body.classList.remove('theme-fucsia', 'theme-azul', 'theme-verde', 'theme-negro', 'theme-naranja', 'theme-dorado');
+        document.body.classList.add('theme-' + color);
+        try {
+            localStorage.setItem('carnet_ribbon_color', color);
+        } catch(e) {}
     }
 
-    // Toggle de Guías de corte
     function toggleGuíasCorte(mostrar) {
         const wrappers = document.querySelectorAll('.carnet-item-wrapper');
         wrappers.forEach(w => {
@@ -724,19 +739,29 @@
         });
     }
 
-    // Toggle de Códigos QR
     function toggleCodigosQR(mostrar) {
         const qrs = document.querySelectorAll('.qr-container');
-        qrs.forEach(q => {
-            q.style.display = mostrar ? 'flex' : 'none';
+        qrs.forEach(el => {
+            el.style.display = mostrar ? 'block' : 'none';
         });
     }
 
-    // Toggle de DT / Cuerpo Técnico
     function toggleCuerpoTecnico(incluir) {
-        const currentUrl = new URL(window.location.href);
-        currentUrl.searchParams.set('dt', incluir ? '1' : '0');
-        window.location.href = currentUrl.toString();
+        const urlParams = new URLSearchParams(window.location.search);
+        if (incluir) {
+            urlParams.set('dt', '1');
+        } else {
+            urlParams.set('dt', '0');
+        }
+        window.location.search = urlParams.toString();
     }
+
+    // Cargar color guardado
+    document.addEventListener('DOMContentLoaded', function() {
+        const savedColor = localStorage.getItem('carnet_ribbon_color');
+        if (savedColor) {
+            cambiarTema(savedColor);
+        }
+    });
 </script>
 {% endblock %}

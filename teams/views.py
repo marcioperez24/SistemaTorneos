@@ -873,10 +873,18 @@ def ver_carnet(request, ficha_id):
     # Generamos la URL del código QR dinámico
     qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={verif_url}"
     
+    equipo = ficha.equipo
+    torneo = ficha.torneo or (equipo.torneos.first() if equipo and hasattr(equipo, 'torneos') else None)
+    organizacion = getattr(request, 'organizacion', None) or ficha.organizacion
+
     context = {
         'ficha': ficha,
         'qr_url': qr_url,
-        'tipo': tipo
+        'tipo': tipo,
+        'es_dt': (tipo == 'dt'),
+        'equipo': equipo,
+        'torneo': torneo,
+        'organizacion': organizacion,
     }
     return render(request, 'teams/carnet.html', context)
 
