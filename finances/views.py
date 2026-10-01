@@ -154,7 +154,7 @@ def registrar_pago_inscripcion(request, pago_id):
 
 @login_required
 def pagar_multa(request, multa_id):
-    if request.user.role not in ['tesorero', 'tesoreria', 'superadmin']:
+    if request.user.role not in ['tesorero', 'tesoreria', 'superadmin'] and not request.user.is_superuser:
         messages.error(request, "No autorizado.")
         return redirect('club_portal')
         
@@ -174,7 +174,10 @@ def pagar_multa(request, multa_id):
         registrado_por=request.user
     )
 
-    messages.success(request, f"Multa cobrada y registrada con éxito ($ {multa.monto:.2f}).")
+    messages.success(request, f"Multa cobrada y registrada en Tesorería con éxito ($ {multa.monto:.2f}).")
+    next_url = request.POST.get('next') or request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
     return redirect('resumen_financiero')
 
 

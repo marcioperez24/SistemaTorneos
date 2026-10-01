@@ -1,0 +1,793 @@
+{% extends 'teams/base.html' %}
+{% load static %}
+
+{% block title %}Control de Tarjetas y Multas - {{ torneo.nombre }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .kpi-card {
+        border-radius: 1rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: none;
+    }
+    .kpi-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0.5rem 1.25rem rgba(0,0,0,0.08) !important;
+    }
+    .badge-amarilla {
+        background-color: #ffc107;
+        color: #212529;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+    .badge-roja {
+        background-color: #dc3545;
+        color: #ffffff;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+    .card-tarjeta-chip {
+        display: inline-block;
+        width: 14px;
+        height: 18px;
+        border-radius: 2px;
+        vertical-align: middle;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+    }
+    .card-tarjeta-amarilla {
+        background-color: #ffc107;
+        border: 1px solid #d39e00;
+    }
+    .card-tarjeta-roja {
+        background-color: #dc3545;
+        border: 1px solid #bd2130;
+    }
+    .nav-tabs .nav-link {
+        font-weight: 600;
+        color: #64748b;
+        border-radius: 0.75rem 0.75rem 0 0;
+        padding: 0.85rem 1.35rem;
+    }
+    .nav-tabs .nav-link.active {
+        color: #0f172a;
+        background-color: #ffffff;
+        border-bottom-color: #ffffff;
+        font-weight: 700;
+        box-shadow: 0 -2px 6px rgba(0,0,0,0.02);
+    }
+    @media print {
+        .no-print, .btn, .nav-tabs, .header-actions {
+            display: none !important;
+        }
+        .tab-pane {
+            display: block !important;
+            opacity: 1 !important;
+        }
+        .container-fluid {
+            padding: 0 !important;
+        }
+        .card {
+            box-shadow: none !important;
+            border: 1px solid #dee2e6 !important;
+            break-inside: avoid;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-lg-5">
+
+    <!-- Top Action Breadcrumb & Back -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 no-print">
+        <div class="d-flex align-items-center gap-2">
+            {% if torneo.tipo == 'personalizado' %}
+                <a href="{% url 'panel_torneo_personalizado' torneo.id %}" class="btn btn-outline-secondary rounded-pill px-3 shadow-sm btn-sm fw-bold">
+                    <i class="bi bi-arrow-left me-1"></i> Panel del Torneo
+                </a>
+            {% else %}
+                <a href="{% url 'detalle_torneo' torneo.id %}" class="btn btn-outline-secondary rounded-pill px-3 shadow-sm btn-sm fw-bold">
+                    <i class="bi bi-arrow-left me-1"></i> Detalle del Torneo
+                </a>
+            {% endif %}
+            <nav aria-label="breadcrumb" class="d-none d-md-block">
+                <ol class="breadcrumb mb-0 bg-transparent p-0 small">
+                    <li class="breadcrumb-item"><a href="{% url 'gestion_torneos' %}" class="text-decoration-none">Torneos</a></li>
+                    <li class="breadcrumb-item active text-truncate" style="max-width: 250px;">{{ torneo.nombre }}</li>
+                    <li class="breadcrumb-item active fw-bold text-dark" aria-current="page">Control Disciplinario y Multas</li>
+                </ol>
+            </nav>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-2 header-actions">
+            <!-- Botón directo a Tesorería General -->
+            <a href="{% url 'resumen_financiero' %}" class="btn btn-primary rounded-pill px-3 py-2 btn-sm fw-bold shadow-sm">
+                <i class="bi bi-wallet2 me-1"></i> Ir a Tesorería General
+            </a>
+            <!-- Exportar a Excel -->
+            <a href="{% url 'exportar_excel_tarjetas_torneo' torneo.id %}" class="btn btn-success rounded-pill px-3 py-2 btn-sm fw-bold shadow-sm">
+                <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
+            </a>
+            <!-- Imprimir Reporte -->
+            <button type="button" onclick="window.print()" class="btn btn-dark rounded-pill px-3 py-2 btn-sm fw-bold shadow-sm">
+                <i class="bi bi-printer me-1"></i> Imprimir Reporte
+            </button>
+        </div>
+    </div>
+
+    <!-- Banner Header Principal -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden text-white" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
+        <div class="card-body p-4 p-md-5">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-4">
+                <div>
+                    <span class="badge bg-warning text-dark fw-bold text-uppercase px-3 py-1.5 rounded-pill mb-2">
+                        <i class="bi bi-shield-fill-exclamation me-1"></i> Módulo Disciplinario y Financiero
+                    </span>
+                    <h1 class="h2 fw-bold text-white mb-2">{{ torneo.nombre }}</h1>
+                    <div class="d-flex flex-wrap align-items-center gap-2 text-light small opacity-90">
+                        <span><i class="bi bi-diagram-3 me-1"></i>{{ torneo.modalidad }}</span> &bull;
+                        <span><i class="bi bi-calendar3 me-1"></i>{{ torneo.temporada }}</span> &bull;
+                        <span><i class="bi bi-trophy me-1"></i>{{ torneo.categoria.nombre|default:"General" }}</span>
+                    </div>
+                </div>
+
+                <!-- Tarifario de Sanciones -->
+                <div class="bg-white bg-opacity-10 border border-light border-opacity-20 rounded-4 p-3 d-flex align-items-center gap-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="card-tarjeta-chip card-tarjeta-amarilla" style="width: 22px; height: 28px;"></div>
+                        <div>
+                            <div class="text-white-50 small text-uppercase fw-semibold">Valor Amarilla</div>
+                            <div class="fs-4 fw-bold text-warning">${{ torneo.costo_amarilla|floatformat:2 }}</div>
+                        </div>
+                    </div>
+                    <div class="border-start border-light border-opacity-25" style="height: 40px;"></div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="card-tarjeta-chip card-tarjeta-roja" style="width: 22px; height: 28px;"></div>
+                        <div>
+                            <div class="text-white-50 small text-uppercase fw-semibold">Valor Roja</div>
+                            <div class="fs-4 fw-bold text-danger">${{ torneo.costo_roja|floatformat:2 }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI Metric Cards (5 Cards) -->
+    <div class="row g-3 mb-4">
+        <!-- Tarjetas Amarillas -->
+        <div class="col-6 col-lg">
+            <div class="card kpi-card shadow-sm h-100 bg-white border-start border-warning border-4">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="text-muted small fw-semibold text-uppercase">Amarillas</span>
+                        <span class="badge bg-warning-subtle text-warning-emphasis rounded-circle p-2">
+                            <div class="card-tarjeta-chip card-tarjeta-amarilla"></div>
+                        </span>
+                    </div>
+                    <h3 class="fw-bold mb-1 text-dark">{{ totales.amarillas_count }}</h3>
+                    <div class="text-muted small">Total: <strong class="text-warning-emphasis">${{ totales.monto_amarillas|floatformat:2 }}</strong></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjetas Rojas -->
+        <div class="col-6 col-lg">
+            <div class="card kpi-card shadow-sm h-100 bg-white border-start border-danger border-4">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="text-muted small fw-semibold text-uppercase">Rojas</span>
+                        <span class="badge bg-danger-subtle text-danger rounded-circle p-2">
+                            <div class="card-tarjeta-chip card-tarjeta-roja"></div>
+                        </span>
+                    </div>
+                    <h3 class="fw-bold mb-1 text-danger">{{ totales.rojas_count }}</h3>
+                    <div class="text-muted small">Total: <strong class="text-danger">${{ totales.monto_rojas|floatformat:2 }}</strong></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Multas Facturadas -->
+        <div class="col-12 col-sm-6 col-lg">
+            <div class="card kpi-card shadow-sm h-100 bg-white border-start border-primary border-4">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="text-muted small fw-semibold text-uppercase">Total Sanciones</span>
+                        <span class="badge bg-primary-subtle text-primary rounded-circle p-2">
+                            <i class="bi bi-calculator fs-6"></i>
+                        </span>
+                    </div>
+                    <h3 class="fw-bold mb-1 text-primary">${{ totales.monto_total|floatformat:2 }}</h3>
+                    <div class="text-muted small">{{ totales.total_sanciones }} tarjetas registradas</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Recaudado / Pagado -->
+        <div class="col-12 col-sm-6 col-lg">
+            <div class="card kpi-card shadow-sm h-100 bg-white border-start border-success border-4">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="text-muted small fw-semibold text-uppercase">Cobrado en Tesorería</span>
+                        <span class="badge bg-success-subtle text-success rounded-circle p-2">
+                            <i class="bi bi-check2-circle fs-6"></i>
+                        </span>
+                    </div>
+                    <h3 class="fw-bold mb-1 text-success">${{ totales.monto_pagado|floatformat:2 }}</h3>
+                    <div class="text-muted small">{{ totales.multas_pagadas_count }} multas liquidadas</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Saldo Pendiente por Cobrar -->
+        <div class="col-12 col-lg">
+            <div class="card kpi-card shadow-sm h-100 {% if totales.monto_pendiente > 0 %}bg-danger bg-opacity-10 border-danger border-start border-4{% else %}bg-white border-start border-secondary border-4{% endif %}">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="{% if totales.monto_pendiente > 0 %}text-danger fw-bold{% else %}text-muted{% endif %} small text-uppercase">Por Cobrar</span>
+                        <span class="badge {% if totales.monto_pendiente > 0 %}bg-danger text-white{% else %}bg-secondary-subtle text-secondary{% endif %} rounded-circle p-2">
+                            <i class="bi bi-hourglass-split fs-6"></i>
+                        </span>
+                    </div>
+                    <h3 class="fw-bold mb-1 {% if totales.monto_pendiente > 0 %}text-danger{% else %}text-muted{% endif %}">${{ totales.monto_pendiente|floatformat:2 }}</h3>
+                    <div class="{% if totales.monto_pendiente > 0 %}text-danger fw-semibold{% else %}text-muted{% endif %} small">{{ totales.multas_pendientes_count }} pendientes</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegación por Pestañas (Tabs) -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-5">
+        <div class="card-header bg-light border-0 p-3 pb-0">
+            <ul class="nav nav-tabs card-header-tabs" id="tarjetasTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active d-flex align-items-center gap-2" id="equipo-tab" data-bs-toggle="tab" data-bs-target="#equipo-pane" type="button" role="tab">
+                        <i class="bi bi-shield-shaded text-primary"></i> Por Equipo & Saldos
+                        <span class="badge bg-primary-subtle text-primary rounded-pill">{{ equipos_data|length }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link d-flex align-items-center gap-2" id="fecha-tab" data-bs-toggle="tab" data-bs-target="#fecha-pane" type="button" role="tab">
+                        <i class="bi bi-calendar-event text-info"></i> Por Fecha / Jornada
+                        <span class="badge bg-info-subtle text-info rounded-pill">{{ fechas_data|length }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link d-flex align-items-center gap-2" id="grupos-tab" data-bs-toggle="tab" data-bs-target="#grupos-pane" type="button" role="tab">
+                        <i class="bi bi-diagram-3 text-warning"></i> Por Grupos
+                        <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">{{ grupos_data|length }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link d-flex align-items-center gap-2" id="historial-tab" data-bs-toggle="tab" data-bs-target="#historial-pane" type="button" role="tab">
+                        <i class="bi bi-card-checklist text-danger"></i> Historial Completo
+                        <span class="badge bg-danger-subtle text-danger rounded-pill">{{ historial_tarjetas|length }}</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="tab-content" id="tarjetasTabsContent">
+
+                <!-- ================= TAB 1: POR EQUIPO & SALDOS ================= -->
+                <div class="tab-pane fade show active" id="equipo-pane" role="tabpanel" tabindex="0">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+                        <div>
+                            <h5 class="fw-bold mb-1 text-dark">Consolidado por Equipo y Estado de Pagos</h5>
+                            <p class="text-muted small mb-0">Total de amonestaciones acumuladas, multas calculadas y opción para liquidar la deuda del equipo en Tesorería.</p>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="text" id="buscadorEquipo" class="form-control form-control-sm rounded-pill px-3" placeholder="Buscar equipo..." style="width: 220px;" onkeyup="filtrarTablaEquipos()">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive rounded-3 border">
+                        <table class="table table-hover align-middle mb-0" id="tablaEquipos">
+                            <thead class="table-light text-uppercase small text-muted">
+                                <tr>
+                                    <th class="ps-3">Equipo</th>
+                                    <th>Grupo</th>
+                                    <th class="text-center">Amarillas</th>
+                                    <th class="text-center">Rojas</th>
+                                    <th class="text-center">Total Tarjetas</th>
+                                    <th class="text-end">Total Multas</th>
+                                    <th class="text-end">Pagado</th>
+                                    <th class="text-end">Saldo Pendiente</th>
+                                    <th class="text-center pe-3">Acción Tesorería</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in equipos_data %}
+                                <tr>
+                                    <td class="ps-3 fw-bold text-dark">
+                                        <div class="d-flex align-items-center gap-2">
+                                            {% if item.equipo.escudo %}
+                                                <img src="{{ item.equipo.escudo.url }}" alt="{{ item.equipo.nombre }}" class="rounded-circle" style="width: 28px; height: 28px; object-fit: contain;">
+                                            {% else %}
+                                                <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center text-muted fw-bold" style="width: 28px; height: 28px; font-size: 0.75rem;">
+                                                    {{ item.equipo.nombre|slice:":2"|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <span class="nombre-equipo">{{ item.equipo.nombre }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2.5 py-1">{{ item.grupo_nombre }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-amarilla rounded-pill px-2.5 py-1">
+                                            <div class="card-tarjeta-chip card-tarjeta-amarilla" style="width: 10px; height: 13px;"></div> {{ item.amarillas }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-roja rounded-pill px-2.5 py-1">
+                                            <div class="card-tarjeta-chip card-tarjeta-roja" style="width: 10px; height: 13px;"></div> {{ item.rojas }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center fw-bold text-secondary">
+                                        {{ item.total_tarjetas }}
+                                    </td>
+                                    <td class="text-end fw-bold text-dark">
+                                        ${{ item.monto_total|floatformat:2 }}
+                                    </td>
+                                    <td class="text-end text-success fw-bold">
+                                        ${{ item.monto_pagado|floatformat:2 }}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if item.monto_pendiente > 0 %}
+                                            <span class="badge bg-danger text-white rounded-pill px-2.5 py-1.5 fs-7 fw-bold">
+                                                ${{ item.monto_pendiente|floatformat:2 }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2 py-1 small">
+                                                <i class="bi bi-check-circle me-1"></i>Al Día
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center pe-3">
+                                        {% if item.tiene_deuda %}
+                                            {% if es_admin %}
+                                                <form action="{% url 'pagar_multas_equipo_torneo' torneo.id item.equipo.id %}" method="POST" class="d-inline" onsubmit="return confirm('¿Confirmas el cobro y registro de ${{ item.monto_pendiente }} en Tesorería para el equipo {{ item.equipo.nombre }}?');">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="metodo_pago" value="efectivo">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1">
+                                                        <i class="bi bi-cash-coin"></i> Cobrar Todo
+                                                    </button>
+                                                </form>
+                                            {% else %}
+                                                <span class="badge bg-warning-subtle text-warning-emphasis">Pendiente</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted small"><i class="bi bi-dash"></i></span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="9" class="text-center py-4 text-muted">No se registran equipos en el torneo.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ================= TAB 2: POR FECHA / JORNADA ================= -->
+                <div class="tab-pane fade" id="fecha-pane" role="tabpanel" tabindex="0">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+                        <div>
+                            <h5 class="fw-bold mb-1 text-dark">Sanciones Agrupadas por Jornada / Fecha</h5>
+                            <p class="text-muted small mb-0">Revisa las tarjetas acumuladas partido a partido para cada fecha programada.</p>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="small text-muted fw-semibold">Filtrar Fecha:</label>
+                            <select id="selectorFechaFiltro" class="form-select form-select-sm rounded-pill" style="width: 170px;" onchange="filtrarJornadas(this.value)">
+                                <option value="todas">Todas las Fechas</option>
+                                {% for f in fechas_data %}
+                                    <option value="fecha-{{ f.numero_fecha }}">Fecha {{ f.numero_fecha }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-4" id="contenedorJornadas">
+                        {% for f in fechas_data %}
+                        <div class="col-12 item-jornada fecha-{{ f.numero_fecha }}">
+                            <div class="card border rounded-4 shadow-sm overflow-hidden">
+                                <div class="card-header bg-light d-flex flex-wrap justify-content-between align-items-center p-3 gap-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge bg-primary rounded-pill px-3 py-1.5 fs-7 fw-bold">Fecha {{ f.numero_fecha }}</span>
+                                        <span class="text-muted small">({{ f.partidos|length }} partido{{ f.partidos|pluralize:"s" }})</span>
+                                    </div>
+                                    <div class="d-flex flex-wrap align-items-center gap-3 small">
+                                        <span class="badge badge-amarilla rounded-pill px-2.5 py-1">
+                                            <div class="card-tarjeta-chip card-tarjeta-amarilla" style="width: 10px; height: 13px;"></div> {{ f.total_amarillas }}
+                                        </span>
+                                        <span class="badge badge-roja rounded-pill px-2.5 py-1">
+                                            <div class="card-tarjeta-chip card-tarjeta-roja" style="width: 10px; height: 13px;"></div> {{ f.total_rojas }}
+                                        </span>
+                                        <span class="fw-bold text-dark">Multas: ${{ f.total_multas_monto|floatformat:2 }}</span>
+                                        {% if f.total_pendiente_monto > 0 %}
+                                            <span class="badge bg-danger text-white rounded-pill px-2.5 py-1">Pendiente: ${{ f.total_pendiente_monto|floatformat:2 }}</span>
+                                        {% else %}
+                                            <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1">Al Día</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0">
+                                            <thead class="table-light small text-uppercase text-muted">
+                                                <tr>
+                                                    <th class="ps-3" style="width: 25%;">Encuentro</th>
+                                                    <th style="width: 15%;">Grupo / Estado</th>
+                                                    <th class="text-center" style="width: 15%;">Tarjetas</th>
+                                                    <th>Jugadores Amonestados en este Partido</th>
+                                                    <th class="text-end pe-3" style="width: 15%;">Subtotal Multas</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for p_item in f.partidos %}
+                                                <tr>
+                                                    <td class="ps-3">
+                                                        <div class="fw-bold text-dark">{{ p_item.partido.equipo_local.nombre }} vs {{ p_item.partido.equipo_visitante.nombre }}</div>
+                                                        <div class="text-muted small">
+                                                            {% if p_item.partido.fecha_hora %}
+                                                                <i class="bi bi-clock me-1"></i>{{ p_item.partido.fecha_hora|date:"d/m/Y H:i" }}
+                                                            {% endif %}
+                                                            {% if p_item.partido.estadio %} &bull; {{ p_item.partido.estadio.nombre }}{% endif %}
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        {% if p_item.partido.grupo %}
+                                                            <span class="badge bg-light text-dark border rounded-pill">{{ p_item.partido.grupo.nombre }}</span>
+                                                        {% else %}
+                                                            <span class="badge bg-light text-muted border rounded-pill">General</span>
+                                                        {% endif %}
+                                                        <div><span class="badge bg-secondary-subtle text-secondary small rounded-pill">{{ p_item.partido.get_estado_display }}</span></div>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span class="badge badge-amarilla rounded-pill px-2 py-1 me-1">{{ p_item.amarillas }} A</span>
+                                                        <span class="badge badge-roja rounded-pill px-2 py-1">{{ p_item.rojas }} R</span>
+                                                    </td>
+                                                    <td>
+                                                        {% if p_item.eventos %}
+                                                            <div class="d-flex flex-wrap gap-1.5">
+                                                                {% for ev in p_item.eventos %}
+                                                                    <span class="badge {% if ev.evento.tipo == 'amarilla' %}bg-warning-subtle text-dark border border-warning{% else %}bg-danger-subtle text-danger border border-danger{% endif %} rounded-pill px-2.5 py-1 text-start">
+                                                                        <div class="card-tarjeta-chip {% if ev.evento.tipo == 'amarilla' %}card-tarjeta-amarilla{% else %}card-tarjeta-roja{% endif %} me-1" style="width: 8px; height: 11px;"></div>
+                                                                        <strong>{{ ev.evento.jugador.nombre_completo|default:ev.evento.jugador }}</strong> ({{ ev.evento.minuto }}')
+                                                                        <span class="text-muted small ms-1">[{{ ev.evento.equipo.nombre }}]</span>
+                                                                        {% if ev.multa %}
+                                                                            {% if ev.multa.pagada %}
+                                                                                <i class="bi bi-check-circle-fill text-success ms-1" title="Pagada"></i>
+                                                                            {% else %}
+                                                                                <i class="bi bi-exclamation-circle-fill text-danger ms-1" title="Pendiente"></i>
+                                                                            {% endif %}
+                                                                        {% endif %}
+                                                                    </span>
+                                                                {% endfor %}
+                                                            </div>
+                                                        {% else %}
+                                                            <span class="text-muted small fst-italic">Sin tarjetas en este partido</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td class="text-end pe-3">
+                                                        <div class="fw-bold text-dark">${{ p_item.monto_multas|floatformat:2 }}</div>
+                                                        {% if p_item.monto_pendiente > 0 %}
+                                                            <div class="small text-danger fw-semibold">Pendiente: ${{ p_item.monto_pendiente|floatformat:2 }}</div>
+                                                        {% else %}
+                                                            <div class="small text-success">Pagado</div>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12 text-center py-5 text-muted">
+                            <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+                            No hay fechas o partidos programados en este torneo.
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- ================= TAB 3: POR GRUPOS ================= -->
+                <div class="tab-pane fade" id="grupos-pane" role="tabpanel" tabindex="0">
+                    <div class="mb-4">
+                        <h5 class="fw-bold mb-1 text-dark">Sanciones y Multas Agrupadas por Grupos</h5>
+                        <p class="text-muted small mb-0">Comportamiento disciplinario y estado de cuentas clasificado por cada grupo de competencia.</p>
+                    </div>
+
+                    <div class="row g-4">
+                        {% for g in grupos_data %}
+                        <div class="col-12 col-xl-6">
+                            <div class="card border rounded-4 shadow-sm h-100 overflow-hidden">
+                                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center p-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-diagram-3-fill text-warning"></i>
+                                        <h6 class="mb-0 fw-bold">{{ g.nombre }}</h6>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 small">
+                                        <span class="badge badge-amarilla rounded-pill">{{ g.total_amarillas }} A</span>
+                                        <span class="badge badge-roja rounded-pill">{{ g.total_rojas }} R</span>
+                                        <span class="badge bg-primary text-white rounded-pill">${{ g.monto_total|floatformat:2 }}</span>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0 small">
+                                            <thead class="table-light text-uppercase text-muted">
+                                                <tr>
+                                                    <th class="ps-3">Equipo</th>
+                                                    <th class="text-center">A</th>
+                                                    <th class="text-center">R</th>
+                                                    <th class="text-end">Total $</th>
+                                                    <th class="text-end">Pendiente $</th>
+                                                    <th class="text-center pe-3">Acción</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for eq in g.equipos %}
+                                                <tr>
+                                                    <td class="ps-3 fw-bold text-dark">{{ eq.equipo.nombre }}</td>
+                                                    <td class="text-center">{{ eq.amarillas }}</td>
+                                                    <td class="text-center">{{ eq.rojas }}</td>
+                                                    <td class="text-end fw-semibold">${{ eq.monto_total|floatformat:2 }}</td>
+                                                    <td class="text-end">
+                                                        {% if eq.monto_pendiente > 0 %}
+                                                            <span class="badge bg-danger rounded-pill">${{ eq.monto_pendiente|floatformat:2 }}</span>
+                                                        {% else %}
+                                                            <span class="badge bg-success-subtle text-success rounded-pill">$0.00</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td class="text-center pe-3">
+                                                        {% if eq.tiene_deuda and es_admin %}
+                                                            <form action="{% url 'pagar_multas_equipo_torneo' torneo.id eq.equipo.id %}" method="POST" class="d-inline" onsubmit="return confirm('¿Cobrar ${{ eq.monto_pendiente }} para {{ eq.equipo.nombre }} en Tesorería?');">
+                                                                {% csrf_token %}
+                                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-0.5" style="font-size: 0.75rem;">
+                                                                    Cobrar
+                                                                </button>
+                                                            </form>
+                                                        {% else %}
+                                                            <span class="text-muted"><i class="bi bi-check text-success"></i></span>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% empty %}
+                                                <tr>
+                                                    <td colspan="6" class="text-center py-3 text-muted">No hay equipos en este grupo.</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="col-12 text-center py-5 text-muted">
+                            No existen grupos configurados en este torneo.
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- ================= TAB 4: HISTORIAL COMPLETO ================= -->
+                <div class="tab-pane fade" id="historial-pane" role="tabpanel" tabindex="0">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+                        <div>
+                            <h5 class="fw-bold mb-1 text-dark">Registro Detallado de Todas las Tarjetas</h5>
+                            <p class="text-muted small mb-0">Historial completo con jugador, minuto, partido, importe de la sanción y botón directo para pagar individualmente en Tesorería.</p>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="text" id="buscadorHistorial" class="form-control form-control-sm rounded-pill px-3" placeholder="Buscar jugador o equipo..." style="width: 250px;" onkeyup="filtrarTablaHistorial()">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive rounded-3 border">
+                        <table class="table table-hover align-middle mb-0" id="tablaHistorial">
+                            <thead class="table-light text-uppercase small text-muted">
+                                <tr>
+                                    <th class="ps-3">Fecha</th>
+                                    <th>Partido</th>
+                                    <th class="text-center">Min</th>
+                                    <th>Jugador</th>
+                                    <th>Equipo</th>
+                                    <th class="text-center">Tarjeta</th>
+                                    <th class="text-end">Monto Multa</th>
+                                    <th class="text-center">Estado Pago</th>
+                                    <th class="text-center pe-3">Acción Tesorería</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in historial_tarjetas %}
+                                <tr>
+                                    <td class="ps-3">
+                                        <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2.5 py-1">Fecha {{ item.numero_fecha }}</span>
+                                    </td>
+                                    <td class="small">
+                                        <div class="fw-semibold text-dark">{{ item.evento.partido.equipo_local.nombre }} vs {{ item.evento.partido.equipo_visitante.nombre }}</div>
+                                        <div class="text-muted" style="font-size: 0.75rem;">{{ item.evento.partido.fecha_hora|date:"d/m/Y"|default:"Sin fecha" }}</div>
+                                    </td>
+                                    <td class="text-center fw-bold text-muted small">
+                                        {{ item.evento.minuto }}'
+                                    </td>
+                                    <td class="fw-bold text-dark busqueda-item">
+                                        {{ item.evento.jugador.nombre_completo|default:item.evento.jugador }}
+                                    </td>
+                                    <td class="text-muted busqueda-item">
+                                        {{ item.evento.equipo.nombre }}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if item.evento.tipo == 'amarilla' %}
+                                            <span class="badge badge-amarilla rounded-pill px-2.5 py-1">
+                                                <div class="card-tarjeta-chip card-tarjeta-amarilla" style="width: 10px; height: 13px;"></div> Amarilla
+                                            </span>
+                                        {% else %}
+                                            <span class="badge badge-roja rounded-pill px-2.5 py-1">
+                                                <div class="card-tarjeta-chip card-tarjeta-roja" style="width: 10px; height: 13px;"></div> Roja
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end fw-bold text-dark">
+                                        ${{ item.monto|floatformat:2 }}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if item.pagada %}
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-2.5 py-1 small">
+                                                <i class="bi bi-check-circle-fill me-1"></i>Pagada
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 small">
+                                                <i class="bi bi-clock-history me-1"></i>Pendiente
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center pe-3">
+                                        {% if not item.pagada and item.multa %}
+                                            {% if es_admin %}
+                                                <!-- Botón para pagar directamente en tesorería -->
+                                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#modalPagarMulta-{{ item.multa.id }}">
+                                                    <i class="bi bi-cash-stack"></i> Pagar en Tesorería
+                                                </button>
+
+                                                <!-- Modal de Cobro Individual -->
+                                                <div class="modal fade text-start" id="modalPagarMulta-{{ item.multa.id }}" tabindex="-1" aria-hidden="true">
+                                                    <div class="modal-dialog modal-dialog-centered">
+                                                        <div class="modal-content rounded-4 border-0 shadow">
+                                                            <form action="{% url 'pagar_multa' item.multa.id %}?next={{ request.get_full_path|urlencode }}" method="POST">
+                                                                {% csrf_token %}
+                                                                <div class="modal-header bg-danger text-white rounded-top-4">
+                                                                    <h5 class="modal-title fw-bold">
+                                                                        <i class="bi bi-credit-card-2-front me-1"></i> Pagar Multa en Tesorería
+                                                                    </h5>
+                                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                </div>
+                                                                <div class="modal-body p-4">
+                                                                    <div class="text-center mb-3">
+                                                                        <div class="text-muted small text-uppercase">Monto a Cobrar</div>
+                                                                        <div class="fs-1 fw-bold text-danger">${{ item.monto|floatformat:2 }}</div>
+                                                                    </div>
+                                                                    <div class="bg-light rounded-3 p-3 mb-3 small">
+                                                                        <div><strong>Jugador:</strong> {{ item.evento.jugador.nombre_completo|default:item.evento.jugador }}</div>
+                                                                        <div><strong>Equipo:</strong> {{ item.evento.equipo.nombre }}</div>
+                                                                        <div><strong>Infracción:</strong> Tarjeta {{ item.evento.get_tipo_display }} (Minuto {{ item.evento.minuto }}')</div>
+                                                                        <div><strong>Torneo:</strong> {{ torneo.nombre }}</div>
+                                                                    </div>
+                                                                    <div class="mb-3">
+                                                                        <label class="form-label fw-semibold small text-muted">Método de Pago</label>
+                                                                        <select name="metodo_pago" class="form-select rounded-3">
+                                                                            <option value="efectivo" selected>Efectivo</option>
+                                                                            <option value="transferencia">Transferencia Bancaria</option>
+                                                                            <option value="deposito">Depósito</option>
+                                                                            <option value="tarjeta">Tarjeta</option>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="modal-footer bg-light rounded-bottom-4">
+                                                                    <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancelar</button>
+                                                                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">
+                                                                        <i class="bi bi-check-lg me-1"></i> Registrar Ingreso en Tesorería
+                                                                    </button>
+                                                                </div>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted small">Pendiente</span>
+                                            {% endif %}
+                                        {% elif item.pagada %}
+                                            <span class="text-success small fw-semibold"><i class="bi bi-check-all fs-6"></i> Cobrada</span>
+                                        {% else %}
+                                            <span class="text-muted small">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="9" class="text-center py-4 text-muted">No se registran tarjetas amonestadas en este torneo.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- JavaScript para filtros instantáneos -->
+<script>
+function filtrarTablaEquipos() {
+    let input = document.getElementById('buscadorEquipo');
+    let filter = input.value.toLowerCase();
+    let table = document.getElementById('tablaEquipos');
+    let trs = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < trs.length; i++) {
+        let td = trs[i].querySelector('.nombre-equipo');
+        if (td) {
+            let txtValue = td.textContent || td.innerText;
+            if (txtValue.toLowerCase().indexOf(filter) > -1) {
+                trs[i].style.display = "";
+            } else {
+                trs[i].style.display = "none";
+            }
+        }
+    }
+}
+
+function filtrarJornadas(valor) {
+    let items = document.querySelectorAll('.item-jornada');
+    items.forEach(function(item) {
+        if (valor === 'todas') {
+            item.style.display = "";
+        } else {
+            if (item.classList.contains(valor)) {
+                item.style.display = "";
+            } else {
+                item.style.display = "none";
+            }
+        }
+    });
+}
+
+function filtrarTablaHistorial() {
+    let input = document.getElementById('buscadorHistorial');
+    let filter = input.value.toLowerCase();
+    let table = document.getElementById('tablaHistorial');
+    let trs = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < trs.length; i++) {
+        let items = trs[i].querySelectorAll('.busqueda-item');
+        let match = false;
+        items.forEach(function(item) {
+            let txt = item.textContent || item.innerText;
+            if (txt.toLowerCase().indexOf(filter) > -1) {
+                match = true;
+            }
+        });
+        if (match || items.length === 0) {
+            trs[i].style.display = "";
+        } else {
+            trs[i].style.display = "none";
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, views_grupos, views_fixture_personalizado, views_estadisticas_personalizado, views_eliminatorias_personalizado, views_panel_personalizado, views_publica_personalizado
+from . import views, views_grupos, views_fixture_personalizado, views_estadisticas_personalizado, views_eliminatorias_personalizado, views_panel_personalizado, views_publica_personalizado, views_tarjetas_torneo
 
 urlpatterns = [
     # Cartelera Pública de Partidos (Calendario)
@@ -95,6 +95,9 @@ urlpatterns = [
     path('torneos/<int:torneo_id>/auditoria/', views_panel_personalizado.historial_auditoria_view, name='historial_auditoria_personalizado'),
     path('torneos/<int:torneo_id>/exportar-excel-consolidado/', views_panel_personalizado.exportar_excel_consolidado_view, name='exportar_excel_consolidado_personalizado'),
     path('torneos/<int:torneo_id>/imprimir-consolidado/', views_panel_personalizado.imprimir_torneo_consolidado_view, name='imprimir_torneo_consolidado_personalizado'),
+    path('torneos/<int:torneo_id>/tarjetas/', views_tarjetas_torneo.control_tarjetas_torneo_view, name='control_tarjetas_torneo'),
+    path('torneos/<int:torneo_id>/tarjetas/excel/', views_tarjetas_torneo.exportar_excel_tarjetas_torneo, name='exportar_excel_tarjetas_torneo'),
+    path('torneos/<int:torneo_id>/tarjetas/pagar-equipo/<int:equipo_id>/', views_tarjetas_torneo.pagar_multas_equipo_torneo, name='pagar_multas_equipo_torneo'),
     path('publico/torneo/<uuid:public_uuid>/', views_publica_personalizado.vista_publica_torneo_view, name='vista_publica_torneo'),
 ]
 

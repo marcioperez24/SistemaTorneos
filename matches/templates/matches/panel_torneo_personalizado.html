@@ -29,7 +29,10 @@
                         <i class="bi bi-gear-fill me-1"></i> Precios / Configuración
                     </button>
                     {% endif %}
-                    <button type="button" onclick="copiarLinkPublicoPanel('{% url 'vista_publica_torneo' torneo.public_uuid %}')" class="btn btn-warning btn-sm fw-bold rounded-pill px-3 shadow-sm text-dark">
+                    <a href="{% url 'control_tarjetas_torneo' torneo.id %}" class="btn btn-warning text-dark fw-bold btn-sm rounded-pill px-3 shadow-sm">
+                        <i class="bi bi-card-heading me-1"></i> Tarjetas y Multas
+                    </a>
+                    <button type="button" onclick="copiarLinkPublicoPanel('{% url 'vista_publica_torneo' torneo.public_uuid %}')" class="btn btn-outline-light btn-sm fw-bold rounded-pill px-3 shadow-sm">
                         <i class="bi bi-clipboard me-1"></i> Copiar Enlace Público
                     </button>
                     <a href="{% url 'vista_publica_torneo' torneo.public_uuid %}" target="_blank" class="btn btn-light btn-sm fw-semibold rounded-pill px-3 shadow-sm">
