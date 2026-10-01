@@ -1367,11 +1367,15 @@ def _preparar_contexto_carnets(request, equipo_id):
     if not torneo_principal and equipo.torneos.exists():
         torneo_principal = equipo.torneos.first()
 
+    chunk_size = 9
+    paginas_carnets = [todos_los_carnets[i:i + chunk_size] for i in range(0, len(todos_los_carnets), chunk_size)]
+
     context = {
         'equipo': equipo,
         'jugadores': jugadores,
         'cuerpo_tecnico': cuerpo_tecnico,
         'todos_los_carnets': todos_los_carnets,
+        'paginas_carnets': paginas_carnets,
         'total_jugadores': len(jugadores),
         'total_registrados': total_registrados,
         'total_aprobados': total_aprobados,

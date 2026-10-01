@@ -31,8 +31,8 @@
     /* Contenedor Cuadrícula de Carnets Verticales (3 a 4 columnas en pantalla) */
     .carnets-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-        gap: 20px;
+        grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
+        gap: 18px;
         max-width: 1200px;
         margin: 0 auto;
     }
@@ -40,7 +40,7 @@
     /* Envoltorio de cada carnet con guías de corte */
     .carnet-item-wrapper {
         position: relative;
-        padding: 6px;
+        padding: 4px;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
         display: flex;
         justify-content: center;
@@ -48,7 +48,7 @@
 
     .carnet-item-wrapper.show-cut-lines {
         border: 1px dashed #94a3b8;
-        border-radius: 14px;
+        border-radius: 12px;
         background: #fafafa;
     }
 
@@ -58,8 +58,8 @@
         top: -9px;
         right: 12px;
         background: #ffffff;
-        padding: 0 6px;
-        font-size: 11px;
+        padding: 0 5px;
+        font-size: 10px;
         color: #64748b;
         font-family: monospace;
         font-weight: bold;
@@ -76,16 +76,17 @@
         background: #ffffff;
         color: #0f172a;
         border: 1.5px solid #cbd5e1;
-        border-radius: 12px;
-        box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+        border-radius: 10px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.06);
         display: flex;
         flex-direction: column;
+        justify-content: space-between;
         overflow: hidden;
         position: relative;
         box-sizing: border-box;
         width: 100%;
-        max-width: 255px;
-        height: 410px;
+        max-width: 240px;
+        height: 382px;
         margin: 0 auto;
         page-break-inside: avoid;
         break-inside: avoid;
@@ -95,18 +96,19 @@
 
     .carnet-card-vertical:hover {
         transform: translateY(-2px);
-        box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
     }
 
     /* 1. Encabezado de la Organización */
     .c-header {
         background: #f8fafc;
-        padding: 6px 10px;
+        padding: 5px 8px;
         display: flex;
         align-items: center;
         justify-content: space-between;
         border-bottom: 1px solid #e2e8f0;
-        min-height: 38px;
+        min-height: 34px;
+        flex-shrink: 0;
     }
 
     .c-header-left {
@@ -116,20 +118,20 @@
 
     .c-org-title {
         display: block;
-        font-size: 0.66rem;
+        font-size: 0.62rem;
         font-weight: 800;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.4px;
         text-transform: uppercase;
         color: #0f172a;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        max-width: 185px;
+        max-width: 175px;
     }
 
     .c-org-sub {
         display: block;
-        font-size: 0.54rem;
+        font-size: 0.50rem;
         font-weight: 600;
         color: #64748b;
         letter-spacing: 0.3px;
@@ -137,8 +139,8 @@
     }
 
     .c-header-logo {
-        width: 26px;
-        height: 26px;
+        width: 22px;
+        height: 22px;
         object-fit: contain;
         flex-shrink: 0;
     }
@@ -153,16 +155,17 @@
     .c-ribbon {
         background-color: var(--carnet-ribbon-bg);
         color: var(--carnet-ribbon-text);
-        padding: 5px 8px;
+        padding: 3.5px 6px;
         text-align: center;
         transition: background-color 0.2s ease;
+        flex-shrink: 0;
     }
 
     .c-ribbon-title {
-        font-size: 0.72rem;
+        font-size: 0.66rem;
         font-weight: 900;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.4px;
         line-height: 1.1;
         margin: 0;
         white-space: nowrap;
@@ -171,7 +174,7 @@
     }
 
     .c-ribbon-sub {
-        font-size: 0.58rem;
+        font-size: 0.52rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.3px;
@@ -182,23 +185,24 @@
 
     /* 3. Área de Foto Central y Dorsal */
     .c-photo-wrapper {
-        padding: 8px 10px 3px;
+        padding: 5px 8px 2px;
         display: flex;
         justify-content: center;
         position: relative;
+        flex-shrink: 0;
     }
 
     .c-photo-frame {
-        width: 84px;
-        height: 102px;
+        width: 72px;
+        height: 88px;
         border: 2px solid #ffffff;
-        border-radius: 8px;
+        border-radius: 6px;
         overflow: hidden;
         background: #f1f5f9;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
         position: relative;
     }
 
@@ -210,7 +214,7 @@
 
     .c-photo-placeholder {
         color: #94a3b8;
-        font-size: 2.2rem;
+        font-size: 1.8rem;
     }
 
     .c-dorsal-badge {
@@ -221,8 +225,8 @@
         color: #ffffff;
         font-weight: 900;
         font-family: monospace;
-        font-size: 0.8rem;
-        padding: 1px 6px;
+        font-size: 0.74rem;
+        padding: 1px 5px;
         border-radius: 4px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         border: 1px solid #ffffff;
@@ -230,16 +234,17 @@
 
     /* 4. Identidad del Jugador */
     .c-identity-section {
-        padding: 2px 10px;
+        padding: 1px 8px;
         text-align: center;
+        flex-shrink: 0;
     }
 
     .c-player-name {
-        font-size: 0.8rem;
+        font-size: 0.74rem;
         font-weight: 900;
         text-transform: uppercase;
         color: #0f172a;
-        line-height: 1.15;
+        line-height: 1.12;
         margin: 0;
         white-space: nowrap;
         overflow: hidden;
@@ -247,9 +252,9 @@
     }
 
     .c-player-role {
-        font-size: 0.56rem;
+        font-size: 0.52rem;
         font-weight: 800;
-        letter-spacing: 0.4px;
+        letter-spacing: 0.3px;
         text-transform: uppercase;
         color: var(--carnet-ribbon-bg);
         display: inline-block;
@@ -260,27 +265,28 @@
     .c-data-box {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
-        border-radius: 6px;
-        margin: 4px 10px;
-        padding: 4px 8px;
+        border-radius: 5px;
+        margin: 3px 8px;
+        padding: 3px 6px;
         display: flex;
         flex-direction: column;
-        gap: 2px;
+        gap: 1.5px;
+        flex-shrink: 0;
     }
 
     .c-data-row {
         display: flex;
         align-items: baseline;
         justify-content: space-between;
-        font-size: 0.63rem;
-        line-height: 1.2;
+        font-size: 0.58rem;
+        line-height: 1.15;
     }
 
     .c-label {
         font-weight: 800;
         color: #64748b;
         text-transform: uppercase;
-        font-size: 0.56rem;
+        font-size: 0.52rem;
         letter-spacing: 0.3px;
     }
 
@@ -289,7 +295,7 @@
         color: #0f172a;
         text-transform: uppercase;
         text-align: right;
-        max-width: 150px;
+        max-width: 140px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -297,33 +303,38 @@
 
     .c-val.font-mono {
         font-family: monospace;
-        font-size: 0.7rem;
+        font-size: 0.65rem;
     }
 
-    /* 6. Footer con QR y Estado */
+    /* 6. Footer con QR y Estado (100% visible, sin cortes) */
     .c-footer-bar {
         margin-top: auto;
-        padding: 4px 10px 6px;
+        padding: 3px 8px 4px;
         border-top: 1px solid #e2e8f0;
         background: #ffffff;
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 6px;
+        flex-shrink: 0;
     }
 
     .c-qr-wrapper {
         background: #ffffff;
-        padding: 2px;
+        padding: 1.5px;
         border: 1px solid #cbd5e1;
         border-radius: 4px;
         flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .c-qr-wrapper img {
-        width: 36px;
-        height: 36px;
+        width: 32px;
+        height: 32px;
         display: block;
+        object-fit: contain;
     }
 
     .c-footer-info {
@@ -335,15 +346,15 @@
     }
 
     .c-badge-status {
-        font-size: 0.56rem;
+        font-size: 0.52rem;
         font-weight: 800;
         letter-spacing: 0.3px;
-        padding: 1.5px 6px;
+        padding: 1px 5px;
         border-radius: 20px;
         text-transform: uppercase;
         display: inline-flex;
         align-items: center;
-        gap: 3px;
+        gap: 2px;
     }
 
     .c-badge-status.aprobado {
@@ -359,16 +370,16 @@
     }
 
     .c-meta-line {
-        font-size: 0.5rem;
+        font-size: 0.46rem;
         color: #64748b;
         font-family: monospace;
         margin-top: 1px;
     }
 
     .c-watermark {
-        font-size: 0.46rem;
+        font-size: 0.42rem;
         font-weight: 800;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.4px;
         color: #94a3b8;
         text-transform: uppercase;
     }
@@ -379,7 +390,7 @@
     @media print {
         @page {
             size: letter portrait;
-            margin: 8mm 6mm;
+            margin: 6mm 5mm;
         }
 
         body {
@@ -402,78 +413,180 @@
             padding: 0 !important;
         }
 
-        /* 3 Columnas de Carnets Verticales por Hoja (9 por página) */
+        /* 3 Columnas por Hoja, 84mm por fila (9 por página) */
         .carnets-grid {
             display: grid !important;
             grid-template-columns: repeat(3, 56mm) !important;
+            grid-template-rows: repeat(3, 84mm) !important;
             justify-content: center !important;
             column-gap: 5mm !important;
-            row-gap: 5mm !important;
+            row-gap: 3.5mm !important;
             width: 100% !important;
-            margin: 0 !important;
+            margin: 0 auto !important;
         }
 
         .carnet-item-wrapper {
             padding: 0 !important;
             background: transparent !important;
+            height: 84mm !important;
+            max-height: 84mm !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
         }
 
+        .carnet-item-wrapper:nth-child(9n) {
+            page-break-after: always !important;
+            break-after: page !important;
+        }
+
         .carnet-item-wrapper.show-cut-lines {
-            border: 0.5pt dashed #94a3b8 !important;
-            padding: 2mm !important;
+            border: 0.4pt dashed #94a3b8 !important;
+            padding: 1mm !important;
         }
 
         .cut-indicator {
             display: block !important;
-            font-size: 7pt !important;
+            font-size: 6pt !important;
             color: #64748b !important;
+            top: -6px !important;
         }
 
         .carnet-card-vertical {
-            width: 54mm !important;
-            height: 86mm !important;
+            width: 53.5mm !important;
+            height: 81.5mm !important;
+            max-height: 81.5mm !important;
             box-shadow: none !important;
-            border: 0.8pt solid #000000 !important;
-            border-radius: 3.2mm !important;
+            border: 0.6pt solid #000000 !important;
+            border-radius: 2.5mm !important;
             background: #ffffff !important;
             color: #000000 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            overflow: hidden !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
         }
 
         .c-header {
             background: #f8fafc !important;
+            padding: 1.2mm 2.2mm !important;
+            min-height: 6.5mm !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+        }
+
+        .c-org-title {
+            font-size: 5.4pt !important;
+            max-width: 38mm !important;
+        }
+
+        .c-org-sub {
+            font-size: 4.2pt !important;
+        }
+
+        .c-header-logo {
+            width: 5.2mm !important;
+            height: 5.2mm !important;
         }
 
         .c-ribbon {
             background-color: var(--carnet-ribbon-bg) !important;
             color: #ffffff !important;
+            padding: 1mm 2.2mm !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
         }
 
-        .c-data-box {
-            background: #f8fafc !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
+        .c-ribbon-title {
+            font-size: 5.6pt !important;
+        }
+
+        .c-ribbon-sub {
+            font-size: 4.5pt !important;
+        }
+
+        .c-photo-wrapper {
+            padding: 1.2mm 0 0.8mm !important;
+        }
+
+        .c-photo-frame {
+            width: 16.5mm !important;
+            height: 20mm !important;
+            border: 0.6pt solid #000000 !important;
+            border-radius: 1.5mm !important;
         }
 
         .c-dorsal-badge {
+            font-size: 6pt !important;
+            padding: 0.4mm 1.2mm !important;
             background-color: var(--carnet-ribbon-bg) !important;
             color: #ffffff !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
         }
 
-        .c-badge-status.aprobado {
-            background: #ecfdf5 !important;
-            color: #059669 !important;
+        .c-player-name {
+            font-size: 6.2pt !important;
+            line-height: 1.1 !important;
+        }
+
+        .c-player-role {
+            font-size: 4.5pt !important;
+        }
+
+        .c-data-box {
+            background: #f8fafc !important;
+            margin: 0.8mm 1.8mm !important;
+            padding: 0.8mm 1.8mm !important;
+            border: 0.4pt solid #cbd5e1 !important;
+            border-radius: 1.2mm !important;
+            gap: 0.6mm !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+        }
+
+        .c-label {
+            font-size: 4.5pt !important;
+        }
+
+        .c-val {
+            font-size: 5pt !important;
+            max-width: 32mm !important;
+        }
+
+        .c-footer-bar {
+            padding: 0.8mm 1.8mm 1.2mm !important;
+            border-top: 0.4pt solid #cbd5e1 !important;
+            background: #ffffff !important;
+        }
+
+        .c-qr-wrapper {
+            width: 8.2mm !important;
+            height: 8.2mm !important;
+            padding: 0.4mm !important;
+            border: 0.4pt solid #000000 !important;
+        }
+
+        .c-badge-status.aprobado {
+            font-size: 4.5pt !important;
+            padding: 0.4mm 1.2mm !important;
+            background: #ecfdf5 !important;
+            color: #059669 !important;
+            border: 0.4pt solid #10b981 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        .c-meta-line {
+            font-size: 4pt !important;
+        }
+
+        .c-watermark {
+            font-size: 3.6pt !important;
         }
     }
 </style>
@@ -603,14 +716,14 @@
                             {% elif equipo.logo %}
                                 <img src="{{ equipo.logo.url }}" alt="{{ equipo.nombre }}">
                             {% else %}
-                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 24px; height: 24px; font-size: 10px;">
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 22px; height: 22px; font-size: 10px;">
                                     <i class="fa-solid fa-trophy text-warning"></i>
                                 </div>
                             {% endif %}
                         </div>
                     </div>
 
-                    <!-- 2. CINTILLO / BANNER DEL TORNEO (COLOR PERSONALIZABLE) -->
+                    <!-- 2. CINTILLO / BANNER DEL TORNEO -->
                     <div class="c-ribbon">
                         <h5 class="c-ribbon-title">
                             {{ item.ficha.torneo.nombre|default:torneo.nombre|default:"TORNEO EMPRESARIAL"|upper }}
@@ -655,7 +768,7 @@
                         </span>
                     </div>
 
-                    <!-- 5. GRILLA DE DATOS TÉCNICOS (BLANCO/GRIS SUAVE) -->
+                    <!-- 5. GRILLA DE DATOS TÉCNICOS -->
                     <div class="c-data-box">
                         <div class="c-data-row">
                             <span class="c-label">CÉDULA:</span>
@@ -683,10 +796,10 @@
                         {% endif %}
                     </div>
 
-                    <!-- 6. FOOTER CON QR Y ESTADO -->
+                    <!-- 6. FOOTER CON QR Y ESTADO (COMPLETO, SIN CORTES) -->
                     <div class="c-footer-bar">
                         <div class="c-qr-wrapper qr-container">
-                            <img src="{{ item.qr_url }}" alt="QR Verificación" loading="lazy">
+                            <img src="{{ item.qr_url }}" alt="QR Verificación">
                         </div>
                         <div class="c-footer-info">
                             {% if item.ficha.estado_validacion == 'aprobado' %}

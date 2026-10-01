@@ -57,7 +57,7 @@
         }
 
         .toolbar-info h1 {
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: 700;
             margin: 0;
             display: flex;
@@ -74,7 +74,7 @@
         .toolbar-actions {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             flex-wrap: wrap;
         }
 
@@ -115,7 +115,6 @@
             background: #475569;
         }
 
-        /* PALETA DE TEMAS EN BARRA SUPERIOR */
         .color-selector {
             display: flex;
             align-items: center;
@@ -138,17 +137,39 @@
             transform: scale(1.2);
         }
 
-        /* CONTENEDOR PRINCIPAL DE IMPRESIÓN */
+        /* CONTENEDOR DE PÁGINAS PARA IMPRESIÓN Y PANTALLA */
         .sheet-container {
-            max-width: 1050px;
-            margin: 24px auto;
-            padding: 0 16px;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 0 12px;
+        }
+
+        .sheet-page {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+            border: 1px solid #e2e8f0;
+        }
+
+        .page-badge {
+            display: inline-block;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 4px;
+            width: 100%;
         }
 
         .carnets-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
+            gap: 16px;
             justify-content: center;
         }
 
@@ -167,7 +188,7 @@
         /* ENVOLTORIO CON LÍNEAS DE CORTE */
         .carnet-item-wrapper {
             position: relative;
-            padding: 6px;
+            padding: 4px;
             display: flex;
             justify-content: center;
             background: transparent;
@@ -175,7 +196,7 @@
 
         .carnet-item-wrapper.show-cut-lines {
             border: 1px dashed #94a3b8;
-            border-radius: 14px;
+            border-radius: 12px;
             background: #fafafa;
         }
 
@@ -183,10 +204,10 @@
             display: none;
             position: absolute;
             top: -9px;
-            right: 12px;
+            right: 10px;
             background: #ffffff;
-            padding: 0 6px;
-            font-size: 11px;
+            padding: 0 5px;
+            font-size: 10px;
             color: #64748b;
             font-family: monospace;
             font-weight: bold;
@@ -197,25 +218,24 @@
         }
 
         /* ==============================================================
-           DISEÑO UNIFICADO DEL CARNET VERTICAL (BLANCO, ELEGANTE, UN SOLO LADO)
+           DISEÑO UNIFICADO DEL CARNET VERTICAL (BLANCO, COMPACTO, 1 SOLO LADO)
            ============================================================== */
         .carnet-card-vertical {
             background: #ffffff;
             color: #0f172a;
             border: 1.5px solid #cbd5e1;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+            border-radius: 10px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.06);
             display: flex;
             flex-direction: column;
+            justify-content: space-between;
             overflow: hidden;
             position: relative;
             box-sizing: border-box;
             width: 100%;
-            max-width: 250px;
-            height: 405px;
+            max-width: 240px;
+            height: 380px;
             margin: 0 auto;
-            page-break-inside: avoid;
-            break-inside: avoid;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
         }
@@ -223,12 +243,13 @@
         /* 1. Encabezado de la Organización */
         .c-header {
             background: #f8fafc;
-            padding: 6px 10px;
+            padding: 5px 8px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             border-bottom: 1px solid #e2e8f0;
-            min-height: 38px;
+            min-height: 34px;
+            flex-shrink: 0;
         }
 
         .c-header-left {
@@ -238,20 +259,20 @@
 
         .c-org-title {
             display: block;
-            font-size: 0.65rem;
+            font-size: 0.62rem;
             font-weight: 800;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
             text-transform: uppercase;
             color: #0f172a;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 180px;
+            max-width: 175px;
         }
 
         .c-org-sub {
             display: block;
-            font-size: 0.52rem;
+            font-size: 0.50rem;
             font-weight: 600;
             color: #64748b;
             letter-spacing: 0.3px;
@@ -259,8 +280,8 @@
         }
 
         .c-header-logo {
-            width: 26px;
-            height: 26px;
+            width: 24px;
+            height: 24px;
             object-fit: contain;
             flex-shrink: 0;
         }
@@ -275,16 +296,17 @@
         .c-ribbon {
             background-color: var(--carnet-ribbon-bg);
             color: var(--carnet-ribbon-text);
-            padding: 5px 8px;
+            padding: 3.5px 6px;
             text-align: center;
             transition: background-color 0.2s ease;
+            flex-shrink: 0;
         }
 
         .c-ribbon-title {
-            font-size: 0.70rem;
+            font-size: 0.66rem;
             font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
             line-height: 1.1;
             margin: 0;
             white-space: nowrap;
@@ -293,7 +315,7 @@
         }
 
         .c-ribbon-sub {
-            font-size: 0.56rem;
+            font-size: 0.52rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.3px;
@@ -304,23 +326,24 @@
 
         /* 3. Área de Foto Central y Dorsal */
         .c-photo-wrapper {
-            padding: 7px 10px 3px;
+            padding: 5px 8px 2px;
             display: flex;
             justify-content: center;
             position: relative;
+            flex-shrink: 0;
         }
 
         .c-photo-frame {
-            width: 82px;
-            height: 100px;
+            width: 72px;
+            height: 88px;
             border: 2px solid #ffffff;
-            border-radius: 8px;
+            border-radius: 6px;
             overflow: hidden;
             background: #f1f5f9;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
             position: relative;
         }
 
@@ -332,7 +355,7 @@
 
         .c-photo-placeholder {
             color: #94a3b8;
-            font-size: 2.2rem;
+            font-size: 1.8rem;
         }
 
         .c-dorsal-badge {
@@ -343,8 +366,8 @@
             color: #ffffff;
             font-weight: 900;
             font-family: monospace;
-            font-size: 0.78rem;
-            padding: 1px 6px;
+            font-size: 0.74rem;
+            padding: 1px 5px;
             border-radius: 4px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             border: 1px solid #ffffff;
@@ -352,16 +375,17 @@
 
         /* 4. Identidad del Jugador */
         .c-identity-section {
-            padding: 2px 10px;
+            padding: 1px 8px;
             text-align: center;
+            flex-shrink: 0;
         }
 
         .c-player-name {
-            font-size: 0.78rem;
+            font-size: 0.74rem;
             font-weight: 900;
             text-transform: uppercase;
             color: #0f172a;
-            line-height: 1.15;
+            line-height: 1.12;
             margin: 0;
             white-space: nowrap;
             overflow: hidden;
@@ -369,9 +393,9 @@
         }
 
         .c-player-role {
-            font-size: 0.55rem;
+            font-size: 0.52rem;
             font-weight: 800;
-            letter-spacing: 0.4px;
+            letter-spacing: 0.3px;
             text-transform: uppercase;
             color: var(--carnet-ribbon-bg);
             display: inline-block;
@@ -382,27 +406,28 @@
         .c-data-box {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            margin: 4px 10px;
-            padding: 4px 8px;
+            border-radius: 5px;
+            margin: 3px 8px;
+            padding: 3px 6px;
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 1.5px;
+            flex-shrink: 0;
         }
 
         .c-data-row {
             display: flex;
             align-items: baseline;
             justify-content: space-between;
-            font-size: 0.62rem;
-            line-height: 1.2;
+            font-size: 0.58rem;
+            line-height: 1.15;
         }
 
         .c-label {
             font-weight: 800;
             color: #64748b;
             text-transform: uppercase;
-            font-size: 0.55rem;
+            font-size: 0.52rem;
             letter-spacing: 0.3px;
         }
 
@@ -411,7 +436,7 @@
             color: #0f172a;
             text-transform: uppercase;
             text-align: right;
-            max-width: 145px;
+            max-width: 140px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -419,33 +444,38 @@
 
         .c-val.font-mono {
             font-family: monospace;
-            font-size: 0.68rem;
+            font-size: 0.65rem;
         }
 
-        /* 6. Footer con QR y Estado */
+        /* 6. Footer con QR y Estado (100% visible, sin cortes) */
         .c-footer-bar {
             margin-top: auto;
-            padding: 4px 10px 6px;
+            padding: 3px 8px 4px;
             border-top: 1px solid #e2e8f0;
             background: #ffffff;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 6px;
+            flex-shrink: 0;
         }
 
         .c-qr-wrapper {
             background: #ffffff;
-            padding: 2px;
+            padding: 1.5px;
             border: 1px solid #cbd5e1;
             border-radius: 4px;
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .c-qr-wrapper img {
-            width: 35px;
-            height: 35px;
+            width: 32px;
+            height: 32px;
             display: block;
+            object-fit: contain;
         }
 
         .c-footer-info {
@@ -457,15 +487,15 @@
         }
 
         .c-badge-status {
-            font-size: 0.55rem;
+            font-size: 0.52rem;
             font-weight: 800;
             letter-spacing: 0.3px;
-            padding: 1.5px 6px;
+            padding: 1px 5px;
             border-radius: 20px;
             text-transform: uppercase;
             display: inline-flex;
             align-items: center;
-            gap: 3px;
+            gap: 2px;
         }
 
         .c-badge-status.aprobado {
@@ -481,27 +511,28 @@
         }
 
         .c-meta-line {
-            font-size: 0.48rem;
+            font-size: 0.46rem;
             color: #64748b;
             font-family: monospace;
             margin-top: 1px;
         }
 
         .c-watermark {
-            font-size: 0.45rem;
+            font-size: 0.42rem;
             font-weight: 800;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
             color: #94a3b8;
             text-transform: uppercase;
         }
 
         /* ==============================================================
            CONFIGURACIÓN EXACTA DE IMPRESIÓN FÍSICA (CARTA / A4)
+           GARANTIZA 9 CARNETS EXACTOS POR HOJA (3x3), CERO CORTES DE QR
            ============================================================== */
         @media print {
             @page {
                 size: letter portrait;
-                margin: 8mm 6mm;
+                margin: 6mm 5mm;
             }
 
             body {
@@ -509,7 +540,7 @@
                 color: #000000 !important;
             }
 
-            .print-toolbar {
+            .print-toolbar, .page-badge {
                 display: none !important;
             }
 
@@ -520,78 +551,195 @@
                 padding: 0 !important;
             }
 
-            /* 3 Columnas por Hoja (9 carnets por página) */
+            .sheet-page {
+                page-break-after: always !important;
+                break-after: page !important;
+                background: transparent !important;
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                height: 262mm !important;
+                max-height: 262mm !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: flex-start !important;
+            }
+
+            .sheet-page:last-child {
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+            }
+
+            /* Exactamente 3 Columnas por Hoja */
             .carnets-grid {
                 display: grid !important;
                 grid-template-columns: repeat(3, 56mm) !important;
+                grid-template-rows: repeat(3, 84mm) !important;
                 justify-content: center !important;
                 column-gap: 5mm !important;
-                row-gap: 5mm !important;
+                row-gap: 3.5mm !important;
                 width: 100% !important;
-                margin: 0 !important;
+                margin: 0 auto !important;
             }
 
             .carnet-item-wrapper {
                 padding: 0 !important;
                 background: transparent !important;
+                height: 84mm !important;
+                max-height: 84mm !important;
+                display: flex !important;
+                justify-content: center !important;
+                align-items: center !important;
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
             }
 
             .carnet-item-wrapper.show-cut-lines {
-                border: 0.5pt dashed #94a3b8 !important;
-                padding: 2mm !important;
+                border: 0.4pt dashed #94a3b8 !important;
+                padding: 1mm !important;
             }
 
             .cut-indicator {
                 display: block !important;
-                font-size: 7pt !important;
+                font-size: 6pt !important;
                 color: #64748b !important;
+                top: -6px !important;
             }
 
             .carnet-card-vertical {
-                width: 54mm !important;
-                height: 86mm !important;
+                width: 53.5mm !important;
+                height: 81.5mm !important;
+                max-height: 81.5mm !important;
                 box-shadow: none !important;
-                border: 0.8pt solid #000000 !important;
-                border-radius: 3.2mm !important;
+                border: 0.6pt solid #000000 !important;
+                border-radius: 2.5mm !important;
                 background: #ffffff !important;
                 color: #000000 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: space-between !important;
+                overflow: hidden !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
 
             .c-header {
                 background: #f8fafc !important;
+                padding: 1.2mm 2.2mm !important;
+                min-height: 6.5mm !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
+            }
+
+            .c-org-title {
+                font-size: 5.4pt !important;
+                max-width: 38mm !important;
+            }
+
+            .c-org-sub {
+                font-size: 4.2pt !important;
+            }
+
+            .c-header-logo {
+                width: 5.2mm !important;
+                height: 5.2mm !important;
             }
 
             .c-ribbon {
                 background-color: var(--carnet-ribbon-bg) !important;
                 color: #ffffff !important;
+                padding: 1mm 2.2mm !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
 
-            .c-data-box {
-                background: #f8fafc !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
+            .c-ribbon-title {
+                font-size: 5.6pt !important;
+            }
+
+            .c-ribbon-sub {
+                font-size: 4.5pt !important;
+            }
+
+            .c-photo-wrapper {
+                padding: 1.2mm 0 0.8mm !important;
+            }
+
+            .c-photo-frame {
+                width: 16.5mm !important;
+                height: 20mm !important;
+                border: 0.6pt solid #000000 !important;
+                border-radius: 1.5mm !important;
             }
 
             .c-dorsal-badge {
+                font-size: 6pt !important;
+                padding: 0.4mm 1.2mm !important;
                 background-color: var(--carnet-ribbon-bg) !important;
                 color: #ffffff !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
 
-            .c-badge-status.aprobado {
-                background: #ecfdf5 !important;
-                color: #059669 !important;
+            .c-player-name {
+                font-size: 6.2pt !important;
+                line-height: 1.1 !important;
+            }
+
+            .c-player-role {
+                font-size: 4.5pt !important;
+            }
+
+            .c-data-box {
+                background: #f8fafc !important;
+                margin: 0.8mm 1.8mm !important;
+                padding: 0.8mm 1.8mm !important;
+                border: 0.4pt solid #cbd5e1 !important;
+                border-radius: 1.2mm !important;
+                gap: 0.6mm !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
+            }
+
+            .c-label {
+                font-size: 4.5pt !important;
+            }
+
+            .c-val {
+                font-size: 5pt !important;
+                max-width: 32mm !important;
+            }
+
+            .c-footer-bar {
+                padding: 0.8mm 1.8mm 1.2mm !important;
+                border-top: 0.4pt solid #cbd5e1 !important;
+                background: #ffffff !important;
+            }
+
+            .c-qr-wrapper {
+                width: 8.2mm !important;
+                height: 8.2mm !important;
+                padding: 0.4mm !important;
+                border: 0.4pt solid #000000 !important;
+            }
+
+            .c-badge-status.aprobado {
+                font-size: 4.5pt !important;
+                padding: 0.4mm 1.2mm !important;
+                background: #ecfdf5 !important;
+                color: #059669 !important;
+                border: 0.4pt solid #10b981 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .c-meta-line {
+                font-size: 4pt !important;
+            }
+
+            .c-watermark {
+                font-size: 3.6pt !important;
             }
         }
     </style>
@@ -606,7 +754,7 @@
                 Plantilla de Impresión de Carnets Verticales
             </h1>
             <p>
-                {{ equipo.nombre }} &bull; {{ torneo.nombre|default:"Torneo Oficial" }} &bull; Total: <strong>{{ total_jugadores }}</strong> carnets (1 Solo Lado)
+                {{ equipo.nombre }} &bull; {{ torneo.nombre|default:"Torneo Oficial" }} &bull; Total: <strong>{{ total_jugadores }}</strong> carnets (1 Solo Lado &bull; 9 por Hoja)
             </p>
         </div>
 
@@ -646,136 +794,141 @@
         </div>
     </div>
 
-    <!-- CONTENEDOR DE CARNETS VERTICALES BLANCOS -->
+    <!-- CONTENEDOR DE PÁGINAS DE CARNETS (PAGINACIÓN EXACTA DE 9 POR HOJA) -->
     <div class="sheet-container">
-        <div class="carnets-grid" id="carnetsGrid">
-            {% for item in todos_los_carnets %}
-                <div class="carnet-item-wrapper show-cut-lines">
-                    <span class="cut-indicator"><i class="fa-solid fa-scissors"></i> CORTE</span>
-                    <div class="carnet-card-vertical">
-                        
-                        <!-- 1. ENCABEZADO DE ORGANIZACIÓN -->
-                        <div class="c-header">
-                            <div class="c-header-left">
-                                <span class="c-org-title">{{ organizacion.nombre|default:"LIGA DEPORTIVA EMPRESARIAL"|upper }}</span>
-                                <span class="c-org-sub">{{ organizacion.nombre_comercial|default:"CÁMARA DE COMERCIO DE AMBATO"|upper }}</span>
-                            </div>
-                            <div class="c-header-logo">
-                                {% if organizacion.logo %}
-                                    <img src="{{ organizacion.logo.url }}" alt="{{ organizacion.nombre }}">
-                                {% elif equipo.logo %}
-                                    <img src="{{ equipo.logo.url }}" alt="{{ equipo.nombre }}">
-                                {% else %}
-                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 24px; height: 24px; font-size: 10px;">
-                                        <i class="fa-solid fa-trophy text-warning"></i>
+        {% for pagina in paginas_carnets %}
+            <div class="sheet-page">
+                <span class="page-badge no-print">Hoja {{ forloop.counter }} de {{ paginas_carnets|length }} ({{ pagina|length }} carnets en esta hoja)</span>
+                <div class="carnets-grid">
+                    {% for item in pagina %}
+                        <div class="carnet-item-wrapper show-cut-lines">
+                            <span class="cut-indicator"><i class="fa-solid fa-scissors"></i> CORTE</span>
+                            <div class="carnet-card-vertical">
+                                
+                                <!-- 1. ENCABEZADO DE ORGANIZACIÓN -->
+                                <div class="c-header">
+                                    <div class="c-header-left">
+                                        <span class="c-org-title">{{ organizacion.nombre|default:"LIGA DEPORTIVA EMPRESARIAL"|upper }}</span>
+                                        <span class="c-org-sub">{{ organizacion.nombre_comercial|default:"CÁMARA DE COMERCIO DE AMBATO"|upper }}</span>
                                     </div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <!-- 2. CINTILLO / BANNER DEL TORNEO -->
-                        <div class="c-ribbon">
-                            <h5 class="c-ribbon-title">
-                                {{ item.ficha.torneo.nombre|default:torneo.nombre|default:"TORNEO EMPRESARIAL"|upper }}
-                            </h5>
-                            <p class="c-ribbon-sub">
-                                {% if item.ficha.torneo.modalidad %}
-                                    {{ item.ficha.torneo.modalidad|upper }} &bull; {{ equipo.get_categoria_display|upper }}
-                                {% elif torneo.modalidad %}
-                                    {{ torneo.modalidad|upper }} &bull; {{ equipo.get_categoria_display|upper }}
-                                {% else %}
-                                    FÚTBOL 6 &bull; {{ equipo.get_categoria_display|default:"COMERCIAL"|upper }}
-                                {% endif %}
-                            </p>
-                        </div>
-
-                        <!-- 3. FOTO CENTRAL CON DORSAL / ROL -->
-                        <div class="c-photo-wrapper">
-                            <div class="c-photo-frame">
-                                {% if item.ficha.foto %}
-                                    <img src="{{ item.ficha.foto.url }}" alt="{{ item.ficha.user.get_full_name }}">
-                                {% else %}
-                                    <div class="c-photo-placeholder">
-                                        <i class="fa-solid fa-user"></i>
+                                    <div class="c-header-logo">
+                                        {% if organizacion.logo %}
+                                            <img src="{{ organizacion.logo.url }}" alt="{{ organizacion.nombre }}">
+                                        {% elif equipo.logo %}
+                                            <img src="{{ equipo.logo.url }}" alt="{{ equipo.nombre }}">
+                                        {% else %}
+                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 22px; height: 22px; font-size: 10px;">
+                                                <i class="fa-solid fa-trophy text-warning"></i>
+                                            </div>
+                                        {% endif %}
                                     </div>
-                                {% endif %}
-
-                                {% if item.es_dt %}
-                                    <span class="c-dorsal-badge">DT</span>
-                                {% elif item.ficha.numero_camiseta %}
-                                    <span class="c-dorsal-badge">#{{ item.ficha.numero_camiseta }}</span>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <!-- 4. IDENTIDAD DEL JUGADOR -->
-                        <div class="c-identity-section">
-                            <h4 class="c-player-name" title="{{ item.ficha.user.get_full_name|default:item.ficha.user.username|upper }}">
-                                {{ item.ficha.user.get_full_name|default:item.ficha.user.username|upper }}
-                            </h4>
-                            <span class="c-player-role">
-                                {% if item.es_dt %}DIRECTOR TÉCNICO{% else %}JUGADOR HABILITADO{% endif %}
-                            </span>
-                        </div>
-
-                        <!-- 5. GRILLA DE DATOS TÉCNICOS -->
-                        <div class="c-data-box">
-                            <div class="c-data-row">
-                                <span class="c-label">CÉDULA:</span>
-                                <span class="c-val font-mono">{{ item.ficha.nro_cedula|default:item.ficha.user.username|default:"-" }}</span>
-                            </div>
-                            <div class="c-data-row">
-                                <span class="c-label">EMPRESA:</span>
-                                <span class="c-val" title="{{ equipo.nombre|upper }}">{{ equipo.nombre|upper }}</span>
-                            </div>
-                            <div class="c-data-row">
-                                <span class="c-label">CAT:</span>
-                                <span class="c-val">
-                                    {% if item.es_dt %}
-                                        STAFF TÉCNICO
-                                    {% else %}
-                                        {{ equipo.get_categoria_display|default:"COMERCIAL"|upper }}
-                                    {% endif %}
-                                </span>
-                            </div>
-                            {% if item.ficha.tipo_sangre %}
-                            <div class="c-data-row">
-                                <span class="c-label">SANGRE:</span>
-                                <span class="c-val font-mono">{{ item.ficha.tipo_sangre }}</span>
-                            </div>
-                            {% endif %}
-                        </div>
-
-                        <!-- 6. FOOTER CON QR Y ESTADO -->
-                        <div class="c-footer-bar">
-                            <div class="c-qr-wrapper qr-container">
-                                <img src="{{ item.qr_url }}" alt="QR Verificación" loading="lazy">
-                            </div>
-                            <div class="c-footer-info">
-                                {% if item.ficha.estado_validacion == 'aprobado' %}
-                                    <span class="c-badge-status aprobado">
-                                        <i class="fa-solid fa-circle-check"></i> HABILITADO
-                                    </span>
-                                {% else %}
-                                    <span class="c-badge-status pendiente">
-                                        <i class="fa-solid fa-clock"></i> EN REVISIÓN
-                                    </span>
-                                {% endif %}
-                                <div class="c-meta-line">
-                                    <span>ID: #{{ item.ficha.id }}</span> &bull; <span>TEMP: {{ torneo.temporada|default:"2026" }}</span>
                                 </div>
-                                <div class="c-watermark">CREDENCIAL OFICIAL</div>
+
+                                <!-- 2. CINTILLO / BANNER DEL TORNEO -->
+                                <div class="c-ribbon">
+                                    <h5 class="c-ribbon-title">
+                                        {{ item.ficha.torneo.nombre|default:torneo.nombre|default:"TORNEO EMPRESARIAL"|upper }}
+                                    </h5>
+                                    <p class="c-ribbon-sub">
+                                        {% if item.ficha.torneo.modalidad %}
+                                            {{ item.ficha.torneo.modalidad|upper }} &bull; {{ equipo.get_categoria_display|upper }}
+                                        {% elif torneo.modalidad %}
+                                            {{ torneo.modalidad|upper }} &bull; {{ equipo.get_categoria_display|upper }}
+                                        {% else %}
+                                            FÚTBOL 6 &bull; {{ equipo.get_categoria_display|default:"COMERCIAL"|upper }}
+                                        {% endif %}
+                                    </p>
+                                </div>
+
+                                <!-- 3. FOTO CENTRAL CON DORSAL / ROL -->
+                                <div class="c-photo-wrapper">
+                                    <div class="c-photo-frame">
+                                        {% if item.ficha.foto %}
+                                            <img src="{{ item.ficha.foto.url }}" alt="{{ item.ficha.user.get_full_name }}">
+                                        {% else %}
+                                            <div class="c-photo-placeholder">
+                                                <i class="fa-solid fa-user"></i>
+                                            </div>
+                                        {% endif %}
+
+                                        {% if item.es_dt %}
+                                            <span class="c-dorsal-badge">DT</span>
+                                        {% elif item.ficha.numero_camiseta %}
+                                            <span class="c-dorsal-badge">#{{ item.ficha.numero_camiseta }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- 4. IDENTIDAD DEL JUGADOR -->
+                                <div class="c-identity-section">
+                                    <h4 class="c-player-name" title="{{ item.ficha.user.get_full_name|default:item.ficha.user.username|upper }}">
+                                        {{ item.ficha.user.get_full_name|default:item.ficha.user.username|upper }}
+                                    </h4>
+                                    <span class="c-player-role">
+                                        {% if item.es_dt %}DIRECTOR TÉCNICO{% else %}JUGADOR HABILITADO{% endif %}
+                                    </span>
+                                </div>
+
+                                <!-- 5. GRILLA DE DATOS TÉCNICOS -->
+                                <div class="c-data-box">
+                                    <div class="c-data-row">
+                                        <span class="c-label">CÉDULA:</span>
+                                        <span class="c-val font-mono">{{ item.ficha.nro_cedula|default:item.ficha.user.username|default:"-" }}</span>
+                                    </div>
+                                    <div class="c-data-row">
+                                        <span class="c-label">EMPRESA:</span>
+                                        <span class="c-val" title="{{ equipo.nombre|upper }}">{{ equipo.nombre|upper }}</span>
+                                    </div>
+                                    <div class="c-data-row">
+                                        <span class="c-label">CAT:</span>
+                                        <span class="c-val">
+                                            {% if item.es_dt %}
+                                                STAFF TÉCNICO
+                                            {% else %}
+                                                {{ equipo.get_categoria_display|default:"COMERCIAL"|upper }}
+                                            {% endif %}
+                                        </span>
+                                    </div>
+                                    {% if item.ficha.tipo_sangre %}
+                                    <div class="c-data-row">
+                                        <span class="c-label">SANGRE:</span>
+                                        <span class="c-val font-mono">{{ item.ficha.tipo_sangre }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- 6. FOOTER CON QR Y ESTADO (COMPLETO, SIN CORTES) -->
+                                <div class="c-footer-bar">
+                                    <div class="c-qr-wrapper qr-container">
+                                        <img src="{{ item.qr_url }}" alt="QR Verificación">
+                                    </div>
+                                    <div class="c-footer-info">
+                                        {% if item.ficha.estado_validacion == 'aprobado' %}
+                                            <span class="c-badge-status aprobado">
+                                                <i class="fa-solid fa-circle-check"></i> HABILITADO
+                                            </span>
+                                        {% else %}
+                                            <span class="c-badge-status pendiente">
+                                                <i class="fa-solid fa-clock"></i> EN REVISIÓN
+                                            </span>
+                                        {% endif %}
+                                        <div class="c-meta-line">
+                                            <span>ID: #{{ item.ficha.id }}</span> &bull; <span>TEMP: {{ torneo.temporada|default:"2026" }}</span>
+                                        </div>
+                                        <div class="c-watermark">CREDENCIAL OFICIAL</div>
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
-
-                    </div>
+                    {% endfor %}
                 </div>
-            {% empty %}
-                <div style="text-align: center; padding: 40px; grid-column: 1 / -1; color: #64748b;">
-                    No se encontraron carnets disponibles para imprimir.
-                </div>
-            {% endfor %}
-        </div>
+            </div>
+        {% empty %}
+            <div style="text-align: center; padding: 40px; color: #64748b;">
+                No se encontraron carnets disponibles para imprimir.
+            </div>
+        {% endfor %}
     </div>
 
     <script>
@@ -811,7 +964,6 @@
                 cambiarTema(savedColor);
             }
             
-            // Si viene con autoprint=1 abre el diálogo de impresión automáticamente
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('autoprint') === '1') {
                 setTimeout(function() {
