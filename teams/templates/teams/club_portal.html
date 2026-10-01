@@ -414,6 +414,12 @@
                             <i class="fa-solid fa-users-gear fs-6"></i>
                             <span>Administrar Plantilla y Tácticas</span>
                         </button>
+
+                        <!-- Botón para Sacar Carnets del Equipo -->
+                        <a href="{% url 'carnets_equipo' equipo.id %}" target="_blank" class="btn btn-outline-success btn-sm w-100 fw-bold py-2 mt-2 d-flex align-items-center justify-content-center gap-2" style="border-radius: 10px;">
+                            <i class="fa-solid fa-id-card fs-6 text-success"></i>
+                            <span>Sacar Carnets del Equipo</span>
+                        </a>
                     </div>
                 </div> <!-- /card -->
             </div> <!-- /col -->
@@ -445,7 +451,13 @@
                                     </div>
                                 </div>
                             </div>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <div class="d-flex align-items-center gap-2">
+                                <a href="{% url 'carnets_equipo' equipo.id %}" target="_blank" class="btn btn-success btn-sm rounded-pill px-3 py-1.5 fw-bold d-flex align-items-center gap-1.5 shadow-sm text-nowrap">
+                                    <i class="fa-solid fa-id-card"></i>
+                                    <span>Sacar Carnets</span>
+                                </a>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
                         </div>
                         <div class="modal-body p-4">
                     <!-- Si acabamos de generar una invitación, la mostramos para copiar -->
@@ -496,6 +508,22 @@
                             <p class="small">Haz clic en el botón superior derecho para generar el enlace de invitación y envíaselo a tus jugadores por WhatsApp.</p>
                         </div>
                     {% else %}
+                        <!-- Barra de acceso rápido a Carnets -->
+                        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2 mb-3 bg-light p-2.5 rounded-3 border">
+                            <span class="text-secondary small fw-semibold">
+                                <i class="fa-solid fa-users me-1 text-primary"></i>Plantilla de Jugadores Registrados
+                            </span>
+                            <div class="d-flex align-items-center gap-2">
+                                <a href="{% url 'carnets_equipo' equipo.id %}" target="_blank" class="btn btn-success btn-sm rounded-pill px-3 py-1 fw-bold shadow-sm d-flex align-items-center gap-1">
+                                    <i class="fa-solid fa-id-card"></i>
+                                    <span>Sacar Todos los Carnets</span>
+                                </a>
+                                <a href="{% url 'descargar_carnets_excel' equipo.id %}" class="btn btn-outline-success btn-sm rounded-pill px-2.5 py-1 fw-semibold" title="Descargar cuadrícula en Excel (.xlsx)">
+                                    <i class="fa-solid fa-file-excel me-1"></i>Excel
+                                </a>
+                            </div>
+                        </div>
+
                         <div class="table-responsive">
                             <table class="table table-hover align-middle" style="min-width: 800px;">
                                 <thead class="table-light text-uppercase fs-7 tracking-wider">

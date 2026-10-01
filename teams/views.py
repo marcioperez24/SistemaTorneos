@@ -1295,3 +1295,291 @@ def cargar_equipos_excel(request):
     messages.error(request, "No se seleccionó ningún archivo Excel para subir.")
     return redirect('club_portal')
 
+
+@login_required
+def carnets_equipo(request, equipo_id):
+    equipo = get_object_or_404(Equipo, id=equipo_id, organizacion=request.organizacion)
+    
+    es_dirigente = (equipo.dirigente == request.user)
+    es_staff = (request.user.role in ['superadmin', 'comision', 'vocal', 'secretaria'] 
+                or request.user.is_superuser 
+                or request.user.has_module_access('equipos')
+                or request.user.has_module_access('secretaria'))
+    if not (es_dirigente or es_staff):
+        messages.error(request, "No tienes permisos para ver los carnets de este equipo.")
+        return redirect('club_portal')
+
+    estado_filtro = request.GET.get('estado', 'aprobados')
+    incluir_dt = request.GET.get('dt', '1') == '1'
+
+    jugadores_qs = FichaJugador.objects.filter(
+        equipo=equipo,
+        organizacion=request.organizacion
+    ).select_related('user', 'torneo', 'aprobado_por').order_by('numero_camiseta', 'user__last_name', 'user__first_name')
+
+    total_registrados = jugadores_qs.count()
+    total_aprobados = jugadores_qs.filter(estado_validacion='aprobado').count()
+
+    if estado_filtro == 'aprobados':
+        jugadores_qs = jugadores_qs.filter(estado_validacion='aprobado')
+
+    jugadores = []
+    for j in jugadores_qs:
+        verif_url = request.build_absolute_uri(f"/verificar/jugador/{j.id}/?tipo=jugador")
+        qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={urllib.parse.quote(verif_url)}"
+        jugadores.append({
+            'ficha': j,
+            'qr_url': qr_url,
+            'verif_url': verif_url,
+            'es_dt': False,
+        })
+
+    cuerpo_tecnico = []
+    if incluir_dt:
+        dt_qs = FichaDT.objects.filter(
+            equipo=equipo,
+            organizacion=request.organizacion
+        ).select_related('user', 'torneo', 'aprobado_por').order_by('user__last_name', 'user__first_name')
+        if estado_filtro == 'aprobados':
+            dt_qs = dt_qs.filter(estado_validacion='aprobado')
+        for dt in dt_qs:
+            verif_url = request.build_absolute_uri(f"/verificar/jugador/{dt.id}/?tipo=dt")
+            qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={urllib.parse.quote(verif_url)}"
+            cuerpo_tecnico.append({
+                'ficha': dt,
+                'qr_url': qr_url,
+                'verif_url': verif_url,
+                'es_dt': True,
+            })
+
+    todos_los_carnets = jugadores + cuerpo_tecnico
+
+    torneo_principal = None
+    if jugadores:
+        torneo_principal = jugadores[0]['ficha'].torneo
+    if not torneo_principal and equipo.torneos.exists():
+        torneo_principal = equipo.torneos.first()
+
+    context = {
+        'equipo': equipo,
+        'jugadores': jugadores,
+        'cuerpo_tecnico': cuerpo_tecnico,
+        'todos_los_carnets': todos_los_carnets,
+        'total_jugadores': len(jugadores),
+        'total_registrados': total_registrados,
+        'total_aprobados': total_aprobados,
+        'total_dt': len(cuerpo_tecnico),
+        'torneo': torneo_principal,
+        'estado_filtro': estado_filtro,
+        'incluir_dt': incluir_dt,
+        'organizacion': request.organizacion,
+    }
+    return render(request, 'teams/carnets_equipo.html', context)
+
+
+@login_required
+def descargar_carnets_excel(request, equipo_id):
+    import io
+    import math
+    from django.http import HttpResponse
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+    equipo = get_object_or_404(Equipo, id=equipo_id, organizacion=request.organizacion)
+    
+    es_dirigente = (equipo.dirigente == request.user)
+    es_staff = (request.user.role in ['superadmin', 'comision', 'vocal', 'secretaria'] 
+                or request.user.is_superuser 
+                or request.user.has_module_access('equipos')
+                or request.user.has_module_access('secretaria'))
+    if not (es_dirigente or es_staff):
+        messages.error(request, "No tienes permiso para descargar los carnets de este equipo.")
+        return redirect('club_portal')
+
+    estado_filtro = request.GET.get('estado', 'aprobados')
+    jugadores_qs = FichaJugador.objects.filter(
+        equipo=equipo,
+        organizacion=request.organizacion
+    ).select_related('user', 'torneo').order_by('numero_camiseta', 'user__last_name')
+    
+    if estado_filtro == 'aprobados':
+        jugadores_qs = jugadores_qs.filter(estado_validacion='aprobado')
+
+    items = []
+    for j in jugadores_qs:
+        t_nombre = (j.torneo.nombre if j.torneo else (equipo.torneos.first().nombre if equipo.torneos.exists() else "TORNEO EMPRESARIAL")).upper()
+        t_sub = (j.torneo.modalidad if j.torneo else "SECTOR COMERCIO FÚTBOL 6vs6").upper()
+        items.append({
+            'nombre': (j.user.get_full_name() or j.user.username).upper(),
+            'cedula': j.nro_cedula or "-",
+            'empresa': equipo.nombre.upper(),
+            'categoria': (equipo.get_categoria_display() or "SENIOR").upper(),
+            'numero': str(j.numero_camiseta if j.numero_camiseta is not None else "-"),
+            'torneo_nombre': t_nombre,
+            'torneo_sub': t_sub,
+            'rol': 'JUGADOR',
+        })
+
+    # Incluir DTs
+    dt_qs = FichaDT.objects.filter(equipo=equipo, organizacion=request.organizacion).select_related('user', 'torneo').order_by('user__last_name')
+    if estado_filtro == 'aprobados':
+        dt_qs = dt_qs.filter(estado_validacion='aprobado')
+    for dt in dt_qs:
+        t_nombre = (dt.torneo.nombre if dt.torneo else "TORNEO EMPRESARIAL").upper()
+        t_sub = (dt.torneo.modalidad if dt.torneo else "CUERPO TÉCNICO").upper()
+        items.append({
+            'nombre': (dt.user.get_full_name() or dt.user.username).upper(),
+            'cedula': dt.nro_cedula or "-",
+            'empresa': equipo.nombre.upper(),
+            'categoria': (equipo.get_categoria_display() or "DT").upper(),
+            'numero': "DT",
+            'torneo_nombre': t_nombre,
+            'torneo_sub': t_sub,
+            'rol': 'DIRECTOR TÉCNICO',
+        })
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "CARNET"
+    ws.views.sheetView[0].showGridLines = True
+
+    thin_side = Side(style='thin', color='4B5563')
+    card_border = Border(left=thin_side, right=thin_side, top=thin_side, bottom=thin_side)
+
+    font_org_title = Font(name="Arial", size=9, bold=True, color="FFFFFF")
+    fill_black = PatternFill(start_color="111827", end_color="111827", fill_type="solid")
+
+    font_banner1 = Font(name="Arial", size=9, bold=True, color="FFFFFF")
+    font_banner2 = Font(name="Arial", size=8, bold=True, color="FFFFFF")
+    fill_magenta = PatternFill(start_color="E11D48", end_color="E11D48", fill_type="solid")
+
+    font_lbl = Font(name="Arial", size=8, bold=True, color="D1D5DB")
+    font_val = Font(name="Arial", size=8, bold=True, color="FFFFFF")
+    fill_card_body = PatternFill(start_color="030712", end_color="030712", fill_type="solid")
+
+    font_photo = Font(name="Arial", size=9, bold=True, color="9CA3AF")
+    fill_photo_box = PatternFill(start_color="1F2937", end_color="1F2937", fill_type="solid")
+
+    ws.column_dimensions['A'].width = 11
+    ws.column_dimensions['B'].width = 25
+    ws.column_dimensions['C'].width = 7
+    ws.column_dimensions['D'].width = 7
+    ws.column_dimensions['E'].width = 3
+    ws.column_dimensions['F'].width = 11
+    ws.column_dimensions['G'].width = 25
+    ws.column_dimensions['H'].width = 7
+    ws.column_dimensions['I'].width = 7
+    ws.column_dimensions['J'].width = 3
+
+    org_title = request.organizacion.nombre.upper()
+    org_sub = (request.organizacion.nombre_comercial or "LIGA DEPORTIVA").upper()
+
+    num_filas_tarjetas = math.ceil(len(items) / 2) if items else 1
+    row_offset = 2
+
+    for t_idx in range(num_filas_tarjetas):
+        left_item = items[t_idx * 2] if (t_idx * 2) < len(items) else None
+        right_item = items[t_idx * 2 + 1] if (t_idx * 2 + 1) < len(items) else None
+
+        for col_start, col_end, item in [(1, 4, left_item), (6, 9, right_item)]:
+            if not item:
+                continue
+            r = row_offset
+            
+            # Fila 1: Encabezado Organización
+            ws.merge_cells(start_row=r, start_column=col_start, end_row=r, end_column=col_end)
+            c1 = ws.cell(row=r, column=col_start, value=f"{org_title} - {org_sub}")
+            c1.font = font_org_title
+            c1.fill = fill_black
+            c1.alignment = Alignment(horizontal="center", vertical="center")
+            ws.row_dimensions[r].height = 20
+
+            # Fila 2: Cintillo Fucsia - Torneo
+            r += 1
+            ws.merge_cells(start_row=r, start_column=col_start, end_row=r, end_column=col_end)
+            c2 = ws.cell(row=r, column=col_start, value=item['torneo_nombre'])
+            c2.font = font_banner1
+            c2.fill = fill_magenta
+            c2.alignment = Alignment(horizontal="center", vertical="center")
+            ws.row_dimensions[r].height = 16
+
+            # Fila 3: Cintillo Fucsia - Subtítulo
+            r += 1
+            ws.merge_cells(start_row=r, start_column=col_start, end_row=r, end_column=col_end)
+            c3 = ws.cell(row=r, column=col_start, value=item['torneo_sub'])
+            c3.font = font_banner2
+            c3.fill = fill_magenta
+            c3.alignment = Alignment(horizontal="center", vertical="center")
+            ws.row_dimensions[r].height = 14
+
+            # Fila 4: NOMBRE
+            r += 1
+            ws.cell(row=r, column=col_start, value="NOMBRE:").font = font_lbl
+            ws.cell(row=r, column=col_start+1, value=item['nombre']).font = font_val
+            ws.row_dimensions[r].height = 16
+
+            # Fila 5: CÉDULA
+            r += 1
+            ws.cell(row=r, column=col_start, value="CEDULA:").font = font_lbl
+            ws.cell(row=r, column=col_start+1, value=item['cedula']).font = font_val
+            ws.row_dimensions[r].height = 16
+
+            # Fila 6: EMPRESA
+            r += 1
+            ws.cell(row=r, column=col_start, value="EMPRESA:").font = font_lbl
+            ws.cell(row=r, column=col_start+1, value=item['empresa']).font = font_val
+            ws.row_dimensions[r].height = 16
+
+            # Fila 7: CAT
+            r += 1
+            ws.cell(row=r, column=col_start, value="CAT:").font = font_lbl
+            ws.cell(row=r, column=col_start+1, value=item['categoria']).font = font_val
+            ws.row_dimensions[r].height = 16
+
+            # Fila 8: No.
+            r += 1
+            ws.cell(row=r, column=col_start, value="No.:").font = font_lbl
+            ws.cell(row=r, column=col_start+1, value=item['numero']).font = font_val
+            ws.row_dimensions[r].height = 16
+
+            # Fila 9: ORGANIZADOR
+            r += 1
+            ws.cell(row=r, column=col_start, value="ORGANIZADOR:").font = font_lbl
+            ws.cell(row=r, column=col_start+1, value="HABILITADO").font = font_val
+            ws.row_dimensions[r].height = 18
+
+            # Foto Box
+            foto_row_start = row_offset + 3
+            foto_row_end = row_offset + 8
+            foto_c_start = col_start + 2
+            foto_c_end = col_start + 3
+            ws.merge_cells(start_row=foto_row_start, start_column=foto_c_start, end_row=foto_row_end, end_column=foto_c_end)
+            c_foto = ws.cell(row=foto_row_start, column=foto_c_start, value="FOTO")
+            c_foto.font = font_photo
+            c_foto.fill = fill_photo_box
+            c_foto.alignment = Alignment(horizontal="center", vertical="center")
+
+            for cur_r in range(row_offset + 3, row_offset + 9):
+                for cur_c in range(col_start, col_start + 2):
+                    cell = ws.cell(row=cur_r, column=cur_c)
+                    cell.fill = fill_card_body
+                    cell.border = card_border
+                for cur_c in range(foto_c_start, foto_c_end + 1):
+                    cell = ws.cell(row=cur_r, column=cur_c)
+                    cell.border = card_border
+
+        row_offset += 10
+        ws.row_dimensions[row_offset - 1].height = 14
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"Carnets_{equipo.nombre.replace(' ', '_')}.xlsx"
+    response = HttpResponse(
+        output.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+

@@ -33,6 +33,8 @@ urlpatterns = [
     
     # Carnet y Verificación Pública (QR)
     path('carnet/<int:ficha_id>/', views.ver_carnet, name='ver_carnet'),
+    path('equipo/<int:equipo_id>/carnets/', views.carnets_equipo, name='carnets_equipo'),
+    path('equipo/<int:equipo_id>/carnets/excel/', views.descargar_carnets_excel, name='descargar_carnets_excel'),
     path('verificar/jugador/<int:ficha_id>/', views.verificar_jugador, name='verificar_jugador'),
     path('ficha/<int:ficha_id>/', views.ver_ficha, name='ver_ficha'),
     path('equipo/<int:equipo_id>/alineacion/guardar/', views.guardar_alineacion, name='guardar_alineacion'),

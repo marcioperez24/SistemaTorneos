@@ -21,7 +21,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-hf#8-!r-b(ns8-
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 't')
 
-allowed_hosts_env = os.environ.get('DJANGO_ALLOWED_HOSTS', 'torneos.sysacadep.win,127.0.0.1,localhost')
+allowed_hosts_env = os.environ.get('DJANGO_ALLOWED_HOSTS', 'torneos.sysacadep.win,torneos.futbolpro.win,127.0.0.1,localhost')
 ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_env.split(',') if h.strip()]
 
 
