@@ -24,9 +24,18 @@
         </div>
 
         <div class="d-flex align-items-center gap-2 flex-wrap">
-            <a href="{% url 'configurar_generar_fixture' torneo.id %}" class="btn btn-outline-primary px-3 py-2 fw-bold text-uppercase fs-8">
-                <i class="fa-solid fa-wand-magic-sparkles me-1.5"></i>Regenerar Fixture
-            </a>
+            {% if grupo_sel_obj %}
+                <a href="{% url 'configurar_generar_fixture' torneo.id %}?grupo_id={{ grupo_sel_obj.id }}" class="btn btn-primary px-3 py-2 fw-bold text-uppercase fs-8 shadow-sm" title="Regenerar únicamente el fixture del grupo {{ grupo_sel_obj.nombre }}">
+                    <i class="fa-solid fa-wand-magic-sparkles me-1.5"></i>Regenerar Grupo: {{ grupo_sel_obj.nombre }}
+                </a>
+                <a href="{% url 'configurar_generar_fixture' torneo.id %}" class="btn btn-outline-secondary px-3 py-2 fw-bold text-uppercase fs-8" title="Configurar y regenerar todo el torneo">
+                    <i class="fa-solid fa-layer-group me-1.5"></i>Regenerar Todos los Grupos
+                </a>
+            {% else %}
+                <a href="{% url 'configurar_generar_fixture' torneo.id %}" class="btn btn-outline-primary px-3 py-2 fw-bold text-uppercase fs-8" title="Configurar o regenerar fixture de grupos">
+                    <i class="fa-solid fa-wand-magic-sparkles me-1.5"></i>Regenerar Fixture
+                </a>
+            {% endif %}
             <a href="{% url 'imprimir_fixture_personalizado' torneo.id %}{% if request.GET.urlencode %}?{{ request.GET.urlencode }}{% endif %}" target="_blank" class="btn btn-secondary px-3 py-2 fw-bold text-uppercase fs-8 shadow-sm">
                 <i class="fa-solid fa-print me-1.5"></i>Imprimir Fixture
             </a>
@@ -154,16 +163,23 @@
     {% else %}
         {% for g_nombre, g_info in fixture_agrupado.items %}
             <div class="card border-0 shadow-sm rounded-4 bg-white mb-4 overflow-hidden">
-                <div class="card-header bg-white border-bottom p-3.5 d-flex align-items-center justify-content-between">
+                <div class="card-header bg-white border-bottom p-3.5 d-flex align-items-center justify-content-between flex-wrap gap-2">
                     <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
                         <i class="fa-solid fa-layer-group text-primary"></i> {{ g_nombre }}
                         {% if g_info.grupo_obj and g_info.grupo_obj.sector %}
                             <span class="text-muted fs-9">({{ g_info.grupo_obj.sector }})</span>
                         {% endif %}
                     </h5>
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1 fs-9 fw-bold">
-                        {{ g_info.jornadas|length }} Jornadas
-                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                        {% if g_info.grupo_obj %}
+                            <a href="{% url 'configurar_generar_fixture' torneo.id %}?grupo_id={{ g_info.grupo_obj.id }}" class="btn btn-outline-primary btn-sm fs-9 fw-bold px-2.5 py-1 rounded-pill" title="Regenerar solo el fixture de {{ g_nombre }}">
+                                <i class="fa-solid fa-wand-magic-sparkles me-1"></i>Regenerar Este Grupo
+                            </a>
+                        {% endif %}
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-1 fs-9 fw-bold">
+                            {{ g_info.jornadas|length }} Jornadas
+                        </span>
+                    </div>
                 </div>
 
                 <div class="card-body p-4">

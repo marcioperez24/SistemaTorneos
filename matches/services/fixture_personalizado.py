@@ -264,6 +264,20 @@ def calcular_vista_previa_fixture(torneo, organizacion, config):
         estado='programado'
     ).count()
 
+    # Regla de seguridad: Detectar si algún grupo seleccionado tiene partidos finalizados o en juego
+    partidos_jugados = Partido.objects.filter(
+        torneo=torneo,
+        grupo_personalizado__in=grupos,
+        estado__in=['finalizado', 'en_juego']
+    )
+    if partidos_jugados.exists():
+        nombres_grupos = sorted(list(set(p.grupo_personalizado.nombre for p in partidos_jugados if p.grupo_personalizado)))
+        conflictos.append(
+            f"Bloqueo de seguridad: El/los grupo(s) [{', '.join(nombres_grupos)}] ya tienen {partidos_jugados.count()} partidos finalizados o en juego. "
+            "No se puede regenerar el fixture de estos grupos para proteger los resultados y la tabla de posiciones. "
+            "Si solo deseas regenerar un grupo que aún no haya comenzado, elígelo en el campo 'Grupo Específico'."
+        )
+
     return {
         'grupos_vista_previa': vista_previa_grupos,
         'total_partidos': total_partidos_calculados,

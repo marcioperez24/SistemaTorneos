@@ -169,6 +169,9 @@ def ver_fixture_personalizado(request, torneo_id):
     arbitros = User.objects.filter(role='arbitro', organizaciones__organizacion=request.organizacion).distinct()
     vocales = User.objects.filter(role='vocal', organizaciones__organizacion=request.organizacion).distinct()
 
+    grupo_id_val = int(grupo_id) if grupo_id else None
+    grupo_sel_obj = grupos.filter(id=grupo_id_val).first() if grupo_id_val else None
+
     context = {
         'torneo': torneo,
         'grupos': grupos,
@@ -181,7 +184,8 @@ def ver_fixture_personalizado(request, torneo_id):
         'arbitros': arbitros,
         'vocales': vocales,
         'estadios': Estadio.objects.filter(organizacion=torneo.organizacion, activo=True).order_by('nombre'),
-        'grupo_id_sel': int(grupo_id) if grupo_id else None,
+        'grupo_id_sel': grupo_id_val,
+        'grupo_sel_obj': grupo_sel_obj,
         'jornada_sel': jornada,
         'equipo_id_sel': int(equipo_id) if equipo_id else None,
         'estado_sel': estado,
