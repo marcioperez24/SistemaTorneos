@@ -1,0 +1,1211 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planilla Oficial de Jugadores - {{ equipo.nombre }} | {{ organizacion.nombre|default:"Fútbol Pro" }}</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #0f172a;
+            --primary-accent: #2563eb;
+            --success: #16a34a;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --border-color: #cbd5e1;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --bg-light: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f1f5f9;
+            color: var(--text-dark);
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        /* BARRA SUPERIOR DE HERRAMIENTAS (PANTALLA) */
+        .print-toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: #0f172a;
+            color: #ffffff;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .toolbar-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .toolbar-logo-badge {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            background: #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border: 1px solid #334155;
+        }
+
+        .toolbar-logo-badge img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .toolbar-info h1 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #f8fafc;
+        }
+
+        .toolbar-info p {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin: 2px 0 0 0;
+        }
+
+        .toolbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-toolbar {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 16px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 9999px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-print-main {
+            background: #16a34a;
+            color: #ffffff;
+            border-color: #15803d;
+            box-shadow: 0 2px 8px rgba(22, 163, 74, 0.35);
+        }
+
+        .btn-print-main:hover {
+            background: #15803d;
+            transform: translateY(-1px);
+        }
+
+        .btn-carnets {
+            background: #2563eb;
+            color: #ffffff;
+            border-color: #1d4ed8;
+        }
+
+        .btn-carnets:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-filter {
+            background: #1e293b;
+            color: #cbd5e1;
+            border-color: #334155;
+        }
+
+        .btn-filter:hover, .btn-filter.active {
+            background: #334155;
+            color: #ffffff;
+            border-color: #64748b;
+        }
+
+        .btn-close-action {
+            background: transparent;
+            color: #94a3b8;
+            border-color: #334155;
+        }
+
+        .btn-close-action:hover {
+            background: #1e293b;
+            color: #ffffff;
+        }
+
+        /* HOJA DE IMPRESIÓN (ESTILO DOCUMENTO OFICIAL) */
+        .page-wrapper {
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .official-sheet {
+            width: 100%;
+            max-width: 1040px;
+            background: #ffffff;
+            padding: 28px 32px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e2e8f0;
+            position: relative;
+        }
+
+        /* ENCABEZADO DUAL: SISTEMA / ORGANIZACIÓN Y EQUIPO */
+        .sheet-header {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid #0f172a;
+            margin-bottom: 14px;
+        }
+
+        /* LADO IZQUIERDO: SISTEMA Y ORGANIZACIÓN */
+        .header-system {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .system-logo-wrap {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            flex-shrink: 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .system-logo-wrap img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .system-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .system-org-name {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.2;
+            text-transform: uppercase;
+            letter-spacing: -0.2px;
+        }
+
+        .system-platform-tag {
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: #2563eb;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 2px;
+        }
+
+        .system-platform-tag i {
+            font-size: 0.75rem;
+        }
+
+        .system-extra-meta {
+            font-size: 0.68rem;
+            color: #64748b;
+            margin-top: 2px;
+        }
+
+        /* CENTRO: TÍTULO DEL DOCUMENTO Y TORNEO */
+        .header-title-box {
+            text-align: center;
+            padding: 0 10px;
+        }
+
+        .doc-badge {
+            display: inline-block;
+            background: #0f172a;
+            color: #ffffff;
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 9999px;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .doc-main-title {
+            font-size: 1.2rem;
+            font-weight: 900;
+            color: #0f172a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            line-height: 1.15;
+            margin-bottom: 2px;
+        }
+
+        .doc-tournament {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #2563eb;
+            text-transform: uppercase;
+            line-height: 1.2;
+        }
+
+        .doc-meta-pills {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 4px;
+            font-size: 0.7rem;
+            color: #475569;
+            font-weight: 600;
+        }
+
+        .doc-meta-pills span.dot {
+            color: #cbd5e1;
+        }
+
+        /* LADO DERECHO: EQUIPO Y ESCUDO */
+        .header-team {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 12px;
+            text-align: right;
+        }
+
+        .team-details {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .team-title {
+            font-size: 1.05rem;
+            font-weight: 900;
+            color: #0f172a;
+            text-transform: uppercase;
+            line-height: 1.15;
+        }
+
+        .team-category-badge {
+            display: inline-block;
+            font-size: 0.68rem;
+            font-weight: 700;
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-top: 2px;
+            text-transform: uppercase;
+        }
+
+        .team-staff-info {
+            font-size: 0.68rem;
+            color: #64748b;
+            margin-top: 3px;
+        }
+
+        .team-logo-wrap {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            flex-shrink: 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .team-logo-wrap img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .team-logo-placeholder {
+            width: 100%;
+            height: 100%;
+            background: #e2e8f0;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-weight: 800;
+            font-size: 1.2rem;
+        }
+
+        /* BARRA RESUMEN DE NÓMINA (KPIs) */
+        .roster-summary-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 8px 14px;
+            margin-bottom: 14px;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .summary-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #334155;
+        }
+
+        .summary-item i {
+            color: #2563eb;
+            font-size: 0.85rem;
+        }
+
+        .summary-badge-val {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            padding: 1px 7px;
+            border-radius: 9999px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        /* TABLA DE JUGADORES */
+        .table-roster-wrap {
+            width: 100%;
+            margin-bottom: 16px;
+            overflow-x: auto;
+        }
+
+        .table-roster {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.72rem;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+        }
+
+        .table-roster thead th {
+            background-color: #0f172a;
+            color: #ffffff;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.65rem;
+            letter-spacing: 0.5px;
+            padding: 7px 6px;
+            text-align: left;
+            border: 1px solid #1e293b;
+            vertical-align: middle;
+        }
+
+        .table-roster thead th.text-center {
+            text-align: center;
+        }
+
+        .table-roster tbody tr {
+            border-bottom: 1px solid #e2e8f0;
+            page-break-inside: avoid;
+        }
+
+        .table-roster tbody tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        .table-roster tbody tr:hover {
+            background-color: #f1f5f9;
+        }
+
+        .table-roster td {
+            padding: 5px 6px;
+            vertical-align: middle;
+            border: 1px solid #e2e8f0;
+            color: #1e293b;
+        }
+
+        /* CELDA DE FOTO PEQUEÑA */
+        .player-thumb-cell {
+            width: 44px;
+            text-align: center;
+            padding: 3px !important;
+        }
+
+        .player-thumb-box {
+            width: 38px;
+            height: 44px;
+            border-radius: 4px;
+            overflow: hidden;
+            background: #e2e8f0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .player-thumb-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .player-thumb-box i {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        /* CELDA DE DORSAL */
+        .dorsal-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 24px;
+            height: 24px;
+            background: #0f172a;
+            color: #ffffff;
+            font-size: 0.72rem;
+            font-weight: 800;
+            border-radius: 4px;
+            padding: 0 4px;
+        }
+
+        /* DATOS DEL JUGADOR */
+        .player-name-main {
+            font-weight: 800;
+            font-size: 0.76rem;
+            color: #0f172a;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+
+        .player-sub-meta {
+            font-size: 0.65rem;
+            color: #64748b;
+            margin-top: 1px;
+        }
+
+        .blood-badge {
+            display: inline-block;
+            font-size: 0.65rem;
+            font-weight: 700;
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 1px 5px;
+            border-radius: 3px;
+            border: 1px solid #fecaca;
+        }
+
+        .status-badge-table {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.62rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 9999px;
+            text-transform: uppercase;
+        }
+
+        .status-badge-table.aprobado {
+            background: #dcfce7;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+        }
+
+        .status-badge-table.pendiente {
+            background: #fef9c3;
+            color: #a16207;
+            border: 1px solid #fef08a;
+        }
+
+        .status-badge-table.rechazado {
+            background: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+
+        .status-badge-table.lesionado {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+            font-weight: 800;
+        }
+
+        /* LÍNEA DE FIRMA PARA CADA FILA */
+        .sign-cell {
+            min-width: 105px;
+            text-align: center;
+        }
+
+        .sign-line-placeholder {
+            border-bottom: 1px dashed #94a3b8;
+            height: 18px;
+            margin: 0 auto;
+            width: 90%;
+        }
+
+        /* SECCIÓN CUERPO TÉCNICO (DT / STAFF) */
+        .section-dt {
+            margin-top: 14px;
+            margin-bottom: 16px;
+            page-break-inside: avoid;
+        }
+
+        .section-dt-title {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: #0f172a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dt-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 8px;
+        }
+
+        .dt-card-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+        }
+
+        .dt-thumb-box {
+            width: 36px;
+            height: 42px;
+            border-radius: 4px;
+            overflow: hidden;
+            background: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #cbd5e1;
+            flex-shrink: 0;
+        }
+
+        .dt-thumb-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .dt-thumb-box i {
+            color: #94a3b8;
+            font-size: 1rem;
+        }
+
+        .dt-info-content {
+            flex-grow: 1;
+        }
+
+        .dt-role-tag {
+            font-size: 0.6rem;
+            font-weight: 800;
+            color: #d97706;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .dt-name-val {
+            font-size: 0.74rem;
+            font-weight: 800;
+            color: #0f172a;
+            text-transform: uppercase;
+            line-height: 1.15;
+        }
+
+        .dt-sub-meta {
+            font-size: 0.64rem;
+            color: #64748b;
+        }
+
+        /* BLOQUE DE FIRMAS Y SELLOS OFICIALES */
+        .sheet-signatures {
+            margin-top: 24px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            page-break-inside: avoid;
+        }
+
+        .signature-box {
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 80px;
+        }
+
+        .signature-space {
+            height: 38px;
+        }
+
+        .signature-line {
+            border-top: 1px solid #334155;
+            margin: 0 auto 4px auto;
+            width: 85%;
+        }
+
+        .signature-label {
+            font-size: 0.68rem;
+            font-weight: 800;
+            color: #0f172a;
+            text-transform: uppercase;
+        }
+
+        .signature-sub {
+            font-size: 0.6rem;
+            color: #64748b;
+        }
+
+        /* PIE DE PÁGINA DEL DOCUMENTO */
+        .sheet-footer {
+            margin-top: 14px;
+            padding-top: 10px;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.64rem;
+            color: #64748b;
+        }
+
+        .footer-branding {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .footer-branding img {
+            height: 15px;
+            width: auto;
+        }
+
+        /* ESTILOS DE IMPRESIÓN OFICIAL */
+        @media print {
+            @page {
+                size: letter portrait;
+                margin: 8mm 8mm 8mm 8mm;
+            }
+
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                font-size: 11px;
+            }
+
+            .print-toolbar {
+                display: none !important;
+            }
+
+            .page-wrapper {
+                padding: 0 !important;
+                display: block !important;
+            }
+
+            .official-sheet {
+                max-width: 100% !important;
+                width: 100% !important;
+                border: none !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+            }
+
+            .table-roster thead th {
+                background-color: #0f172a !important;
+                color: #ffffff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .dorsal-badge {
+                background: #0f172a !important;
+                color: #ffffff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .status-badge-table.aprobado {
+                background: #dcfce7 !important;
+                color: #15803d !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .table-roster tbody tr:nth-child(even) {
+                background-color: #f8fafc !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .table-roster {
+                border: 1px solid #000000 !important;
+            }
+
+            .table-roster td, .table-roster th {
+                border-color: #cbd5e1 !important;
+            }
+
+            .signature-box {
+                border: 1px solid #94a3b8 !important;
+            }
+
+            .sheet-header {
+                border-bottom: 2px solid #000000 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- BARRA DE ACCIÓN FLOTANTE (SOLO PANTALLA) -->
+    <div class="print-toolbar">
+        <div class="toolbar-info">
+            <div class="toolbar-logo-badge">
+                {% if organizacion.logo %}
+                    <img src="{{ organizacion.logo.url }}" alt="{{ organizacion.nombre }}">
+                {% else %}
+                    <img src="{% static 'teams/images/logo.png' %}" alt="Fútbol Pro">
+                {% endif %}
+            </div>
+            <div>
+                <h1>
+                    <i class="fa-solid fa-file-invoice text-emerald-400"></i>
+                    Planilla de Jugadores: {{ equipo.nombre }}
+                </h1>
+                <p>
+                    {{ organizacion.nombre|default:"Fútbol Pro" }} • {{ torneo.nombre|default:"Torneo Oficial" }} • {{ equipo.get_categoria_display }}
+                </p>
+            </div>
+        </div>
+
+        <div class="toolbar-actions">
+            <!-- Filtro de Estado -->
+            <div style="display: flex; gap: 4px;">
+                <a href="?estado=todos{% if autoprint %}&autoprint=1{% endif %}" class="btn-toolbar btn-filter {% if estado_filtro != 'aprobados' %}active{% endif %}" title="Mostrar todos los registrados">
+                    <i class="fa-solid fa-list"></i>
+                    Todos ({{ total_registrados }})
+                </a>
+                <a href="?estado=aprobados{% if autoprint %}&autoprint=1{% endif %}" class="btn-toolbar btn-filter {% if estado_filtro == 'aprobados' %}active{% endif %}" title="Mostrar únicamente habilitados">
+                    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+                    Solo Habilitados ({{ total_aprobados }})
+                </a>
+            </div>
+
+            <!-- Botón de Imprimir -->
+            <button onclick="window.print()" class="btn-toolbar btn-print-main" title="Imprimir o Guardar como PDF">
+                <i class="fa-solid fa-print"></i>
+                Imprimir Planilla / PDF
+            </button>
+
+            <!-- Acceso a Carnets -->
+            <a href="{% url 'imprimir_carnets_equipo' equipo.id %}?autoprint=1" target="_blank" class="btn-toolbar btn-carnets" title="Imprimir carnets del equipo">
+                <i class="fa-solid fa-id-card"></i>
+                Imprimir Carnets
+            </a>
+
+            <!-- Cerrar -->
+            <button onclick="window.close()" class="btn-toolbar btn-close-action" title="Cerrar ventana">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- CONTENEDOR DE HOJA IMPRIMIBLE -->
+    <div class="page-wrapper">
+        <div class="official-sheet">
+
+            <!-- ENCABEZADO DUAL: SISTEMA/ORGANIZACIÓN + TÍTULO CENTRAL + EQUIPO -->
+            <header class="sheet-header">
+                <!-- Lado Izquierdo: Sistema & Organización -->
+                <div class="header-system">
+                    <div class="system-logo-wrap">
+                        {% if organizacion.logo %}
+                            <img src="{{ organizacion.logo.url }}" alt="{{ organizacion.nombre }}" title="{{ organizacion.nombre }}">
+                        {% else %}
+                            <img src="{% static 'teams/images/logo.png' %}" alt="Fútbol Pro" title="Fútbol Pro">
+                        {% endif %}
+                    </div>
+                    <div class="system-details">
+                        <div class="system-org-name">{{ organizacion.nombre|default:"FÚTBOL PRO" }}</div>
+                        <div class="system-platform-tag">
+                            <img src="{% static 'teams/images/logo.png' %}" alt="Logo" style="height: 12px; width: auto; vertical-align: middle;">
+                            <span>SISTEMA FÚTBOL PRO</span>
+                        </div>
+                        <div class="system-extra-meta">
+                            {% if organizacion.telefono %}Tel: {{ organizacion.telefono }} • {% endif %}
+                            {% if organizacion.correo %}{{ organizacion.correo }}{% else %}Control Oficial de Torneos{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Centro: Título Oficial de la Planilla -->
+                <div class="header-title-box">
+                    <div class="doc-badge">DOCUMENTO OFICIAL DE COMPETENCIA</div>
+                    <h2 class="doc-main-title">PLANILLA DE JUGADORES</h2>
+                    <div class="doc-tournament">{{ torneo.nombre|default:"TORNEO OFICIAL"|upper }}</div>
+                    <div class="doc-meta-pills">
+                        <span>CATEGORÍA: {{ equipo.get_categoria_display|upper }}</span>
+                        <span class="dot">•</span>
+                        <span>TEMPORADA: {{ torneo.temporada|default:"2026" }}</span>
+                        <span class="dot">•</span>
+                        <span>EMISIÓN: {{ fecha_impresion|date:"d/m/Y H:i" }}</span>
+                    </div>
+                </div>
+
+                <!-- Lado Derecho: Info del Equipo y su Escudo -->
+                <div class="header-team">
+                    <div class="team-details">
+                        <div class="team-title">{{ equipo.nombre|upper }}</div>
+                        <div class="team-category-badge">
+                            <i class="fa-solid fa-shield-halved me-1"></i>CLUB REGISTRADO
+                        </div>
+                        <div class="team-staff-info">
+                            <strong>DT:</strong> {{ equipo.get_dt_name }}<br>
+                            <strong>Rep:</strong> {{ equipo.dirigente.get_full_name|default:equipo.dirigente.username }}
+                        </div>
+                    </div>
+                    <div class="team-logo-wrap">
+                        {% if equipo.logo %}
+                            <img src="{{ equipo.logo.url }}" alt="{{ equipo.nombre }}" title="{{ equipo.nombre }}">
+                        {% else %}
+                            <div class="team-logo-placeholder">
+                                {{ equipo.nombre|slice:":2"|upper }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </header>
+
+            <!-- BARRA DE RESUMEN DE NÓMINA -->
+            <div class="roster-summary-bar">
+                <div class="summary-item">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Jugadores Listados:</span>
+                    <span class="summary-badge-val">{{ jugadores|length }}</span>
+                </div>
+                <div class="summary-item">
+                    <i class="fa-solid fa-circle-check text-success"></i>
+                    <span>Habilitados Oficialmente:</span>
+                    <span class="summary-badge-val" style="color: #15803d;">{{ total_aprobados }}</span>
+                </div>
+                {% if total_pendientes > 0 %}
+                <div class="summary-item">
+                    <i class="fa-solid fa-clock text-warning"></i>
+                    <span>Pendientes:</span>
+                    <span class="summary-badge-val" style="color: #b45309;">{{ total_pendientes }}</span>
+                </div>
+                {% endif %}
+                <div class="summary-item">
+                    <i class="fa-solid fa-id-badge"></i>
+                    <span>Cupo Total Permitido:</span>
+                    <span class="summary-badge-val">{{ equipo.max_jugadores }}</span>
+                </div>
+                <div class="summary-item">
+                    <i class="fa-solid fa-shield text-primary"></i>
+                    <span>Estado del Club:</span>
+                    <span class="summary-badge-val" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;">ACTIVO</span>
+                </div>
+            </div>
+
+            <!-- TABLA PRINCIPAL DE JUGADORES CON SUS FOTOS PEQUEÑAS -->
+            <div class="table-roster-wrap">
+                <table class="table-roster">
+                    <thead>
+                        <tr>
+                            <th class="text-center" style="width: 32px;">#</th>
+                            <th class="text-center" style="width: 48px;">FOTO</th>
+                            <th style="width: 220px;">APELLIDOS Y NOMBRES</th>
+                            <th style="width: 105px;">CÉDULA / ID</th>
+                            <th class="text-center" style="width: 50px;">SANGRE</th>
+                            <th style="width: 110px;">TELÉFONO</th>
+                            <th style="width: 115px;">EMERGENCIA</th>
+                            <th class="text-center" style="width: 85px;">ESTADO</th>
+                            <th class="text-center" style="width: 110px;">FIRMA / ASISTENCIA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if jugadores %}
+                            {% for j in jugadores %}
+                                <tr>
+                                    <!-- Camiseta / Dorsal -->
+                                    <td class="text-center">
+                                        {% if j.numero_camiseta %}
+                                            <span class="dorsal-badge">#{{ j.numero_camiseta }}</span>
+                                        {% else %}
+                                            <span style="color:#94a3b8; font-weight:600;">-</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Foto Pequeña -->
+                                    <td class="player-thumb-cell">
+                                        <div class="player-thumb-box">
+                                            {% if j.foto %}
+                                                <img src="{{ j.foto.url }}" alt="{{ j.user.get_full_name }}" loading="lazy">
+                                            {% else %}
+                                                <i class="fa-solid fa-user"></i>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+
+                                    <!-- Nombre Completo y Usuario/Email -->
+                                    <td>
+                                        <div class="player-name-main">
+                                            {{ j.user.last_name|upper }} {{ j.user.first_name|upper }}
+                                        </div>
+                                        <div class="player-sub-meta">
+                                            {{ j.user.email|default:j.user.username }}
+                                        </div>
+                                    </td>
+
+                                    <!-- Cédula -->
+                                    <td>
+                                        <strong style="font-family: monospace; font-size: 0.74rem;">
+                                            {{ j.nro_cedula|default:j.user.username }}
+                                        </strong>
+                                    </td>
+
+                                    <!-- Tipo de Sangre -->
+                                    <td class="text-center">
+                                        {% if j.tipo_sangre %}
+                                            <span class="blood-badge">{{ j.tipo_sangre }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Teléfono Jugador -->
+                                    <td>
+                                        {% if j.user.telefono %}
+                                            <span style="font-size: 0.68rem; font-weight: 600;">
+                                                <i class="fa-solid fa-phone me-0.5 text-muted" style="font-size: 0.6rem;"></i>{{ j.user.telefono }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Contacto de Emergencia -->
+                                    <td>
+                                        {% if j.contacto_emergencia or j.telefono_emergencia %}
+                                            <div style="font-size: 0.68rem; line-height: 1.1;">
+                                                {{ j.contacto_emergencia|default:"" }}
+                                                {% if j.telefono_emergencia %}
+                                                    <span style="color:#64748b; font-size:0.62rem; display:block;">
+                                                        {{ j.telefono_emergencia }}
+                                                    </span>
+                                                {% endif %}
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Estado Habilitado / Pendiente -->
+                                    <td class="text-center">
+                                        {% if j.es_lesionado %}
+                                            <span class="status-badge-table lesionado">
+                                                <i class="fa-solid fa-briefcase-medical"></i>Lesión
+                                            </span>
+                                        {% elif j.estado_validacion == 'aprobado' %}
+                                            <span class="status-badge-table aprobado">
+                                                <i class="fa-solid fa-check"></i>Habilitado
+                                            </span>
+                                        {% elif j.estado_validacion == 'rechazado' %}
+                                            <span class="status-badge-table rechazado">
+                                                <i class="fa-solid fa-ban"></i>Rechazado
+                                            </span>
+                                        {% else %}
+                                            <span class="status-badge-table pendiente">
+                                                <i class="fa-solid fa-clock"></i>Pendiente
+                                            </span>
+                                        {% endif %}
+                                    </td>
+
+                                    <!-- Espacio para Firma / Control -->
+                                    <td class="sign-cell">
+                                        <div class="sign-line-placeholder"></div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="9" style="text-align: center; padding: 24px; color: #64748b;">
+                                    <i class="fa-solid fa-user-xmark me-2" style="font-size: 1.2rem;"></i>
+                                    No se encontraron jugadores registrados con el filtro actual.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- CUERPO TÉCNICO (DT / ASISTENTES / DELEGADOS) SI EXISTE -->
+            {% if cuerpo_tecnico %}
+                <div class="section-dt">
+                    <div class="section-dt-title">
+                        <i class="fa-solid fa-clipboard-user text-primary"></i>
+                        Cuerpo Técnico y Oficiales de Equipo
+                    </div>
+                    <div class="dt-cards-grid">
+                        {% for dt in cuerpo_tecnico %}
+                            <div class="dt-card-box">
+                                <div class="dt-thumb-box">
+                                    {% if dt.foto %}
+                                        <img src="{{ dt.foto.url }}" alt="{{ dt.user.get_full_name }}">
+                                    {% else %}
+                                        <i class="fa-solid fa-user-tie"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="dt-info-content">
+                                    <div class="dt-role-tag">
+                                        <i class="fa-solid fa-certificate me-1"></i>DIRECTOR TÉCNICO / STAFF
+                                    </div>
+                                    <div class="dt-name-val">
+                                        {{ dt.user.last_name|upper }} {{ dt.user.first_name|upper }}
+                                    </div>
+                                    <div class="dt-sub-meta">
+                                        Cédula: <strong>{{ dt.nro_cedula|default:dt.user.username }}</strong>
+                                        {% if dt.user.telefono %} • Tel: {{ dt.user.telefono }}{% endif %}
+                                    </div>
+                                </div>
+                                <div>
+                                    {% if dt.estado_validacion == 'aprobado' %}
+                                        <span class="status-badge-table aprobado">Habilitado</span>
+                                    {% else %}
+                                        <span class="status-badge-table pendiente">{{ dt.get_estado_validacion_display }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- SECCIÓN DE FIRMAS Y SELLOS OFICIALES -->
+            <div class="sheet-signatures">
+                <div class="signature-box">
+                    <div class="signature-space"></div>
+                    <div>
+                        <div class="signature-line"></div>
+                        <div class="signature-label">Representante / DT</div>
+                        <div class="signature-sub">{{ equipo.nombre|upper }}</div>
+                    </div>
+                </div>
+
+                <div class="signature-box">
+                    <div class="signature-space"></div>
+                    <div>
+                        <div class="signature-line"></div>
+                        <div class="signature-label">Comisión Técnica / Vocalía</div>
+                        <div class="signature-sub">{{ torneo.nombre|default:"Comisión Oficial"|upper }}</div>
+                    </div>
+                </div>
+
+                <div class="signature-box">
+                    <div class="signature-space"></div>
+                    <div>
+                        <div class="signature-line"></div>
+                        <div class="signature-label">Sello de Secretaría</div>
+                        <div class="signature-sub">{{ organizacion.nombre|default:"Fútbol Pro"|upper }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PIE DE PÁGINA OFICIAL -->
+            <footer class="sheet-footer">
+                <div class="footer-branding">
+                    <img src="{% static 'teams/images/logo.png' %}" alt="Fútbol Pro">
+                    <span>FÚTBOL PRO • GESTIÓN DEPORTIVA PROFESIONAL</span>
+                </div>
+                <div>
+                    Documento de Planillaje Oficial generado el {{ fecha_impresion|date:"d/m/Y H:i:s" }}
+                </div>
+                <div>
+                    Página 1 de 1 • Ref: EQ-{{ equipo.id }}-{% now "Ymd" %}
+                </div>
+            </footer>
+
+        </div>
+    </div>
+
+    <!-- AUTOPRINT SCRIPT -->
+    {% if autoprint %}
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                window.print();
+            }, 600);
+        });
+    </script>
+    {% endif %}
+
+</body>
+</html>

@@ -452,6 +452,10 @@
                                 </div>
                             </div>
                             <div class="d-flex align-items-center gap-2">
+                                <a href="{% url 'imprimir_plantilla_equipo' equipo.id %}?autoprint=1" target="_blank" class="btn btn-info btn-sm rounded-pill px-3 py-1.5 fw-bold text-white d-flex align-items-center gap-1.5 shadow-sm text-nowrap" title="Imprimir plantilla/nómina con fotos en hoja limpia">
+                                    <i class="fa-solid fa-file-invoice"></i>
+                                    <span>Imprimir Planilla</span>
+                                </a>
                                 <a href="{% url 'imprimir_carnets_equipo' equipo.id %}?autoprint=1" target="_blank" class="btn btn-success btn-sm rounded-pill px-3 py-1.5 fw-bold d-flex align-items-center gap-1.5 shadow-sm text-nowrap" title="Imprimir en plantilla limpia sin menús del sistema">
                                     <i class="fa-solid fa-print"></i>
                                     <span>Imprimir Carnets</span>
@@ -517,6 +521,10 @@
                                 <i class="fa-solid fa-users me-1 text-primary"></i>Plantilla de Jugadores Registrados
                             </span>
                             <div class="d-flex align-items-center gap-2">
+                                <a href="{% url 'imprimir_plantilla_equipo' equipo.id %}?autoprint=1" target="_blank" class="btn btn-primary btn-sm rounded-pill px-3 py-1 fw-bold shadow-sm d-flex align-items-center gap-1" title="Imprimir nómina oficial con fotos de jugadores y logos">
+                                    <i class="fa-solid fa-file-invoice"></i>
+                                    <span>Planilla con Fotos</span>
+                                </a>
                                 <a href="{% url 'imprimir_carnets_equipo' equipo.id %}?autoprint=1" target="_blank" class="btn btn-success btn-sm rounded-pill px-3 py-1 fw-bold shadow-sm d-flex align-items-center gap-1" title="Imprimir en plantilla limpia sin menús del sistema">
                                     <i class="fa-solid fa-print"></i>
                                     <span>Imprimir Carnets</span>

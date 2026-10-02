@@ -629,6 +629,12 @@
                     </a>
                 </div>
 
+                <!-- Botón Imprimir Planilla con Fotos -->
+                <a href="{% url 'imprimir_plantilla_equipo' equipo.id %}?estado={{ estado_filtro }}&autoprint=1" target="_blank" class="btn btn-primary fw-bold px-3 py-2 shadow-sm d-flex align-items-center gap-2" title="Imprimir nómina oficial con fotos pequeñas, info del equipo y del sistema">
+                    <i class="fa-solid fa-file-invoice"></i>
+                    <span>Planilla con Fotos</span>
+                </a>
+
                 <!-- Botón Imprimir en Template Especial Limpio -->
                 <a href="{% url 'imprimir_carnets_equipo' equipo.id %}?estado={{ estado_filtro }}{% if not incluir_dt %}&dt=0{% endif %}&autoprint=1" target="_blank" class="btn btn-success fw-bold px-3 py-2 shadow-sm d-flex align-items-center gap-2" title="Abrir plantilla especial de impresión limpia sin menús del sistema">
                     <i class="fa-solid fa-print"></i>

@@ -1407,6 +1407,66 @@ def imprimir_carnets_equipo(request, equipo_id):
 
 
 @login_required
+def imprimir_plantilla_equipo(request, equipo_id):
+    equipo = get_object_or_404(Equipo, id=equipo_id, organizacion=request.organizacion)
+    
+    es_dirigente = (equipo.dirigente == request.user)
+    es_staff = (request.user.role in ['superadmin', 'comision', 'vocal', 'secretaria'] 
+                or request.user.is_superuser 
+                or request.user.has_module_access('equipos')
+                or request.user.has_module_access('secretaria'))
+    if not (es_dirigente or es_staff):
+        messages.error(request, "No tienes permisos para ver la planilla de este equipo.")
+        return redirect('club_portal')
+
+    estado_filtro = request.GET.get('estado', 'todos')
+    jugadores_qs = FichaJugador.objects.filter(
+        equipo=equipo,
+        organizacion=request.organizacion
+    ).select_related('user', 'torneo', 'aprobado_por').order_by('numero_camiseta', 'user__last_name', 'user__first_name')
+
+    total_registrados = jugadores_qs.count()
+    total_aprobados = jugadores_qs.filter(estado_validacion='aprobado').count()
+    total_pendientes = jugadores_qs.filter(estado_validacion='pendiente').count()
+    total_rechazados = jugadores_qs.filter(estado_validacion='rechazado').count()
+
+    if estado_filtro == 'aprobados':
+        jugadores = list(jugadores_qs.filter(estado_validacion='aprobado'))
+    else:
+        jugadores = list(jugadores_qs)
+
+    cuerpo_tecnico = list(FichaDT.objects.filter(
+        equipo=equipo,
+        organizacion=request.organizacion
+    ).select_related('user', 'torneo', 'aprobado_por').order_by('user__last_name', 'user__first_name'))
+
+    torneo_principal = None
+    if jugadores_qs.exists() and jugadores_qs.first().torneo:
+        torneo_principal = jugadores_qs.first().torneo
+    elif equipo.torneos.exists():
+        torneo_principal = equipo.torneos.first()
+
+    context = {
+        'equipo': equipo,
+        'jugadores': jugadores,
+        'cuerpo_tecnico': cuerpo_tecnico,
+        'torneo': torneo_principal,
+        'organizacion': request.organizacion,
+        'total_jugadores': len(jugadores),
+        'total_registrados': total_registrados,
+        'total_aprobados': total_aprobados,
+        'total_pendientes': total_pendientes,
+        'total_rechazados': total_rechazados,
+        'total_dt': len(cuerpo_tecnico),
+        'estado_filtro': estado_filtro,
+        'fecha_impresion': timezone.now(),
+        'autoprint': request.GET.get('autoprint', '0') == '1',
+    }
+    return render(request, 'teams/plantilla_imprimir.html', context)
+
+
+
+@login_required
 def descargar_carnets_excel(request, equipo_id):
     import io
     import math
