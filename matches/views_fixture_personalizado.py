@@ -12,7 +12,9 @@ from teams.models import Equipo
 from django.contrib.auth import get_user_model
 from matches.services.fixture_personalizado import (
     calcular_vista_previa_fixture,
-    guardar_fixture_personalizado
+    guardar_fixture_personalizado,
+    eliminar_fixture_personalizado,
+    generar_fixture_incremental_equipos_nuevos
 )
 
 User = get_user_model()
@@ -82,12 +84,14 @@ def configurar_generar_fixture(request, torneo_id):
 
     # Si es una confirmación de guardado vía POST
     if request.method == 'POST' and request.POST.get('confirmar_guardar') == '1':
+        forzar_reinicio = request.POST.get('forzar_reinicio') == '1'
         try:
             partidos_guardados = guardar_fixture_personalizado(
                 torneo=torneo,
                 organizacion=request.organizacion,
                 usuario=request.user,
-                vista_previa_data=vista_previa_data
+                vista_previa_data=vista_previa_data,
+                forzar_reinicio=forzar_reinicio
             )
             messages.success(request, f"Se generó y guardó exitosamente el fixture con {len(partidos_guardados)} partidos.")
             return redirect('ver_fixture_personalizado', torneo_id=torneo.id)
@@ -116,7 +120,7 @@ def configurar_generar_fixture(request, torneo_id):
 def ver_fixture_personalizado(request, torneo_id):
     """
     Muestra la cartelera y calendario del fixture para el torneo personalizado,
-    agrupado por grupo y jornada con filtros interactivos.
+    agrupado por grupo y jornada con filtros interactivos, descansos y alertas de equipos incompletos.
     """
     torneo = get_object_or_404(
         Torneo,
@@ -145,18 +149,87 @@ def ver_fixture_personalizado(request, torneo_id):
     if estado:
         partidos_qs = partidos_qs.filter(estado=estado)
 
-    # Agrupar partidos por Grupo -> Jornada
+    # Construir fixture_agrupado asegurando que todos los grupos (o el filtrado) aparezcan
     fixture_agrupado = {}
+    grupos_mostrar = grupos.filter(id=grupo_id) if grupo_id else grupos
+
+    for g in grupos_mostrar:
+        fixture_agrupado[g.nombre] = {
+            'grupo_obj': g,
+            'jornadas': {},
+            'jornadas_lista': [],
+            'equipos_asignados': [],
+            'equipos_incompletos': [],
+            'total_partidos_grupo': 0
+        }
+
     for p in partidos_qs:
         g_nombre = p.grupo_personalizado.nombre if p.grupo_personalizado else (p.grupo or "General")
         if g_nombre not in fixture_agrupado:
-            fixture_agrupado[g_nombre] = {'grupo_obj': p.grupo_personalizado, 'jornadas': {}}
+            fixture_agrupado[g_nombre] = {
+                'grupo_obj': p.grupo_personalizado,
+                'jornadas': {},
+                'jornadas_lista': [],
+                'equipos_asignados': [],
+                'equipos_incompletos': [],
+                'total_partidos_grupo': 0
+            }
 
-        j_num = p.jornada
+        j_num = p.jornada or 1
         if j_num not in fixture_agrupado[g_nombre]['jornadas']:
             fixture_agrupado[g_nombre]['jornadas'][j_num] = []
 
         fixture_agrupado[g_nombre]['jornadas'][j_num].append(p)
+        fixture_agrupado[g_nombre]['total_partidos_grupo'] += 1
+
+    # Calcular equipos asignados, descansos por jornada y equipos sin fixture
+    total_equipos_incompletos_torneo = 0
+    for g_nombre, g_info in fixture_agrupado.items():
+        g_obj = g_info['grupo_obj']
+        if not g_obj:
+            continue
+
+        equipos_del_grupo = [a.equipo for a in g_obj.equipos_asignados.select_related('equipo')]
+        g_info['equipos_asignados'] = equipos_del_grupo
+
+        partidos_del_grupo = Partido.objects.filter(torneo=torneo, grupo_personalizado=g_obj)
+        conteos = {}
+        for eq in equipos_del_grupo:
+            c = partidos_del_grupo.filter(models.Q(equipo_local=eq) | models.Q(equipo_visitante=eq)).count()
+            conteos[eq.id] = {'equipo': eq, 'count': c}
+
+        max_p = max((v['count'] for v in conteos.values()), default=0)
+        incompletos = []
+        if max_p > 0:
+            for v in conteos.values():
+                if v['count'] < max_p:
+                    incompletos.append({'equipo': v['equipo'], 'partidos_count': v['count'], 'esperados': max_p})
+        elif len(equipos_del_grupo) >= 2 and partidos_del_grupo.count() == 0:
+            for v in conteos.values():
+                incompletos.append({'equipo': v['equipo'], 'partidos_count': 0, 'esperados': len(equipos_del_grupo) - 1})
+
+        g_info['equipos_incompletos'] = incompletos
+        total_equipos_incompletos_torneo += len(incompletos)
+
+        # Construir jornadas_lista ordenada con descansos
+        jornadas_lista = []
+        for j_num in sorted(g_info['jornadas'].keys()):
+            partidos_j = g_info['jornadas'][j_num]
+            equipos_jugando = set()
+            for p in partidos_j:
+                if p.equipo_local_id:
+                    equipos_jugando.add(p.equipo_local_id)
+                if p.equipo_visitante_id:
+                    equipos_jugando.add(p.equipo_visitante_id)
+
+            descansan = [eq for eq in equipos_del_grupo if eq.id not in equipos_jugando]
+            jornadas_lista.append({
+                'numero': j_num,
+                'partidos': partidos_j,
+                'descansan': descansan
+            })
+
+        g_info['jornadas_lista'] = jornadas_lista
 
     # Contadores generales de partidos
     todos_partidos = Partido.objects.filter(torneo=torneo, organizacion=request.organizacion)
@@ -180,6 +253,7 @@ def ver_fixture_personalizado(request, torneo_id):
         'partidos_programados': partidos_programados,
         'partidos_en_juego': partidos_en_juego,
         'partidos_finalizados': partidos_finalizados,
+        'total_equipos_incompletos_torneo': total_equipos_incompletos_torneo,
         'equipos_torneo': equipos_torneo,
         'arbitros': arbitros,
         'vocales': vocales,
@@ -191,6 +265,71 @@ def ver_fixture_personalizado(request, torneo_id):
         'estado_sel': estado,
     }
     return render(request, 'matches/fixture_personalizado.html', context)
+
+
+@login_required
+@require_POST
+def borrar_fixture_personalizado(request, torneo_id):
+    """
+    Elimina los partidos del fixture para un grupo o para todo el torneo.
+    Soporta eliminar solo pendientes (programados) o reinicio total completo.
+    """
+    if not _verificar_permiso_gestion(request):
+        messages.error(request, "No tienes autorización para eliminar fixtures.")
+        return redirect('partidos_lista')
+
+    torneo = get_object_or_404(Torneo, id=torneo_id, organizacion=request.organizacion, tipo='personalizado')
+    grupo_id = request.POST.get('grupo_id')
+    modo = request.POST.get('modo', 'solo_programados')
+
+    try:
+        total = eliminar_fixture_personalizado(
+            torneo=torneo,
+            organizacion=request.organizacion,
+            usuario=request.user,
+            grupo_id=int(grupo_id) if grupo_id else None,
+            modo=modo
+        )
+        if modo == 'solo_programados':
+            messages.success(request, f"Se eliminaron {total} partidos programados (pendientes). Los resultados y partidos finalizados se mantuvieron intactos.")
+        else:
+            messages.success(request, f"Reinicio total completado: se eliminaron {total} partidos. Ahora puedes generar un nuevo fixture con todos los equipos.")
+    except Exception as e:
+        messages.error(request, f"Error al eliminar fixture: {str(e)}")
+
+    return redirect('ver_fixture_personalizado', torneo_id=torneo.id)
+
+
+@login_required
+@require_POST
+def generar_fixture_equipos_nuevos(request, torneo_id):
+    """
+    Genera enfrentamientos únicamente para equipos nuevos incorporados a los grupos,
+    sin borrar ni alterar ningún partido ya jugado o programado.
+    """
+    if not _verificar_permiso_gestion(request):
+        messages.error(request, "No tienes autorización para generar fixtures.")
+        return redirect('partidos_lista')
+
+    torneo = get_object_or_404(Torneo, id=torneo_id, organizacion=request.organizacion, tipo='personalizado')
+    grupo_id = request.POST.get('grupo_id')
+
+    try:
+        total, resumen = generar_fixture_incremental_equipos_nuevos(
+            torneo=torneo,
+            organizacion=request.organizacion,
+            usuario=request.user,
+            grupo_id=int(grupo_id) if grupo_id else None
+        )
+        if total > 0:
+            detalles = ", ".join([f"{r['grupo']}: +{r['partidos_nuevos']} partidos" for r in resumen if r['partidos_nuevos'] > 0])
+            messages.success(request, f"¡Éxito! Se generaron {total} partidos nuevos para los equipos incorporados ({detalles}). Todos los partidos anteriores se conservaron.")
+        else:
+            messages.info(request, "Todos los equipos de este grupo ya tienen su fixture completo. No hay partidos faltantes por programar.")
+    except Exception as e:
+        messages.error(request, f"Error al generar fixture para equipos nuevos: {str(e)}")
+
+    return redirect('ver_fixture_personalizado', torneo_id=torneo.id)
 
 
 @login_required
@@ -323,13 +462,33 @@ def imprimir_fixture_personalizado(request, torneo_id):
     for p in partidos_qs:
         g_nombre = p.grupo_personalizado.nombre if p.grupo_personalizado else (p.grupo or "General")
         if g_nombre not in fixture_agrupado:
-            fixture_agrupado[g_nombre] = {'grupo_obj': p.grupo_personalizado, 'jornadas': {}}
+            fixture_agrupado[g_nombre] = {'grupo_obj': p.grupo_personalizado, 'jornadas': {}, 'jornadas_lista': []}
 
-        j_num = p.jornada
+        j_num = p.jornada or 1
         if j_num not in fixture_agrupado[g_nombre]['jornadas']:
             fixture_agrupado[g_nombre]['jornadas'][j_num] = []
 
         fixture_agrupado[g_nombre]['jornadas'][j_num].append(p)
+
+    for g_nombre, g_info in fixture_agrupado.items():
+        g_obj = g_info['grupo_obj']
+        equipos_del_grupo = [a.equipo for a in g_obj.equipos_asignados.select_related('equipo')] if g_obj else []
+        jornadas_lista = []
+        for j_num in sorted(g_info['jornadas'].keys()):
+            partidos_j = g_info['jornadas'][j_num]
+            equipos_jugando = set()
+            for p in partidos_j:
+                if p.equipo_local_id:
+                    equipos_jugando.add(p.equipo_local_id)
+                if p.equipo_visitante_id:
+                    equipos_jugando.add(p.equipo_visitante_id)
+            descansan = [eq for eq in equipos_del_grupo if eq.id not in equipos_jugando]
+            jornadas_lista.append({
+                'numero': j_num,
+                'partidos': partidos_j,
+                'descansan': descansan
+            })
+        g_info['jornadas_lista'] = jornadas_lista
 
     context = {
         'torneo': torneo,

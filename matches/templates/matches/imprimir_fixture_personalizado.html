@@ -142,9 +142,19 @@
                 {{ g_nombre }} {% if g_info.grupo_obj and g_info.grupo_obj.sector %}<span class="text-muted fs-6">({{ g_info.grupo_obj.sector }})</span>{% endif %}
             </h4>
 
-            {% for j_num, partidos_list in g_info.jornadas.items %}
+            {% for j_info in g_info.jornadas_lista %}
                 <div class="mb-3">
-                    <h6 class="fw-bold text-primary mb-2">Jornada {{ j_num }}</h6>
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h6 class="fw-bold text-primary mb-0">Jornada {{ j_info.numero }}</h6>
+                        {% if j_info.descansan %}
+                            <div class="small text-muted">
+                                <strong>Descansa / Fecha Libre:</strong>
+                                {% for eq_desc in j_info.descansan %}
+                                    <span class="badge bg-light text-dark border ms-1">{{ eq_desc.nombre }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
                     <table class="table table-bordered table-sm table-fixture mb-3">
                         <thead>
                             <tr>
@@ -156,7 +166,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for p in partidos_list %}
+                            {% for p in j_info.partidos %}
                                 <tr>
                                     <td class="col-fecha-hora">{{ p.fecha_hora|date:"d/m/Y H:i" }}</td>
                                     <td class="text-end fw-bold">

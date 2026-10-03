@@ -270,12 +270,15 @@ def calcular_vista_previa_fixture(torneo, organizacion, config):
         grupo_personalizado__in=grupos,
         estado__in=['finalizado', 'en_juego']
     )
-    if partidos_jugados.exists():
+    tiene_partidos_jugados = partidos_jugados.exists()
+    partidos_jugados_count = partidos_jugados.count()
+
+    if tiene_partidos_jugados:
         nombres_grupos = sorted(list(set(p.grupo_personalizado.nombre for p in partidos_jugados if p.grupo_personalizado)))
-        conflictos.append(
-            f"Bloqueo de seguridad: El/los grupo(s) [{', '.join(nombres_grupos)}] ya tienen {partidos_jugados.count()} partidos finalizados o en juego. "
-            "No se puede regenerar el fixture de estos grupos para proteger los resultados y la tabla de posiciones. "
-            "Si solo deseas regenerar un grupo que aún no haya comenzado, elígelo en el campo 'Grupo Específico'."
+        advertencias.append(
+            f"Atención: El/los grupo(s) [{', '.join(nombres_grupos)}] ya tienen {partidos_jugados_count} partidos finalizados o en juego. "
+            "Si solo deseas agregar partidos para los equipos nuevos sin tocar los ya jugados, usa 'Generar Fixture para Equipos Nuevos'. "
+            "Si deseas reiniciar completamente el fixture desde cero para incluir a todos, marca la casilla de confirmación 'Forzar Reinicio Total'."
         )
 
     return {
@@ -284,38 +287,51 @@ def calcular_vista_previa_fixture(torneo, organizacion, config):
         'total_descansos': total_descansos,
         'conflictos': conflictos,
         'advertencias': advertencias,
+        'tiene_partidos_jugados': tiene_partidos_jugados,
+        'partidos_jugados_count': partidos_jugados_count,
         'partidos_existentes_afectados': partidos_existentes_afectados,
         'grupos_ids': [g.id for g in grupos]
     }
 
 
-def guardar_fixture_personalizado(torneo, organizacion, usuario, vista_previa_data):
+def guardar_fixture_personalizado(torneo, organizacion, usuario, vista_previa_data, forzar_reinicio=False):
     """
     Guarda el fixture calculado en la base de datos dentro de una transacción atómica.
-    Previene duplicados y bloquea regeneraciones si existen partidos finalizados/en juego.
+    Previene duplicados. Si forzar_reinicio=True, elimina todos los partidos previos
+    para un reinicio limpio; de lo contrario, protege partidos finalizados/en juego.
     """
     grupos_ids = vista_previa_data.get('grupos_ids', [])
     grupos = GrupoTorneo.objects.filter(torneo=torneo, id__in=grupos_ids)
 
     with transaction.atomic():
-        # Regla: Verificar que ningún grupo afectado tenga partidos finalizados o en juego
         partidos_bloqueados = Partido.objects.filter(
             torneo=torneo,
             grupo_personalizado__in=grupos,
             estado__in=['finalizado', 'en_juego']
         )
-        if partidos_bloqueados.exists():
+        if partidos_bloqueados.exists() and not forzar_reinicio:
             raise ValidationError(
-                "Este grupo tiene partidos iniciados o finalizados. "
-                "No se puede regenerar automáticamente porque se perdería la integridad histórica."
+                f"Este grupo tiene {partidos_bloqueados.count()} partidos iniciados o finalizados. "
+                "Para proteger los resultados, no se eliminan automáticamente. "
+                "Si deseas reiniciar todo el fixture desde cero, confirma marcando 'Forzar Reinicio Total' "
+                "o utiliza 'Generar Fixture para Equipos Nuevos' para conservar lo ya jugado."
             )
 
-        # Eliminar únicamente los partidos programados de los grupos seleccionados
-        Partido.objects.filter(
-            torneo=torneo,
-            grupo_personalizado__in=grupos,
-            estado='programado'
-        ).delete()
+        if forzar_reinicio:
+            # Eliminar todos los partidos de estos grupos, limpiando multas y eventos
+            partidos_a_borrar = Partido.objects.filter(torneo=torneo, grupo_personalizado__in=grupos)
+            for p in partidos_a_borrar:
+                from finances.models import MultaTarjeta
+                MultaTarjeta.objects.filter(partido=p).delete()
+                p.eventos.all().delete()
+            partidos_a_borrar.delete()
+        else:
+            # Eliminar únicamente los partidos programados
+            Partido.objects.filter(
+                torneo=torneo,
+                grupo_personalizado__in=grupos,
+                estado='programado'
+            ).delete()
 
         partidos_creados = []
         for g_data in vista_previa_data['grupos_vista_previa']:
@@ -323,7 +339,7 @@ def guardar_fixture_personalizado(torneo, organizacion, usuario, vista_previa_da
             for j_data in g_data['jornadas']:
                 jornada_num = j_data['numero_jornada']
                 for p_data in j_data['partidos']:
-                    # Doble comprobación contra duplicados
+                    # Comprobación contra duplicados
                     existe = Partido.objects.filter(
                         torneo=torneo,
                         grupo_personalizado=grupo,
@@ -358,11 +374,266 @@ def guardar_fixture_personalizado(torneo, organizacion, usuario, vista_previa_da
             torneo=torneo,
             usuario=usuario,
             accion="Generación de Fixture Personalizado",
-            detalles=f"Se generaron {len(partidos_creados)} partidos en {len(grupos)} grupos.",
+            detalles=f"Se generaron {len(partidos_creados)} partidos en {len(grupos)} grupos (reinicio: {forzar_reinicio}).",
             valores_nuevos={'partidos_creados': len(partidos_creados), 'grupos': [g.nombre for g in grupos]}
         )
 
     return partidos_creados
+
+
+def eliminar_fixture_personalizado(torneo, organizacion, usuario, grupo_id=None, modo='solo_programados'):
+    """
+    Elimina los partidos del fixture para un grupo o para todo el torneo personalizado.
+    - modo='solo_programados': elimina únicamente los partidos con estado 'programado',
+      preservando partidos finalizados o en juego.
+    - modo='todo': elimina todos los partidos (incluyendo finalizados/en juego)
+      limpiando dependencias (eventos, multas).
+    """
+    partidos_qs = Partido.objects.filter(torneo=torneo, organizacion=organizacion)
+    if grupo_id:
+        partidos_qs = partidos_qs.filter(grupo_personalizado_id=grupo_id)
+        grupo_obj = GrupoTorneo.objects.filter(torneo=torneo, id=grupo_id).first()
+        grupo_nombre = grupo_obj.nombre if grupo_obj else f"Grupo #{grupo_id}"
+    else:
+        grupo_nombre = "Todos los grupos"
+
+    with transaction.atomic():
+        if modo == 'solo_programados':
+            partidos_a_eliminar = partidos_qs.filter(estado='programado')
+            total = partidos_a_eliminar.count()
+            partidos_a_eliminar.delete()
+            detalle = f"Se eliminaron {total} partidos programados (pendientes) de {grupo_nombre}."
+        else:
+            total = partidos_qs.count()
+            from finances.models import MultaTarjeta
+            for p in partidos_qs:
+                MultaTarjeta.objects.filter(partido=p).delete()
+                p.eventos.all().delete()
+            partidos_qs.delete()
+            detalle = f"Reinicio total: se eliminaron {total} partidos (incluyendo jugados) de {grupo_nombre}."
+
+        BitacoraTorneo.objects.create(
+            organizacion=organizacion,
+            torneo=torneo,
+            usuario=usuario,
+            accion="Eliminación de Fixture",
+            detalles=detalle,
+            valores_nuevos={'modo': modo, 'grupo': grupo_nombre, 'total_eliminados': total}
+        )
+
+    return total
+
+
+def generar_fixture_incremental_equipos_nuevos(torneo, organizacion, usuario, grupo_id=None, estadio_default=None):
+    """
+    Genera enfrentamientos ÚNICAMENTE para los equipos nuevos que no tienen fixture completo
+    en su grupo, SIN borrar ningún partido existente ni jugado.
+    """
+    if grupo_id:
+        grupos = GrupoTorneo.objects.filter(torneo=torneo, id=grupo_id, activo=True)
+    else:
+        grupos = GrupoTorneo.objects.filter(torneo=torneo, activo=True).order_by('orden', 'id')
+
+    total_creados = 0
+    resumen_grupos = []
+
+    with transaction.atomic():
+        for grupo in grupos:
+            asignaciones = EquipoGrupoTorneo.objects.filter(grupo=grupo).select_related('equipo')
+            equipos_grupo = [a.equipo for a in asignaciones]
+            if len(equipos_grupo) < 2:
+                continue
+
+            equipos_dict = {eq.id: eq for eq in equipos_grupo}
+            equipos_ids = sorted(list(equipos_dict.keys()))
+
+            # Obtener partidos existentes del grupo
+            partidos_existentes = Partido.objects.filter(
+                torneo=torneo,
+                grupo_personalizado=grupo
+            ).select_related('equipo_local', 'equipo_visitante').order_by('jornada')
+
+            enfrentamientos_v1 = set()
+            enfrentamientos_v2 = set()
+            equipos_por_jornada = {}
+            max_jornada = 0
+            ultima_fecha_hora = None
+            estadios_usados = []
+
+            for p in partidos_existentes:
+                j = p.jornada or 1
+                if j > max_jornada:
+                    max_jornada = j
+
+                if j not in equipos_por_jornada:
+                    equipos_por_jornada[j] = set()
+                if p.equipo_local_id:
+                    equipos_por_jornada[j].add(p.equipo_local_id)
+                if p.equipo_visitante_id:
+                    equipos_por_jornada[j].add(p.equipo_visitante_id)
+
+                vuelta = p.numero_vuelta or 1
+                par_ordenado = (min(p.equipo_local_id, p.equipo_visitante_id), max(p.equipo_local_id, p.equipo_visitante_id))
+                if vuelta == 1:
+                    enfrentamientos_v1.add(par_ordenado)
+                else:
+                    enfrentamientos_v2.add(par_ordenado)
+
+                if p.fecha_hora:
+                    if ultima_fecha_hora is None or p.fecha_hora > ultima_fecha_hora:
+                        ultima_fecha_hora = p.fecha_hora
+                if p.estadio:
+                    estadios_usados.append(p.estadio)
+
+            estadio_final = estadio_default or (max(set(estadios_usados), key=estadios_usados.count) if estadios_usados else "Estadio Principal")
+
+            # Detectar parejas faltantes para Vuelta 1
+            parejas_faltantes_v1 = []
+            for i in range(len(equipos_ids)):
+                for k in range(i + 1, len(equipos_ids)):
+                    par = (equipos_ids[i], equipos_ids[k])
+                    if par not in enfrentamientos_v1:
+                        parejas_faltantes_v1.append(par)
+
+            # Si es ida_vuelta, detectar parejas faltantes para Vuelta 2
+            parejas_faltantes_v2 = []
+            if grupo.formato_enfrentamientos == 'ida_vuelta':
+                for i in range(len(equipos_ids)):
+                    for k in range(i + 1, len(equipos_ids)):
+                        par = (equipos_ids[i], equipos_ids[k])
+                        if par not in enfrentamientos_v2:
+                            parejas_faltantes_v2.append(par)
+
+            if not parejas_faltantes_v1 and not parejas_faltantes_v2:
+                continue
+
+            if ultima_fecha_hora:
+                fecha_siguiente = ultima_fecha_hora.date() + datetime.timedelta(days=7)
+            else:
+                fecha_siguiente = torneo.fecha_inicio or datetime.date.today()
+
+            horas_disponibles = ['09:00', '11:00', '13:00', '15:00', '17:00']
+
+            def programar_parejas(lista_parejas, vuelta_num, jornada_inicial):
+                nonlocal fecha_siguiente
+                partidos_creados_grupo = []
+                parejas_restantes = list(lista_parejas)
+                current_jornada = jornada_inicial
+
+                # 1. Intentar acomodar en jornadas existentes donde AMBOS descansaban
+                for j_num in sorted(equipos_por_jornada.keys()):
+                    if not parejas_restantes:
+                        break
+                    ocupados = equipos_por_jornada[j_num]
+                    parejas_a_remover = []
+                    for par in parejas_restantes:
+                        id1, id2 = par
+                        if id1 not in ocupados and id2 not in ocupados:
+                            ocupados.add(id1)
+                            ocupados.add(id2)
+                            eq_loc = equipos_dict[id1]
+                            eq_vis = equipos_dict[id2]
+                            if vuelta_num == 2:
+                                eq_loc, eq_vis = eq_vis, eq_loc
+
+                            partido_referencia = partidos_existentes.filter(jornada=j_num).first()
+                            dt_partido = partido_referencia.fecha_hora if partido_referencia and partido_referencia.fecha_hora else timezone.now()
+
+                            partido = Partido.objects.create(
+                                organizacion=organizacion,
+                                torneo=torneo,
+                                grupo_personalizado=grupo,
+                                grupo=grupo.nombre,
+                                equipo_local=eq_loc,
+                                equipo_visitante=eq_vis,
+                                fecha_hora=dt_partido,
+                                estadio=estadio_final,
+                                jornada=j_num,
+                                temporada=torneo.temporada,
+                                fase='grupos',
+                                estado='programado',
+                                numero_vuelta=vuelta_num
+                            )
+                            partidos_creados_grupo.append(partido)
+                            parejas_a_remover.append(par)
+
+                    for p_rem in parejas_a_remover:
+                        parejas_restantes.remove(p_rem)
+
+                # 2. Para parejas restantes, crear nuevas jornadas consecutivas
+                while parejas_restantes:
+                    current_jornada += 1
+                    equipos_en_jornada = set()
+                    parejas_a_remover = []
+                    hora_idx = 0
+
+                    for par in parejas_restantes:
+                        id1, id2 = par
+                        if id1 not in equipos_en_jornada and id2 not in equipos_en_jornada:
+                            equipos_en_jornada.add(id1)
+                            equipos_en_jornada.add(id2)
+
+                            eq_loc = equipos_dict[id1]
+                            eq_vis = equipos_dict[id2]
+                            if vuelta_num == 2:
+                                eq_loc, eq_vis = eq_vis, eq_loc
+
+                            hora_str = horas_disponibles[hora_idx % len(horas_disponibles)]
+                            hora_idx += 1
+                            h, m = [int(x) for x in hora_str.split(':')]
+                            dt_partido = datetime.datetime.combine(fecha_siguiente, datetime.time(h, m))
+                            if timezone.is_naive(dt_partido):
+                                dt_partido = timezone.make_aware(dt_partido, timezone.get_current_timezone())
+
+                            partido = Partido.objects.create(
+                                organizacion=organizacion,
+                                torneo=torneo,
+                                grupo_personalizado=grupo,
+                                grupo=grupo.nombre,
+                                equipo_local=eq_loc,
+                                equipo_visitante=eq_vis,
+                                fecha_hora=dt_partido,
+                                estadio=estadio_final,
+                                jornada=current_jornada,
+                                temporada=torneo.temporada,
+                                fase='grupos',
+                                estado='programado',
+                                numero_vuelta=vuelta_num
+                            )
+                            partidos_creados_grupo.append(partido)
+                            parejas_a_remover.append(par)
+
+                    for p_rem in parejas_a_remover:
+                        parejas_restantes.remove(p_rem)
+
+                    fecha_siguiente += datetime.timedelta(days=7)
+
+                return partidos_creados_grupo, current_jornada
+
+            partidos_v1, max_j1 = programar_parejas(parejas_faltantes_v1, 1, max_jornada)
+            total_creados += len(partidos_v1)
+
+            partidos_v2 = []
+            if parejas_faltantes_v2:
+                partidos_v2, _ = programar_parejas(parejas_faltantes_v2, 2, max_j1)
+                total_creados += len(partidos_v2)
+
+            resumen_grupos.append({
+                'grupo': grupo.nombre,
+                'partidos_nuevos': len(partidos_v1) + len(partidos_v2)
+            })
+
+        if total_creados > 0:
+            BitacoraTorneo.objects.create(
+                organizacion=organizacion,
+                torneo=torneo,
+                usuario=usuario,
+                accion="Fixture Incremental para Equipos Nuevos",
+                detalles=f"Se generaron {total_creados} partidos nuevos para equipos incorporados en {len(resumen_grupos)} grupos.",
+                valores_nuevos={'total_creados': total_creados, 'resumen': resumen_grupos}
+            )
+
+    return total_creados, resumen_grupos
 
 
 def mover_equipo_y_regenerar_fixtures(torneo, organizacion, usuario, asignacion, grupo_destino):

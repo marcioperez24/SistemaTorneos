@@ -182,9 +182,31 @@
                         {% endif %}
                         {% if asignar_arbitro %}<input type="hidden" name="asignar_arbitro" value="on">{% endif %}
                         {% if asignar_vocal %}<input type="hidden" name="asignar_vocal" value="on">{% endif %}
+                        {% if vista_previa.tiene_partidos_jugados %}
+                            <div class="alert alert-warning border-0 p-3 mb-3 fs-8 rounded-3 text-start">
+                                <div class="fw-bold text-dark mb-1 d-flex align-items-center gap-1.5">
+                                    <i class="fa-solid fa-triangle-exclamation text-warning fs-5"></i>
+                                    <span>Partidos ya disputados en este torneo / grupo</span>
+                                </div>
+                                <p class="text-muted mb-2">
+                                    Se detectaron <strong>{{ vista_previa.partidos_jugados_count }} partidos finalizados o en juego</strong>. 
+                                    Para proteger las actas y tabla de posiciones, el sistema requiere confirmación explícita:
+                                </p>
+                                <div class="form-check bg-white p-2.5 rounded-2 border border-warning-subtle mb-2">
+                                    <input class="form-check-input ms-0 me-2" type="checkbox" name="forzar_reinicio" value="1" id="chkForzarReinicio" onchange="const b = document.getElementById('btnGuardarFixture'); if(b){ b.disabled = !this.checked; }">
+                                    <label class="form-check-label fw-bold text-danger cursor-pointer" for="chkForzarReinicio">
+                                        Confirmo que deseo reiniciar todo el fixture y reemplazar los partidos de estos grupos para incluir a todos los equipos.
+                                    </label>
+                                </div>
+                                <div class="fs-9 text-secondary">
+                                    <em>¿No deseas borrar lo ya jugado?</em> Puedes volver al fixture y usar el botón <strong>"Generar Fixture para Equipos Nuevos"</strong>.
+                                </div>
+                            </div>
+                        {% endif %}
+
                         <input type="hidden" name="confirmar_guardar" value="1">
 
-                        <button type="submit" class="btn btn-success px-4 py-2.5 fw-bold text-uppercase fs-8 shadow-sm" {% if vista_previa.conflictos %}disabled title="Resuelve los conflictos antes de guardar"{% endif %}>
+                        <button type="submit" id="btnGuardarFixture" class="btn btn-success px-4 py-2.5 fw-bold text-uppercase fs-8 shadow-sm" {% if vista_previa.conflictos or vista_previa.tiene_partidos_jugados %}disabled title="Confirma el reinicio o resuelve conflictos"{% endif %}>
                             <i class="fa-solid fa-check-circle me-1.5"></i>Confirmar y Guardar Fixture
                         </button>
                     </form>

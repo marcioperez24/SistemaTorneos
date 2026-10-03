@@ -226,6 +226,14 @@ def obtener_resumen_grupos_panel(torneo):
 
         proximo = partidos.filter(estado='programado').order_by('fecha_hora').first()
 
+        # Detección de equipos nuevos o con fixture pendiente
+        conteos = {}
+        for eq in equipos:
+            c = partidos.filter(Q(equipo_local=eq) | Q(equipo_visitante=eq)).count()
+            conteos[eq.id] = c
+        max_p = max(conteos.values(), default=0)
+        equipos_incompletos_count = sum(1 for c in conteos.values() if (max_p > 0 and c < max_p) or (max_p == 0 and len(equipos) >= 2))
+
         resumen.append({
             'grupo': g,
             'equipos_count': len(equipos),
@@ -238,7 +246,8 @@ def obtener_resumen_grupos_panel(torneo):
             'lider': lider,
             'clasificados': clasif_equipos,
             'es_clasificacion_definitiva': es_definitivo,
-            'proximo_partido': proximo
+            'proximo_partido': proximo,
+            'equipos_incompletos_count': equipos_incompletos_count
         })
 
     return resumen

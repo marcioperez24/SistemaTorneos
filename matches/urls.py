@@ -63,6 +63,8 @@ urlpatterns = [
     path('torneos/<int:torneo_id>/fixture/configurar-alias/', views_fixture_personalizado.configurar_generar_fixture, name='configurar_generar_fixture_personalizado'),
     path('torneos/<int:torneo_id>/fixture/personalizado/', views_fixture_personalizado.ver_fixture_personalizado, name='ver_fixture_personalizado'),
     path('torneos/<int:torneo_id>/fixture/personalizado-alias/', views_fixture_personalizado.ver_fixture_personalizado, name='fixture_personalizado'),
+    path('torneos/<int:torneo_id>/fixture/borrar/', views_fixture_personalizado.borrar_fixture_personalizado, name='borrar_fixture_personalizado'),
+    path('torneos/<int:torneo_id>/fixture/generar-nuevos/', views_fixture_personalizado.generar_fixture_equipos_nuevos, name='generar_fixture_equipos_nuevos'),
     path('torneos/<int:torneo_id>/fixture/reprogramar/<int:partido_id>/', views_fixture_personalizado.reprogramar_partido_personalizado, name='reprogramar_partido_personalizado'),
     path('torneos/<int:torneo_id>/fixture/imprimir-personalizado/', views_fixture_personalizado.imprimir_fixture_personalizado, name='imprimir_fixture_personalizado'),
 
