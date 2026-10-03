@@ -3,8 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
 from .models import PagoInscripcion, MultaTarjeta, MovimientoCaja
-from teams.models import Equipo
-from matches.models import EventoPartido
+from teams.models import Equipo, FichaJugador
+from matches.models import EventoPartido, Partido
 from django.db.models import Sum
 from decimal import Decimal
 
@@ -78,6 +78,7 @@ def resumen_financiero(request):
     pagos_inscripcion = PagoInscripcion.objects.filter(organizacion=request.organizacion).select_related('equipo')
     multas = MultaTarjeta.objects.filter(organizacion=request.organizacion).select_related('jugador', 'equipo', 'partido').order_by('-id')
     movimientos = MovimientoCaja.objects.filter(organizacion=request.organizacion).select_related('registrado_por').order_by('-fecha')[:50]
+    partidos_recientes = Partido.objects.filter(organizacion=request.organizacion).select_related('equipo_local', 'equipo_visitante', 'torneo').order_by('-id')[:60]
 
     context = {
         'total_inscripciones': total_inscripciones,
@@ -89,6 +90,7 @@ def resumen_financiero(request):
         'multas': multas,
         'movimientos': movimientos,
         'equipos': equipos,
+        'partidos_recientes': partidos_recientes,
     }
     return render(request, 'finances/resumen.html', context)
 
@@ -182,9 +184,68 @@ def pagar_multa(request, multa_id):
 
 
 @login_required
+def anular_multa(request, multa_id):
+    if request.user.role not in ['tesorero', 'tesoreria', 'superadmin'] and not request.user.is_superuser:
+        messages.error(request, "No tienes autorización para anular sanciones o multas.")
+        return redirect('resumen_financiero')
+        
+    multa = get_object_or_404(MultaTarjeta, id=multa_id, organizacion=request.organizacion)
+    equipo_nombre = multa.equipo.nombre
+    motivo_display = multa.get_motivo_display()
+    
+    # Si la multa está vinculada a un evento de partido (ej. tarjeta amarilla o roja de vocalía)
+    if multa.evento:
+        evento = multa.evento
+        jugador = evento.jugador
+        partido = evento.partido
+        tipo = str(evento.tipo).lower()
+        
+        # Revertir posible suspensión si la tarjeta provocó suspensión automática
+        if jugador and partido and partido.torneo:
+            ficha = FichaJugador.objects.filter(user=jugador, equipo=evento.equipo, torneo=partido.torneo).first()
+            if not ficha:
+                ficha = FichaJugador.objects.filter(user=jugador, equipo=evento.equipo).order_by('-id').first()
+            if ficha and ficha.partidos_suspension > 0:
+                if tipo == 'amarilla':
+                    limite = partido.torneo.limite_amarillas_suspension or 3
+                    total_amarillas = EventoPartido.objects.filter(
+                        partido__torneo=partido.torneo,
+                        tipo__in=['amarilla', 'AMARILLA'],
+                        jugador=jugador
+                    ).count()
+                    if total_amarillas % limite == 0:
+                        ficha.partidos_suspension = max(0, ficha.partidos_suspension - 1)
+                        ficha.save()
+                elif tipo == 'roja':
+                    ficha.partidos_suspension = max(0, ficha.partidos_suspension - 1)
+                    ficha.save()
+                    
+        # Eliminar el evento del partido para que no aparezca en el acta ni regenere la multa
+        evento.delete()
+
+    # Si la multa ya había sido cobrada, registrar egreso de compensación en la caja
+    if multa.estado == 'pagado':
+        MovimientoCaja.objects.create(
+            organizacion=request.organizacion,
+            tipo='egreso',
+            monto=multa.monto,
+            concepto=f"Anulación de Cobro #{multa.id} ({motivo_display}) - {equipo_nombre}",
+            registrado_por=request.user
+        )
+
+    multa.delete()
+    messages.success(request, f"¡{motivo_display} del club {equipo_nombre} anulada y eliminada con éxito! Se corrigieron el acta y los registros de Tesorería.")
+    
+    next_url = request.POST.get('next') or request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
+    return redirect('resumen_financiero')
+
+
+@login_required
 def registrar_multa_manual(request):
-    if request.user.role not in ['tesorero', 'tesoreria', 'superadmin']:
-        messages.error(request, "No tienes autorización para registrar multas.")
+    if request.user.role not in ['tesorero', 'tesoreria', 'superadmin'] and not request.user.is_superuser:
+        messages.error(request, "No tienes autorización para registrar multas o cobros.")
         return redirect('club_portal')
         
     if request.method == 'POST':
@@ -192,19 +253,23 @@ def registrar_multa_manual(request):
         equipo = get_object_or_404(Equipo, id=equipo_id, organizacion=request.organizacion)
         motivo = request.POST.get('motivo', 'roja')
         monto = request.POST.get('monto')
+        partido_id = request.POST.get('partido_id')
+        partido = Partido.objects.filter(id=partido_id, organizacion=request.organizacion).first() if partido_id else None
         
         try:
-            monto_dec = Decimal(monto) if monto else Decimal('150.00')
+            monto_dec = Decimal(monto) if monto else Decimal('20.00' if motivo == 'arbitraje' else '150.00')
             multa = MultaTarjeta.objects.create(
                 organizacion=request.organizacion,
                 equipo=equipo,
+                partido=partido,
                 motivo=motivo,
                 monto=monto_dec,
                 estado='pendiente'
             )
-            messages.success(request, f"Sanción / Multa ({multa.get_motivo_display()}) registrada con éxito para {equipo.nombre} por $ {monto_dec:.2f}.")
+            motivo_txt = "Cuota de Arbitraje" if motivo == 'arbitraje' else f"Sanción / Multa ({multa.get_motivo_display()})"
+            messages.success(request, f"{motivo_txt} registrada con éxito para {equipo.nombre} por $ {monto_dec:.2f}.")
         except Exception as e:
-            messages.error(request, f"Error al registrar multa: {str(e)}")
+            messages.error(request, f"Error al registrar cobro: {str(e)}")
             
     return redirect('resumen_financiero')
 

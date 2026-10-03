@@ -461,6 +461,59 @@ def registrar_evento(request, partido_id):
 
 
 @login_required
+def eliminar_evento(request, partido_id, evento_id):
+    partido = get_object_or_404(Partido, id=partido_id, organizacion=request.organizacion)
+    
+    if request.user.role not in ['vocal', 'arbitro', 'superadmin', 'comision'] and not request.user.is_superuser:
+        messages.error(request, "No estás autorizado para modificar los eventos de este partido.")
+        return redirect('match_day', partido_id=partido.id)
+        
+    evento = get_object_or_404(EventoPartido, id=evento_id, partido=partido)
+    tipo = str(evento.tipo).lower()
+    jugador = evento.jugador
+    equipo = evento.equipo
+
+    # 1. Si era gol, restar del marcador
+    if tipo == 'gol':
+        if partido.equipo_local == equipo and partido.goles_local > 0:
+            partido.goles_local -= 1
+        elif partido.equipo_visitante == equipo and partido.goles_visitante > 0:
+            partido.goles_visitante -= 1
+        partido.save()
+
+    # 2. Si era tarjeta, revertir suspensiones y eliminar multa asociada
+    if tipo in ['amarilla', 'roja']:
+        # Eliminar MultaTarjeta asociada si existe
+        if hasattr(evento, 'multa_tarjeta') and evento.multa_tarjeta:
+            evento.multa_tarjeta.delete()
+        else:
+            MultaTarjeta.objects.filter(evento=evento).delete()
+
+        if jugador and partido.torneo:
+            ficha = FichaJugador.objects.filter(user=jugador, equipo=equipo, torneo=partido.torneo).first()
+            if not ficha:
+                ficha = FichaJugador.objects.filter(user=jugador, equipo=equipo).order_by('-id').first()
+            if ficha and ficha.partidos_suspension > 0:
+                if tipo == 'amarilla':
+                    limite = partido.torneo.limite_amarillas_suspension or 3
+                    total_amarillas = EventoPartido.objects.filter(
+                        partido__torneo=partido.torneo,
+                        tipo__in=['amarilla', 'AMARILLA'],
+                        jugador=jugador
+                    ).count()
+                    if total_amarillas % limite == 0:
+                        ficha.partidos_suspension = max(0, ficha.partidos_suspension - 1)
+                        ficha.save()
+                elif tipo == 'roja':
+                    ficha.partidos_suspension = max(0, ficha.partidos_suspension - 1)
+                    ficha.save()
+
+    evento.delete()
+    messages.success(request, f"Incidencia '{tipo.upper()}' eliminada y corregida del acta del partido.")
+    return redirect('match_day', partido_id=partido.id)
+
+
+@login_required
 def cerrar_partido(request, partido_id):
     partido = get_object_or_404(Partido, id=partido_id)
     

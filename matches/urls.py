@@ -14,6 +14,7 @@ urlpatterns = [
     path('vocalia/', views.vocalia_dashboard, name='vocalia_dashboard'),
     path('vocalia/<int:partido_id>/', views.match_day, name='match_day'),
     path('vocalia/<int:partido_id>/evento/nuevo/', views.registrar_evento, name='registrar_evento'),
+    path('vocalia/<int:partido_id>/evento/<int:evento_id>/eliminar/', views.eliminar_evento, name='eliminar_evento'),
     path('vocalia/<int:partido_id>/cerrar/', views.cerrar_partido, name='cerrar_partido'),
     
     # Notificación WhatsApp (Mock)

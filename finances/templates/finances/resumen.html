@@ -178,14 +178,15 @@
                     <!-- Filtros Rápidos -->
                     <div class="btn-group btn-group-sm" role="group">
                         <button type="button" class="btn btn-outline-secondary active btn-filtro-multa" data-filtro="todos">Todas</button>
-                        <button type="button" class="btn btn-outline-danger btn-filtro-multa" data-filtro="roja">Rojas 🟥</button>
+                        <button type="button" class="btn btn-outline-info text-dark btn-filtro-multa" data-filtro="arbitraje"><i class="fa-solid fa-flag me-1"></i>Arbitrajes</button>
                         <button type="button" class="btn btn-outline-warning text-dark btn-filtro-multa" data-filtro="amarilla">Amarillas 🟨</button>
+                        <button type="button" class="btn btn-outline-danger btn-filtro-multa" data-filtro="roja">Rojas 🟥</button>
                         <button type="button" class="btn btn-outline-secondary btn-filtro-multa" data-filtro="pendiente">Pendientes</button>
                         <button type="button" class="btn btn-outline-secondary btn-filtro-multa" data-filtro="pagado">Cobradas</button>
                     </div>
                     <!-- Botón Registrar Multa Manual -->
                     <button type="button" class="btn btn-danger btn-sm px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#modalMultaManual">
-                        <i class="fa-solid fa-circle-plus me-1.5"></i>Registrar Multa
+                        <i class="fa-solid fa-circle-plus me-1.5"></i>Registrar Multa / Arbitraje
                     </button>
                 </div>
             </div>
@@ -238,6 +239,8 @@
                                             <span class="badge bg-warning text-dark py-1.5 px-3 rounded-pill"><i class="fa-solid fa-square-full me-1"></i>Tarjeta Amarilla</span>
                                         {% elif multa.motivo == 'roja' %}
                                             <span class="badge bg-danger py-1.5 px-3 rounded-pill"><i class="fa-solid fa-square-full me-1"></i>Tarjeta Roja</span>
+                                        {% elif multa.motivo == 'arbitraje' %}
+                                            <span class="badge bg-info text-dark py-1.5 px-3 rounded-pill"><i class="fa-solid fa-flag me-1"></i>Cuota Arbitraje</span>
                                         {% else %}
                                             <span class="badge bg-secondary py-1.5 px-3 rounded-pill"><i class="fa-solid fa-gavel me-1"></i>{{ multa.get_motivo_display }}</span>
                                         {% endif %}
@@ -252,13 +255,27 @@
                                     </td>
                                     <td class="text-center text-muted font-monospace fs-8">{{ multa.fecha_pago|date:"d/m/Y H:i"|default:"-" }}</td>
                                     <td class="text-end">
-                                        {% if multa.estado == 'pendiente' %}
-                                            <a href="{% url 'pagar_multa' multa.id %}" class="btn btn-outline-success btn-sm px-3 rounded-pill">
-                                                <i class="fa-solid fa-check me-1"></i>Cobrar $ {{ multa.monto|floatformat:2 }}
-                                            </a>
-                                        {% else %}
-                                            <span class="text-success small fw-semibold"><i class="fa-solid fa-check-double me-1"></i>Cobrado</span>
-                                        {% endif %}
+                                        <div class="d-flex align-items-center justify-content-end gap-1.5">
+                                            {% if multa.estado == 'pendiente' %}
+                                                <a href="{% url 'pagar_multa' multa.id %}" class="btn btn-outline-success btn-sm px-3 rounded-pill fw-bold">
+                                                    <i class="fa-solid fa-check me-1"></i>Cobrar ${{ multa.monto|floatformat:2 }}
+                                                </a>
+                                                <a href="{% url 'anular_multa' multa.id %}" 
+                                                   onclick="return confirm('¿Confirmas que deseas ANULAR y ELIMINAR esta {{ multa.get_motivo_display|lower }} de {{ multa.equipo.nombre }}? Si provino de un partido, se corregirá el acta y el conteo de tarjetas.');" 
+                                                   class="btn btn-outline-danger btn-sm px-2.5 rounded-pill" 
+                                                   title="Anular / Eliminar incidencia anotada por error">
+                                                    <i class="fa-solid fa-trash-can"></i> Anular
+                                                </a>
+                                            {% else %}
+                                                <span class="text-success small fw-semibold me-1"><i class="fa-solid fa-check-double me-1"></i>Cobrado</span>
+                                                <a href="{% url 'anular_multa' multa.id %}" 
+                                                   onclick="return confirm('Esta multa ya fue cobrada. Si la anulas se registrará una compensación en caja. ¿Deseas anularla de todos modos?');" 
+                                                   class="btn btn-link text-muted p-0 fs-8" 
+                                                   title="Anular cobro realizado por error">
+                                                    <i class="fa-solid fa-ban text-danger"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
                                     </td>
                                 </tr>
                             {% empty %}
@@ -437,19 +454,19 @@
     </div>
 </div>
 
-<!-- Modal para Registrar Multa Manual -->
+<!-- Modal para Registrar Multa / Arbitraje Manual -->
 <div class="modal fade" id="modalMultaManual" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-4 border-0 shadow">
             <div class="modal-header">
-                <h5 class="modal-title fw-bold text-danger"><i class="fa-solid fa-gavel me-2"></i>Registrar Multa / Sanción Manual</h5>
+                <h5 class="modal-title fw-bold text-danger"><i class="fa-solid fa-gavel me-2"></i>Registrar Multa / Sanción / Arbitraje</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form action="{% url 'registrar_multa_manual' %}" method="POST">
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label fw-semibold text-secondary">Equipo Sancionado</label>
+                        <label class="form-label fw-semibold text-secondary">Equipo Sancionado / Obligado al Pago</label>
                         <select class="form-select" name="equipo_id" required>
                             <option value="">-- Selecciona el Equipo --</option>
                             {% for eq in equipos %}
@@ -459,25 +476,39 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-semibold text-secondary">Tipo de Sanción / Motivo</label>
+                        <label class="form-label fw-semibold text-secondary">Tipo de Sanción / Concepto</label>
                         <select class="form-select" name="motivo" id="select-motivo-manual" required>
-                            <option value="roja" selected>Tarjeta Roja Directa / Expulsión</option>
+                            <option value="arbitraje" selected>Cuota de Arbitraje / Vocalía de Partido</option>
                             <option value="amarilla">Tarjeta Amarilla / Amonestación</option>
+                            <option value="roja">Tarjeta Roja Directa / Expulsión</option>
                             <option value="sancion">Sanción Disciplinaria / Administrativa</option>
                         </select>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-semibold text-secondary">Monto de la Multa ($)</label>
+                        <label class="form-label fw-semibold text-secondary">Partido / Encuentro (Opcional)</label>
+                        <select class="form-select fs-8" name="partido_id" id="select-partido-manual">
+                            <option value="">-- Sin Partido Específico / Administrativo --</option>
+                            {% for p in partidos_recientes %}
+                                <option value="{{ p.id }}">
+                                    #{{ p.id }} - {{ p.equipo_local.nombre }} vs {{ p.equipo_visitante.nombre }} (Jornada {{ p.jornada }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted fs-9">Si es arbitraje o tarjeta de una fecha, puedes vincularlo al encuentro correspondiente.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-secondary">Monto a Cobrar ($)</label>
                         <div class="input-group">
                             <span class="input-group-text font-monospace fw-bold">$</span>
-                            <input type="number" step="0.01" min="0" class="form-control font-monospace fw-bold fs-5 text-danger" name="monto" id="input-monto-manual" value="150.00" required>
+                            <input type="number" step="0.01" min="0" class="form-control font-monospace fw-bold fs-5 text-danger" name="monto" id="input-monto-manual" value="20.00" required>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-danger px-4">Registrar Multa</button>
+                    <button type="submit" class="btn btn-danger px-4">Registrar Cobro</button>
                 </div>
             </form>
         </div>
@@ -526,10 +557,14 @@
     const inputMontoManual = document.getElementById('input-monto-manual');
     if (selectMotivo && inputMontoManual) {
         selectMotivo.addEventListener('change', function() {
-            if (this.value === 'roja') {
-                inputMontoManual.value = '150.00';
+            if (this.value === 'arbitraje') {
+                inputMontoManual.value = '20.00';
+            } else if (this.value === 'roja') {
+                inputMontoManual.value = '10.00';
             } else if (this.value === 'amarilla') {
-                inputMontoManual.value = '50.00';
+                inputMontoManual.value = '1.50';
+            } else if (this.value === 'sancion') {
+                inputMontoManual.value = '25.00';
             }
         });
     }
@@ -549,7 +584,7 @@
 
                 if (filtro === 'todos') {
                     fila.style.display = '';
-                } else if (filtro === 'roja' || filtro === 'amarilla') {
+                } else if (filtro === 'roja' || filtro === 'amarilla' || filtro === 'arbitraje' || filtro === 'sancion') {
                     fila.style.display = (motivo === filtro) ? '' : 'none';
                 } else if (filtro === 'pendiente' || filtro === 'pagado') {
                     fila.style.display = (estado === filtro) ? '' : 'none';

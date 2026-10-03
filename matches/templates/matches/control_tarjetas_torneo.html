@@ -661,6 +661,12 @@
                                                 <button type="button" class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#modalPagarMulta-{{ item.multa.id }}">
                                                     <i class="bi bi-cash-stack"></i> Pagar en Tesorería
                                                 </button>
+                                                <a href="{% url 'anular_multa' item.multa.id %}?next={{ request.get_full_path|urlencode }}" 
+                                                   onclick="return confirm('¿Confirmas que deseas ANULAR y ELIMINAR esta amonestación de {{ item.evento.jugador }}? Se corregirá el acta del partido, el conteo de tarjetas acumuladas y la multa de tesorería.');" 
+                                                   class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 shadow-sm ms-1" 
+                                                   title="Anular amonestación registrada por error">
+                                                    <i class="bi bi-trash"></i> Anular
+                                                </a>
 
                                                 <!-- Modal de Cobro Individual -->
                                                 <div class="modal fade text-start" id="modalPagarMulta-{{ item.multa.id }}" tabindex="-1" aria-hidden="true">
@@ -710,6 +716,14 @@
                                             {% endif %}
                                         {% elif item.pagada %}
                                             <span class="text-success small fw-semibold"><i class="bi bi-check-all fs-6"></i> Cobrada</span>
+                                            {% if es_admin and item.multa %}
+                                                <a href="{% url 'anular_multa' item.multa.id %}?next={{ request.get_full_path|urlencode }}" 
+                                                   onclick="return confirm('Esta multa ya fue cobrada. Si la anulas se compensará en caja y se eliminará la tarjeta del partido. ¿Continuar?');" 
+                                                   class="btn btn-sm btn-link text-danger p-0 ms-1" 
+                                                   title="Anular tarjeta cobrada por error">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            {% endif %}
                                         {% else %}
                                             <span class="text-muted small">-</span>
                                         {% endif %}

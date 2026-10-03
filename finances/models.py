@@ -38,6 +38,7 @@ class MultaTarjeta(models.Model):
     MOTIVOS = (
         ('amarilla', 'Tarjeta Amarilla'),
         ('roja', 'Tarjeta Roja'),
+        ('arbitraje', 'Cuota de Arbitraje / Vocalía'),
         ('sancion', 'Sanción Disciplinaria / Administrativa'),
     )
     organizacion = models.ForeignKey('users.Organizacion', on_delete=models.CASCADE, verbose_name="Organización")

@@ -346,7 +346,7 @@
                                 <span class="fw-bold text-dark">{{ ev.jugador.get_full_name|default:ev.jugador.username }}</span>
                                 <span class="text-muted">({{ ev.equipo.nombre }})</span>
                             </div>
-                            <div>
+                            <div class="d-flex align-items-center gap-1">
                                 {% if ev.tipo == 'gol' %}
                                     <span class="badge bg-success py-1 px-2 rounded-pill"><i class="fa-solid fa-futbol me-1"></i>Gol</span>
                                 {% elif ev.tipo == 'amarilla' %}
@@ -355,6 +355,14 @@
                                     <span class="badge bg-danger py-1 px-2 rounded-pill"><i class="fa-solid fa-square-full me-1"></i>Roja</span>
                                 {% else %}
                                     <span class="badge bg-info text-dark py-1 px-2 rounded-pill"><i class="fa-solid fa-right-left me-1"></i>Cambio</span>
+                                {% endif %}
+                                {% if partido.estado != 'finalizado' or request.user.role == 'superadmin' or request.user.is_superuser %}
+                                    <a href="{% url 'eliminar_evento' partido.id ev.id %}" 
+                                       onclick="return confirm('¿Confirmas que deseas ELIMINAR/ANULAR este evento ({{ ev.get_tipo_display|default:ev.tipo }}) anotado? Se corregirán el marcador, tarjetas o multas.');" 
+                                       class="btn btn-sm btn-outline-danger border-0 p-0 px-1 text-danger ms-1" 
+                                       title="Eliminar / Anular este evento anotado por error">
+                                        <i class="fa-solid fa-trash-can fa-xs"></i>
+                                    </a>
                                 {% endif %}
                             </div>
                         </div>
