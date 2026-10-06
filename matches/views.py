@@ -4,8 +4,9 @@ from django.contrib import messages
 from django.utils import timezone
 from datetime import timedelta
 from teams.models import Equipo, FichaJugador
-from .models import Partido, EventoPartido, Torneo, Estadio
+from .models import Partido, EventoPartido, Torneo, Estadio, BitacoraTorneo
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models import Q, F, Count
 from .forms import ArbitroForm, VocalForm, TorneoForm, TorneoEdicionForm, EstadioForm
 from finances.models import MultaTarjeta
@@ -583,6 +584,157 @@ def _descontar_suspensiones(partido):
     for ficha in fichas_suspendidas:
         ficha.partidos_suspension -= 1
         ficha.save()
+
+
+@login_required
+def anular_o_reabrir_partido(request, partido_id):
+    """
+    Anula o restablece un partido que fue iniciado, finalizado o con datos registrados por error,
+    regresándolo a su estado original 'programado' para que pueda disputarse o jugarse nuevamente.
+    - Revierte el marcador a 0 - 0.
+    - Elimina todos los eventos (goles, tarjetas, cambios).
+    - Revierte las sanciones/suspensiones causadas por tarjetas en este partido.
+    - Si el partido estaba finalizado, restaura las suspensiones previas que habían sido descontadas.
+    - Elimina las multas financieras generadas por este partido o sus incidencias.
+    - Limpia las firmas digitales del acta y alineaciones en vivo.
+    - Registra la auditoría en BitacoraTorneo.
+    """
+    partido = get_object_or_404(Partido, id=partido_id, organizacion=request.organizacion)
+    
+    is_admin = request.user.role in ['superadmin', 'comision'] or request.user.is_superuser
+    is_assigned_staff = (partido.vocal == request.user or partido.arbitro == request.user)
+    
+    if not (is_admin or is_assigned_staff):
+        messages.error(request, "No estás autorizado para anular o restablecer este partido.")
+        return redirect('partidos_lista')
+        
+    if request.method == 'POST':
+        motivo = request.POST.get('motivo', '').strip()
+        if not motivo:
+            motivo = "Partido anulado / reiniciado por error de digitación o no disputado aún"
+            
+        with transaction.atomic():
+            valores_anteriores = {
+                'estado': partido.estado,
+                'goles_local': partido.goles_local,
+                'goles_visitante': partido.goles_visitante,
+                'total_eventos': partido.eventos.count(),
+                'firma_vocal': partido.firma_vocal,
+            }
+            
+            # Obtener todas las fichas de los jugadores de ambos equipos para este torneo
+            fichas_ambos_equipos = FichaJugador.objects.filter(
+                Q(equipo=partido.equipo_local) | Q(equipo=partido.equipo_visitante),
+                torneo=partido.torneo
+            )
+            
+            # 1. Gestionar tarjetas y suspensiones
+            eventos_tarjeta = list(partido.eventos.filter(tipo__in=['amarilla', 'roja']))
+            jugadores_sancionados_este_partido = set()
+            limite = partido.torneo.limite_amarillas_suspension if partido.torneo else 3
+            
+            for ev in eventos_tarjeta:
+                if ev.tipo == 'roja':
+                    jugadores_sancionados_este_partido.add(ev.jugador_id)
+                elif ev.tipo == 'amarilla':
+                    total_amarillas = EventoPartido.objects.filter(
+                        partido__torneo=partido.torneo,
+                        tipo__in=['amarilla', 'AMARILLA'],
+                        jugador=ev.jugador
+                    ).count()
+                    if total_amarillas > 0 and total_amarillas % limite == 0:
+                        jugadores_sancionados_este_partido.add(ev.jugador_id)
+            
+            if partido.estado == 'finalizado':
+                # El partido fue cerrado, por lo que _descontar_suspensiones restó 1 a quienes tenían partidos_suspension > 0.
+                # Restaurar +1 a los jugadores que tenían suspensión previa y cuyo partido en realidad no se disputó
+                for ficha in fichas_ambos_equipos:
+                    if ficha.user_id not in jugadores_sancionados_este_partido:
+                        if ficha.partidos_suspension > 0:
+                            ficha.partidos_suspension += 1
+                            ficha.save()
+                        else:
+                            rojas_prev = EventoPartido.objects.filter(
+                                partido__torneo=partido.torneo, 
+                                tipo__in=['roja', 'ROJA'], 
+                                jugador=ficha.user
+                            ).exclude(partido=partido).count()
+                            
+                            amarillas_prev = EventoPartido.objects.filter(
+                                partido__torneo=partido.torneo, 
+                                tipo__in=['amarilla', 'AMARILLA'], 
+                                jugador=ficha.user
+                            ).exclude(partido=partido).count()
+                            
+                            sanciones_prev = rojas_prev + (amarillas_prev // limite)
+                            if sanciones_prev > 0:
+                                ficha.partidos_suspension += 1
+                                ficha.save()
+            else:
+                # El partido no estaba finalizado, pero pudo haber sumado suspensiones por tarjetas en vivo
+                for jugador_id in jugadores_sancionados_este_partido:
+                    ficha = fichas_ambos_equipos.filter(user_id=jugador_id).first()
+                    if ficha and ficha.partidos_suspension > 0:
+                        ficha.partidos_suspension = max(0, ficha.partidos_suspension - 1)
+                        ficha.save()
+            
+            # 2. Eliminar multas financieras asociadas a este partido o sus incidencias
+            MultaTarjeta.objects.filter(partido=partido).delete()
+            MultaTarjeta.objects.filter(evento__partido=partido).delete()
+            
+            # 3. Eliminar todas las incidencias/eventos del partido
+            partido.eventos.all().delete()
+            
+            # 4. Restablecer marcador y estado del partido
+            partido.goles_local = 0
+            partido.goles_visitante = 0
+            partido.estado = 'programado'
+            
+            # 5. Limpiar firmas digitales y alineaciones
+            partido.firma_vocal = False
+            partido.firma_capitan_local = False
+            partido.firma_capitan_visitante = False
+            partido.firma_vocal_img = None
+            partido.firma_arbitro_img = None
+            partido.firma_entrenador_local_img = None
+            partido.firma_entrenador_visitante_img = None
+            partido.alineacion_local = dict()
+            partido.alineacion_visitante = dict()
+            partido.save()
+            
+            # 6. Auditoría en BitacoraTorneo
+            if partido.torneo:
+                BitacoraTorneo.objects.create(
+                    organizacion=request.organizacion,
+                    torneo=partido.torneo,
+                    usuario=request.user,
+                    accion="Anulación / Reinicio de Partido",
+                    detalles=f"Se anuló y restableció a 'Programado' el partido #{partido.id} ({partido.equipo_local.nombre} vs {partido.equipo_visitante.nombre}). Marcador previo: {valores_anteriores['goles_local']}-{valores_anteriores['goles_visitante']}. Eventos eliminados: {valores_anteriores['total_eventos']}. Motivo: {motivo}",
+                    valores_anteriores=valores_anteriores,
+                    valores_nuevos={'estado': 'programado', 'goles_local': 0, 'goles_visitante': 0}
+                )
+                
+        messages.success(
+            request, 
+            f"El partido #{partido.id} ({partido.equipo_local.nombre} vs {partido.equipo_visitante.nombre}) fue ANULADO y restablecido a 'Programado' exitosamente. El marcador volvió a 0-0 y las incidencias/multas fueron eliminadas para que pueda disputarse de nuevo."
+        )
+        
+        # Redirección inteligente
+        next_url = request.POST.get('next')
+        if next_url and 'vocalia/' not in next_url:
+            return redirect(next_url)
+            
+        if request.user.role == 'vocal':
+            return redirect('vocalia_dashboard')
+            
+        if partido.torneo:
+            if partido.torneo.tipo == 'personalizado':
+                return redirect('ver_fixture_personalizado', torneo_id=partido.torneo.id)
+            return redirect('detalle_torneo', torneo_id=partido.torneo.id)
+            
+        return redirect('partidos_lista')
+        
+    return redirect('detalle_partido', partido_id=partido.id)
 
 
 @login_required

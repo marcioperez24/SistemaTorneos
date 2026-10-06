@@ -220,6 +220,18 @@
 
 {% block content %}
 <div class="container my-4">
+    <!-- Barra Superior de Navegación y Control -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a href="{% url 'vocalia_dashboard' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 shadow-sm">
+            <i class="fa-solid fa-arrow-left me-1.5"></i>Volver al Panel
+        </a>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAnularPartido" title="Anular este partido si fue abierto o anotado por error antes de disputarse">
+                <i class="fa-solid fa-ban me-1.5"></i>Anular / Restablecer Encuentro
+            </button>
+        </div>
+    </div>
+
     <!-- Marcador En Vivo -->
     <div class="score-panel p-4 mb-4 text-center">
         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -420,6 +432,61 @@
                     </button>
                 </form>
             </div>
+
+            <!-- Zona de Emergencia / Anulación por Error -->
+            <div class="card border-danger border-opacity-25 rounded-4 p-3.5 bg-danger bg-opacity-10 mt-3 shadow-sm">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div>
+                        <h6 class="fw-bold text-danger mb-0 fs-8"><i class="fa-solid fa-triangle-exclamation me-1.5"></i>¿Equivocación de Encuentro?</h6>
+                        <small class="text-danger-emphasis fs-9">Si abriste o anotaste datos en este partido por error antes de disputarse, puedes anularlo.</small>
+                    </div>
+                    <button type="button" class="btn btn-outline-danger btn-sm fw-bold rounded-pill px-3 py-1.5 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAnularPartido">
+                        <i class="fa-solid fa-ban me-1.5"></i>Anular / Restablecer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Anular / Restablecer Partido -->
+<div class="modal fade" id="modalAnularPartido" tabindex="-1" aria-labelledby="modalAnularPartidoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header bg-danger text-white p-3.5">
+                <h5 class="modal-title fw-bold fs-6" id="modalAnularPartidoLabel">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>Anular y Restablecer Partido
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <form action="{% url 'anular_o_reabrir_partido' partido.id %}" method="POST">
+                {% csrf_token %}
+                <div class="modal-body p-4">
+                    <div class="alert alert-danger bg-danger-subtle border-danger-subtle text-danger p-3 rounded-3 mb-3 fs-8">
+                        <i class="fa-solid fa-circle-exclamation me-1.5"></i>
+                        <strong>¡Atención!</strong> Esta acción dejará el partido en estado <strong>PROGRAMADO</strong> para que pueda disputarse nuevamente desde cero cuando corresponda.
+                    </div>
+                    
+                    <p class="fs-8 text-secondary mb-2">Al anular este encuentro:</p>
+                    <ul class="fs-8 text-secondary ps-3 mb-3">
+                        <li>El marcador volverá a <strong>0 - 0</strong>.</li>
+                        <li>Se eliminarán todos los goles, asistencias y cambios anotados.</li>
+                        <li>Se anularán las tarjetas y se cancelarán las multas generadas.</li>
+                        <li>Se limpiarán las firmas digitales y alineaciones del acta.</li>
+                    </ul>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark fs-8">Motivo de la anulación:</label>
+                        <textarea name="motivo" class="form-control form-control-sm" rows="2" placeholder="Ej: Se ingresaron datos a un partido que no se disputa todavía por equivocación." required>Se ingresaron datos a un partido que no se disputa todavía por equivocación.</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-3 pt-0 d-flex justify-content-between">
+                    <button type="button" class="btn btn-light rounded-pill px-3 btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 btn-sm fw-bold shadow-sm">
+                        <i class="fa-solid fa-ban me-1.5"></i>Confirmar Anulación y Reinicio
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

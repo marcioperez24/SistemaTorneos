@@ -308,9 +308,16 @@
                                                 <div class="text-truncate">
                                                     <i class="fa-solid fa-location-dot me-1"></i>{{ p.estadio }}
                                                 </div>
-                                                <button type="button" class="btn btn-sm btn-link text-primary p-0 text-decoration-none fw-semibold fs-9" data-bs-toggle="modal" data-bs-target="#modalReprogramar{{ p.id }}">
-                                                    <i class="fa-solid fa-pen-to-square me-1"></i>Editar
-                                                </button>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    {% if p.estado != 'programado' or p.eventos.exists %}
+                                                        <button type="button" class="btn btn-sm btn-link text-danger p-0 text-decoration-none fw-semibold fs-9" data-bs-toggle="modal" data-bs-target="#modalAnular{{ p.id }}" title="Anular datos de este partido">
+                                                            <i class="fa-solid fa-ban me-1"></i>Anular
+                                                        </button>
+                                                    {% endif %}
+                                                    <button type="button" class="btn btn-sm btn-link text-primary p-0 text-decoration-none fw-semibold fs-9" data-bs-toggle="modal" data-bs-target="#modalReprogramar{{ p.id }}">
+                                                        <i class="fa-solid fa-pen-to-square me-1"></i>Editar
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -391,6 +398,41 @@
                                                     <div class="modal-footer border-top p-3 bg-light">
                                                         <button type="button" class="btn btn-secondary fs-8" data-bs-dismiss="modal">Cancelar</button>
                                                         <button type="submit" class="btn btn-primary fs-8 fw-bold">Guardar Cambios</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- MODAL ANULAR / RESTABLECER PARTIDO -->
+                                    <div class="modal fade" id="modalAnular{{ p.id }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content border-0 shadow rounded-4">
+                                                <form method="POST" action="{% url 'anular_o_reabrir_partido' p.id %}">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="next" value="{% url 'ver_fixture_personalizado' torneo.id %}">
+                                                    <div class="modal-header bg-danger text-white p-3.5">
+                                                        <h6 class="modal-title fw-bold">
+                                                            <i class="fa-solid fa-triangle-exclamation me-2"></i>Anular Partido #{{ p.id }}
+                                                        </h6>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body p-4 fs-8">
+                                                        <div class="alert alert-danger bg-danger-subtle border-0 p-3 rounded-3 mb-3">
+                                                            <strong>¿Deseas anular este partido?</strong><br>
+                                                            El encuentro entre <strong>{{ p.equipo_local.nombre }}</strong> y <strong>{{ p.equipo_visitante.nombre }}</strong> volverá a <strong>Programado</strong> con marcador 0-0.
+                                                        </div>
+                                                        <p class="text-muted mb-2">Se eliminarán todos los goles, tarjetas, multas e incidencias registradas por equivocación.</p>
+                                                        <div class="mb-3">
+                                                            <label class="form-label fw-bold text-dark fs-8">Motivo de anulación:</label>
+                                                            <textarea name="motivo" class="form-control form-control-sm" rows="2" placeholder="Ej: Se ingresaron datos a un partido que no se disputa todavía." required>Se ingresaron datos a un partido que no se disputa todavía por error.</textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer border-0 p-3 pt-0 d-flex justify-content-between">
+                                                        <button type="button" class="btn btn-light rounded-pill px-3 btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                                                        <button type="submit" class="btn btn-danger rounded-pill px-3.5 btn-sm fw-bold shadow-sm">
+                                                            <i class="fa-solid fa-ban me-1.5"></i>Confirmar Anulación
+                                                        </button>
                                                     </div>
                                                 </form>
                                             </div>
