@@ -228,8 +228,8 @@
                                             <div class="small text-muted"><i class="fa-solid fa-map-marker-alt me-1 text-danger"></i>{{ partido.estadio }}</div>
                                         </td>
                                         <td class="small text-muted">
-                                            <div>Vocal: {{ partido.vocal.get_full_name|default:partido.vocal.username|default:"-" }}</div>
-                                            <div>Árbitro: {{ partido.arbitro.get_full_name|default:partido.arbitro.username|default:"-" }}</div>
+                                            <div>Vocal: {% if partido.vocal %}{{ partido.vocal.get_full_name|default:partido.vocal.username }}{% else %}-{% endif %}</div>
+                                            <div>Árbitro: {% if partido.arbitro %}{{ partido.arbitro.get_full_name|default:partido.arbitro.username }}{% else %}-{% endif %}</div>
                                         </td>
                                     </tr>
                                 {% endfor %}
@@ -305,8 +305,8 @@
                                             <div class="small text-muted"><i class="fa-solid fa-map-marker-alt me-1 text-danger"></i>{{ partido.estadio }}</div>
                                         </td>
                                         <td class="small text-muted">
-                                            <div>Vocal: {{ partido.vocal.get_full_name|default:partido.vocal.username|default:"-" }}</div>
-                                            <div>Árbitro: {{ partido.arbitro.get_full_name|default:partido.arbitro.username|default:"-" }}</div>
+                                            <div>Vocal: {% if partido.vocal %}{{ partido.vocal.get_full_name|default:partido.vocal.username }}{% else %}-{% endif %}</div>
+                                            <div>Árbitro: {% if partido.arbitro %}{{ partido.arbitro.get_full_name|default:partido.arbitro.username }}{% else %}-{% endif %}</div>
                                         </td>
                                     </tr>
                                 {% endfor %}
@@ -376,8 +376,8 @@
                                             <div class="small text-muted"><i class="fa-solid fa-map-marker-alt me-1 text-danger"></i>{{ partido.estadio }}</div>
                                         </td>
                                         <td class="small text-muted">
-                                            <div>Vocal: {{ partido.vocal.get_full_name|default:partido.vocal.username|default:"-" }}</div>
-                                            <div>Árbitro: {{ partido.arbitro.get_full_name|default:partido.arbitro.username|default:"-" }}</div>
+                                            <div>Vocal: {% if partido.vocal %}{{ partido.vocal.get_full_name|default:partido.vocal.username }}{% else %}-{% endif %}</div>
+                                            <div>Árbitro: {% if partido.arbitro %}{{ partido.arbitro.get_full_name|default:partido.arbitro.username }}{% else %}-{% endif %}</div>
                                         </td>
                                     </tr>
                                 {% endfor %}

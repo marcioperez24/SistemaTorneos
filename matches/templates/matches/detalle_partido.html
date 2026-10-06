@@ -188,7 +188,7 @@
                     <div class="d-flex flex-column align-items-end">
                         {% for ev in eventos_local %}
                             <div class="d-flex flex-wrap align-items-center justify-content-end mb-2 gap-1 gap-md-2 event-text w-100">
-                                <span class="fs-8 fw-semibold text-end text-break" style="max-width: 140px;">{{ ev.jugador.get_full_name|default:ev.jugador.username }}</span>
+                                <span class="fs-8 fw-semibold text-end text-break" style="max-width: 140px;">{% if ev.jugador %}{{ ev.jugador.get_full_name|default:ev.jugador.username }}{% else %}Jugador{% endif %}</span>
                                 
                                 <div class="position-relative mx-1">
                                     {% if ev.ficha_jugador and ev.ficha_jugador.foto %}
@@ -239,7 +239,7 @@
                                     {% endif %}
                                 </div>
                                 
-                                <span class="fs-8 fw-semibold text-start text-break" style="max-width: 140px;">{{ ev.jugador.get_full_name|default:ev.jugador.username }}</span>
+                                <span class="fs-8 fw-semibold text-start text-break" style="max-width: 140px;">{% if ev.jugador %}{{ ev.jugador.get_full_name|default:ev.jugador.username }}{% else %}Jugador{% endif %}</span>
                             </div>
                         {% endfor %}
                     </div>
@@ -254,11 +254,13 @@
                     <i class="fa-solid fa-map-location-dot me-1"></i>Estadio/Campo: <strong>{{ partido.estadio }}</strong>
                 </div>
                 <div class="col-md-4">
-                    <i class="fa-solid fa-bullhorn me-1"></i>Árbitro: <strong>{{ partido.arbitro.get_full_name|default:"Sin asignar" }}</strong>
+                    <i class="fa-solid fa-bullhorn me-1"></i>Árbitro: <strong>{% if partido.arbitro %}{{ partido.arbitro.get_full_name|default:partido.arbitro.username }}{% else %}Sin asignar{% endif %}</strong>
                 </div>
             </div>
         </div>
-    </div    <!-- Firmas Digitales de Validación (Movido hacia arriba) -->   <!-- Firmas Digitales de Validación -->
+    </div>
+
+    <!-- Firmas Digitales de Validación -->
     <div class="mt-5">
         <h4 class="fw-bold mb-3 text-secondary"><i class="fa-solid fa-file-contract me-2 text-success"></i>Firmas de Acta Electrónica</h4>
         <div class="card card-custom p-4 bg-white">
@@ -281,7 +283,7 @@
                             {% endif %}
                         </div>
                         <div class="signature-box mt-3 text-muted border-top pt-2 small">
-                            <strong>{{ partido.vocal.get_full_name|default:partido.vocal.username|default:"Vocal de Campo" }}</strong><br>
+                            <strong>{% if partido.vocal %}{{ partido.vocal.get_full_name|default:partido.vocal.username }}{% else %}Vocal de Mesa{% endif %}</strong><br>
                             Vocal de Mesa
                         </div>
                     </div>
@@ -302,7 +304,7 @@
                             {% endif %}
                         </div>
                         <div class="signature-box mt-3 text-muted border-top pt-2 small">
-                            <strong>{{ partido.arbitro.get_full_name|default:"Árbitro Principal" }}</strong><br>
+                            <strong>{% if partido.arbitro %}{{ partido.arbitro.get_full_name|default:partido.arbitro.username }}{% else %}Árbitro Principal{% endif %}</strong><br>
                             Árbitro del Partido
                         </div>
                     </div>

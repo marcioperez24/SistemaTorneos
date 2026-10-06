@@ -355,7 +355,7 @@
                         <div class="list-group-item px-0 py-2.5 d-flex align-items-center justify-content-between fs-8">
                             <div>
                                 <span class="badge bg-dark font-monospace text-warning me-1.5">{{ ev.minuto }}'</span>
-                                <span class="fw-bold text-dark">{{ ev.jugador.get_full_name|default:ev.jugador.username }}</span>
+                                <span class="fw-bold text-dark">{% if ev.jugador %}{{ ev.jugador.get_full_name|default:ev.jugador.username }}{% else %}Jugador no registrado{% endif %}</span>
                                 <span class="text-muted">({{ ev.equipo.nombre }})</span>
                             </div>
                             <div class="d-flex align-items-center gap-1">

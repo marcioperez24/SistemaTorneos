@@ -74,8 +74,8 @@
                         <span>{{ partido.estadio }}</span>
                     </div>
                     <div class="d-flex align-items-center gap-3 fs-9 text-muted flex-wrap">
-                        <span><i class="fa-solid fa-clipboard-user me-1 text-info"></i>Vocal: <strong>{{ partido.vocal.get_full_name|default:partido.vocal.username|default:"Sin asignar" }}</strong></span>
-                        <span><i class="fa-solid fa-whistle me-1 text-warning"></i>Árbitro: <strong>{{ partido.arbitro.get_full_name|default:partido.arbitro.username|default:"Sin asignar" }}</strong></span>
+                        <span><i class="fa-solid fa-clipboard-user me-1 text-info"></i>Vocal: <strong>{% if partido.vocal %}{{ partido.vocal.get_full_name|default:partido.vocal.username }}{% else %}Sin asignar{% endif %}</strong></span>
+                        <span><i class="fa-solid fa-whistle me-1 text-warning"></i>Árbitro: <strong>{% if partido.arbitro %}{{ partido.arbitro.get_full_name|default:partido.arbitro.username }}{% else %}Sin asignar{% endif %}</strong></span>
                     </div>
                 </div>
 
