@@ -1,0 +1,1231 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acta Oficial de Partido - {{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }} | {{ organizacion.nombre|default:"Fútbol Pro" }}</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+    <style>
+        :root {
+            --primary-dark: #0f172a;
+            --primary-blue: #1e3a8a;
+            --accent-blue: #2563eb;
+            --border-dark: #334155;
+            --border-light: #cbd5e1;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --bg-light: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #e2e8f0;
+            color: var(--text-main);
+            font-size: 11px;
+            line-height: 1.35;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        /* BARRA SUPERIOR DE HERRAMIENTAS (PANTALLA) */
+        .print-toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: #0f172a;
+            color: #ffffff;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .toolbar-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .toolbar-logo {
+            height: 32px;
+            width: auto;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+
+        .toolbar-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #f8fafc;
+            letter-spacing: 0.3px;
+        }
+
+        .toolbar-subtitle {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+
+        .toolbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: none;
+        }
+
+        .btn-print {
+            background: #2563eb;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+        }
+
+        .btn-print:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        .btn-back {
+            background: #334155;
+            color: #f1f5f9;
+        }
+
+        .btn-back:hover {
+            background: #475569;
+        }
+
+        /* CONTENEDOR DE HOJA IMPRIMIBLE */
+        .sheet-container {
+            max-width: 960px;
+            margin: 24px auto 40px auto;
+            background: #ffffff;
+            padding: 24px 28px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            border-radius: 4px;
+        }
+
+        /* ENCABEZADO INSTITUCIONAL */
+        .doc-header {
+            display: grid;
+            grid-template-columns: 240px 1fr 200px;
+            gap: 16px;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--primary-dark);
+            margin-bottom: 14px;
+        }
+
+        .org-branding {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .org-logo-box {
+            width: 56px;
+            height: 56px;
+            flex-shrink: 0;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            padding: 4px;
+        }
+
+        .org-logo-box img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .org-text-box h3 {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--primary-dark);
+            line-height: 1.15;
+            text-transform: uppercase;
+        }
+
+        .org-text-box .system-tag {
+            font-size: 9.5px;
+            font-weight: 700;
+            color: var(--accent-blue);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 2px;
+        }
+
+        .org-text-box .system-tag img {
+            height: 10px;
+            width: auto;
+        }
+
+        .org-text-box .org-contact {
+            font-size: 8.5px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .doc-title-center {
+            text-align: center;
+        }
+
+        .doc-badge {
+            display: inline-block;
+            background: var(--primary-dark);
+            color: #ffffff;
+            font-size: 8.5px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            padding: 2px 10px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            margin-bottom: 3px;
+        }
+
+        .doc-main-title {
+            font-size: 17px;
+            font-weight: 900;
+            color: var(--primary-dark);
+            letter-spacing: 0.2px;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+
+        .doc-tournament-name {
+            font-size: 11.5px;
+            font-weight: 700;
+            color: var(--accent-blue);
+            margin-top: 2px;
+            text-transform: uppercase;
+        }
+
+        .doc-meta-sub {
+            font-size: 9px;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .match-badge-box {
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 9.5px;
+            line-height: 1.4;
+        }
+
+        .badge-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2px;
+        }
+
+        .badge-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .badge-label {
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .badge-value {
+            font-weight: 700;
+            color: var(--primary-dark);
+            text-align: right;
+        }
+
+        /* SCOREBOARD PRINCIPAL */
+        .scoreboard-panel {
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+            color: #ffffff;
+            border-radius: 8px;
+            padding: 12px 20px;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 14px;
+            border: 1px solid #1e293b;
+        }
+
+        .team-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .team-box.team-local {
+            justify-content: flex-start;
+        }
+
+        .team-box.team-visitante {
+            justify-content: flex-end;
+            flex-direction: row-reverse;
+            text-align: right;
+        }
+
+        .team-logo-shield {
+            width: 48px;
+            height: 48px;
+            background: #ffffff;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+            flex-shrink: 0;
+        }
+
+        .team-logo-shield img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .team-logo-placeholder {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            background: #3b82f6;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 16px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+        }
+
+        .team-name-lg {
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            line-height: 1.15;
+        }
+
+        .team-meta-sm {
+            font-size: 9px;
+            color: #93c5fd;
+            font-weight: 500;
+            margin-top: 2px;
+        }
+
+        .score-center-box {
+            text-align: center;
+            padding: 0 8px;
+        }
+
+        .score-display {
+            font-family: 'JetBrains Mono', monospace;
+            background: #ffffff;
+            color: #0f172a;
+            font-size: 24px;
+            font-weight: 900;
+            padding: 4px 18px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: inline-block;
+            letter-spacing: 4px;
+        }
+
+        .score-status-pill {
+            font-size: 8.5px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #e2e8f0;
+            margin-top: 4px;
+        }
+
+        /* AUTORIDADES DE MESA Y CAMPO */
+        .officials-strip {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            background: var(--bg-light);
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-bottom: 14px;
+        }
+
+        .official-card {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .official-role {
+            font-size: 8.5px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .official-name {
+            font-size: 10.5px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* SECCIÓN DE ALINEACIONES / PLANILLAS */
+        .lineups-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+
+        .roster-card {
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            overflow: hidden;
+            background: #ffffff;
+        }
+
+        .roster-header {
+            background: var(--primary-dark);
+            color: #ffffff;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .roster-header.local {
+            background: #1e3a8a;
+        }
+
+        .roster-header.visitante {
+            background: #0f172a;
+        }
+
+        .roster-header-title {
+            font-size: 10.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .roster-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9.5px;
+        }
+
+        .roster-table th {
+            background: #f1f5f9;
+            color: var(--text-muted);
+            font-weight: 700;
+            padding: 4px 6px;
+            text-transform: uppercase;
+            font-size: 8px;
+            border-bottom: 1px solid var(--border-light);
+            text-align: left;
+        }
+
+        .roster-table td {
+            padding: 4.5px 6px;
+            border-bottom: 1px solid #f1f5f9;
+            color: var(--text-main);
+            vertical-align: middle;
+        }
+
+        .roster-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .roster-table tr:hover {
+            background: #f8fafc;
+        }
+
+        .jersey-badge {
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+            background: #e2e8f0;
+            color: #0f172a;
+            font-weight: 700;
+            font-size: 9px;
+            padding: 1px 5px;
+            border-radius: 3px;
+            text-align: center;
+            min-width: 22px;
+        }
+
+        .player-name-cell {
+            font-weight: 600;
+            color: var(--primary-dark);
+        }
+
+        .icon-incidencia {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            margin-right: 4px;
+            font-size: 8px;
+            font-weight: 700;
+        }
+
+        .icon-gol {
+            color: #16a34a;
+        }
+
+        .icon-amarilla {
+            color: #eab308;
+        }
+
+        .icon-roja {
+            color: #dc2626;
+        }
+
+        .icon-cambio {
+            color: #0284c7;
+        }
+
+        .signature-check-box {
+            width: 44px;
+            height: 14px;
+            border-bottom: 1px dashed #cbd5e1;
+        }
+
+        /* BITÁCORA Y CRONOLOGÍA DE EVENTOS */
+        .events-panel {
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            margin-bottom: 14px;
+            overflow: hidden;
+        }
+
+        .section-bar {
+            background: #f1f5f9;
+            padding: 5px 10px;
+            font-size: 9.5px;
+            font-weight: 800;
+            color: var(--primary-dark);
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .events-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9.5px;
+        }
+
+        .events-table th {
+            background: #ffffff;
+            color: var(--text-muted);
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 5px 8px;
+            border-bottom: 1px solid var(--border-light);
+            text-align: left;
+        }
+
+        .events-table td {
+            padding: 4px 8px;
+            border-bottom: 1px solid #f1f5f9;
+            color: var(--text-main);
+        }
+
+        .events-table tr:nth-child(even) {
+            background: #fafafa;
+        }
+
+        .minute-pill {
+            font-family: 'JetBrains Mono', monospace;
+            background: #0f172a;
+            color: #f8fafc;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 8.5px;
+            font-weight: 700;
+        }
+
+        /* OBSERVACIONES E INFORME DISCIPLINARIO */
+        .notes-box {
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .notes-content {
+            padding: 8px 12px;
+            min-height: 52px;
+            font-size: 9px;
+            color: var(--text-main);
+            background: #ffffff;
+        }
+
+        .notes-lines {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-top: 6px;
+        }
+
+        .note-line {
+            border-bottom: 1px dotted #cbd5e1;
+            height: 1px;
+            width: 100%;
+        }
+
+        /* FIRMAS OFICIALES */
+        .signatures-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .signature-slot {
+            border: 1px solid var(--border-light);
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 100px;
+        }
+
+        .sig-img-container {
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 4px;
+        }
+
+        .sig-img-container img {
+            max-height: 44px;
+            max-width: 100%;
+            object-fit: contain;
+        }
+
+        .sig-stamp-ok {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 8px;
+            font-weight: 800;
+            color: #16a34a;
+            border: 1px solid #16a34a;
+            padding: 2px 6px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sig-line {
+            border-top: 1px solid var(--primary-dark);
+            margin-top: 4px;
+            padding-top: 4px;
+        }
+
+        .sig-role-title {
+            font-size: 8.5px;
+            font-weight: 800;
+            color: var(--primary-dark);
+            text-transform: uppercase;
+        }
+
+        .sig-name {
+            font-size: 8.5px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* FOOTER DE IMPRESIÓN */
+        .sheet-footer {
+            border-top: 1px solid var(--border-light);
+            padding-top: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 8px;
+            color: var(--text-muted);
+        }
+
+        .footer-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .footer-left img {
+            height: 12px;
+            width: auto;
+        }
+
+        /* AJUSTES EXACTOS PARA IMPRESIÓN (A4 / CARTA) */
+        @media print {
+            .no-print, .print-toolbar {
+                display: none !important;
+            }
+
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .sheet-container {
+                max-width: 100% !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 10px 14px !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+            }
+
+            .scoreboard-panel {
+                background: #0f172a !important;
+                color: #ffffff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .roster-header.local {
+                background: #1e3a8a !important;
+                color: #ffffff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .roster-header.visitante {
+                background: #0f172a !important;
+                color: #ffffff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .section-bar {
+                background: #e2e8f0 !important;
+                color: #0f172a !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .doc-badge {
+                background: #0f172a !important;
+                color: #ffffff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            .minute-pill {
+                background: #0f172a !important;
+                color: #ffffff !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            @page {
+                size: A4 portrait;
+                margin: 8mm 6mm;
+            }
+
+            .page-break-avoid {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- BARRA DE HERRAMIENTAS EN PANTALLA (NO IMPRIMIBLE) -->
+    <div class="print-toolbar no-print">
+        <div class="toolbar-info">
+            <img src="{% static 'teams/images/logo.png' %}" alt="Fútbol Pro" class="toolbar-logo">
+            <div>
+                <div class="toolbar-title">Acta Oficial de Partido y Hoja de Vocalía</div>
+                <div class="toolbar-subtitle">{{ partido.torneo.nombre|default:"Torneo Oficial" }} &bull; Jornada {{ partido.jornada }} &bull; {{ partido.equipo_local.nombre }} vs {{ partido.equipo_visitante.nombre }}</div>
+            </div>
+        </div>
+        <div class="toolbar-actions">
+            <a href="{% url 'detalle_partido' partido.id %}" class="btn-action btn-back">
+                <i class="fa-solid fa-arrow-left"></i> Volver al Detalle
+            </a>
+            <button onclick="window.print()" class="btn-action btn-print">
+                <i class="fa-solid fa-print"></i> Imprimir / Guardar PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- HOJA OFICIAL IMPRIMIBLE -->
+    <div class="sheet-container">
+
+        <!-- 1. ENCABEZADO INSTITUCIONAL -->
+        <header class="doc-header">
+            <!-- Branding Organizacional & Sistema -->
+            <div class="org-branding">
+                <div class="org-logo-box">
+                    {% if organizacion.logo %}
+                        <img src="{{ organizacion.logo.url }}" alt="{{ organizacion.nombre }}">
+                    {% else %}
+                        <img src="{% static 'teams/images/logo.png' %}" alt="Fútbol Pro">
+                    {% endif %}
+                </div>
+                <div class="org-text-box">
+                    <h3>{{ organizacion.nombre|default:"FÚTBOL PRO" }}</h3>
+                    <div class="system-tag">
+                        <img src="{% static 'teams/images/logo.png' %}" alt="Logo">
+                        <span>SISTEMA FÚTBOL PRO</span>
+                    </div>
+                    <div class="org-contact">
+                        {% if organizacion.ruc %}RUC: {{ organizacion.ruc }} &bull; {% endif %}
+                        {% if organizacion.telefono %}Tel: {{ organizacion.telefono }}{% else %}Control Oficial de Competencias{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Título Central del Documento -->
+            <div class="doc-title-center">
+                <span class="doc-badge">DOCUMENTO OFICIAL DE COMPETENCIA</span>
+                <h1 class="doc-main-title">ACTA OFICIAL DE PARTIDO</h1>
+                <div class="doc-tournament-name">{{ partido.torneo.nombre|default:"TORNEO DE FÚTBOL"|upper }}</div>
+                <div class="doc-meta-sub">
+                    CATEGORÍA: {{ partido.torneo.categoria.nombre|default:partido.equipo_local.get_categoria_display|upper }} &bull;
+                    TEMPORADA: {{ partido.temporada|upper }}
+                    {% if partido.grupo %}&bull; GRUPO {{ partido.grupo|upper }}{% endif %}
+                </div>
+            </div>
+
+            <!-- Resumen Técnico del Encuentro -->
+            <div class="match-badge-box">
+                <div class="badge-row">
+                    <span class="badge-label">CÓDIGO:</span>
+                    <span class="badge-value font-mono">{{ codigo_acta }}</span>
+                </div>
+                <div class="badge-row">
+                    <span class="badge-label">FECHA:</span>
+                    <span class="badge-value">{{ partido.fecha_hora|date:"d/m/Y" }}</span>
+                </div>
+                <div class="badge-row">
+                    <span class="badge-label">HORA:</span>
+                    <span class="badge-value">{{ partido.fecha_hora|date:"H:i" }}</span>
+                </div>
+                <div class="badge-row">
+                    <span class="badge-label">JORNADA:</span>
+                    <span class="badge-value">FECHA {{ partido.jornada }}</span>
+                </div>
+                <div class="badge-row">
+                    <span class="badge-label">CANCHA:</span>
+                    <span class="badge-value text-truncate" style="max-width: 105px;">{{ partido.estadio }}</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- 2. MARCADOR CENTRAL (SCOREBOARD) -->
+        <section class="scoreboard-panel page-break-avoid">
+            <!-- Equipo Local -->
+            <div class="team-box team-local">
+                <div class="team-logo-shield">
+                    {% if partido.equipo_local.logo %}
+                        <img src="{{ partido.equipo_local.logo.url }}" alt="{{ partido.equipo_local.nombre }}">
+                    {% else %}
+                        <div class="team-logo-placeholder">{{ partido.equipo_local.nombre|slice:":2"|upper }}</div>
+                    {% endif %}
+                </div>
+                <div>
+                    <div class="team-name-lg">{{ partido.equipo_local.nombre }}</div>
+                    <div class="team-meta-sm">LOCAL &bull; {{ partido.equipo_local.get_categoria_display }}</div>
+                </div>
+            </div>
+
+            <!-- Marcador y Estado -->
+            <div class="score-center-box">
+                <div class="score-display">
+                    {{ total_goles_local }} - {{ total_goles_visitante }}
+                </div>
+                <div class="score-status-pill">
+                    {% if partido.estado == 'finalizado' %}
+                        <i class="fa-solid fa-flag-checkered me-1"></i> RESULTADO FINAL
+                    {% else %}
+                        {{ partido.get_estado_display|upper }}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Equipo Visitante -->
+            <div class="team-box team-visitante">
+                <div class="team-logo-shield">
+                    {% if partido.equipo_visitante.logo %}
+                        <img src="{{ partido.equipo_visitante.logo.url }}" alt="{{ partido.equipo_visitante.nombre }}">
+                    {% else %}
+                        <div class="team-logo-placeholder">{{ partido.equipo_visitante.nombre|slice:":2"|upper }}</div>
+                    {% endif %}
+                </div>
+                <div>
+                    <div class="team-name-lg">{{ partido.equipo_visitante.nombre }}</div>
+                    <div class="team-meta-sm">VISITANTE &bull; {{ partido.equipo_visitante.get_categoria_display }}</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. AUTORIDADES Y OFICIALES DEL ENCUENTRO -->
+        <section class="officials-strip page-break-avoid">
+            <div class="official-card">
+                <span class="official-role"><i class="fa-solid fa-clipboard-user text-info"></i> Vocal de Mesa</span>
+                <span class="official-name">
+                    {% if partido.vocal %}{{ partido.vocal.get_full_name|default:partido.vocal.username }}{% else %}No asignado{% endif %}
+                </span>
+            </div>
+            <div class="official-card">
+                <span class="official-role"><i class="fa-solid fa-whistle text-warning"></i> Árbitro Principal</span>
+                <span class="official-name">
+                    {% if partido.arbitro %}{{ partido.arbitro.get_full_name|default:partido.arbitro.username }}{% else %}No asignado{% endif %}
+                </span>
+            </div>
+            <div class="official-card">
+                <span class="official-role"><i class="fa-solid fa-user-tie text-primary"></i> D.T. / Delegado Local</span>
+                <span class="official-name">{{ dt_local }}</span>
+            </div>
+            <div class="official-card">
+                <span class="official-role"><i class="fa-solid fa-user-tie text-primary"></i> D.T. / Delegado Visitante</span>
+                <span class="official-name">{{ dt_visitante }}</span>
+            </div>
+        </section>
+
+        <!-- 4. PLANILLAS DE JUGADORES FRENTE A FRENTE -->
+        <section class="lineups-container page-break-avoid">
+            
+            <!-- PLANILLA LOCAL -->
+            <div class="roster-card">
+                <div class="roster-header local">
+                    <span class="roster-header-title">
+                        <i class="fa-solid fa-shield me-1"></i> {{ partido.equipo_local.nombre|upper }}
+                    </span>
+                    <span style="font-size: 8px; opacity: 0.9;">LOCAL</span>
+                </div>
+                <table class="roster-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 28px; text-align: center;">N°</th>
+                            <th>Jugador</th>
+                            <th style="width: 75px; text-align: center;">Incidencias</th>
+                            <th style="width: 50px; text-align: center;">Firma</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for j in jugadores_local %}
+                            <tr>
+                                <td style="text-align: center;">
+                                    <span class="jersey-badge">{{ j.ficha.numero_camiseta|default:"-" }}</span>
+                                </td>
+                                <td class="player-name-cell">
+                                    {{ j.ficha.user.get_full_name|default:j.ficha.user.username }}
+                                </td>
+                                <td style="text-align: center;">
+                                    {% if j.goles %}
+                                        {% for m in j.goles %}
+                                            <span class="icon-incidencia icon-gol" title="Gol"><i class="fa-solid fa-futbol"></i>{{ m }}'</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if j.amarillas %}
+                                        {% for m in j.amarillas %}
+                                            <span class="icon-incidencia icon-amarilla" title="Amarilla"><i class="fa-solid fa-square"></i>{{ m }}'</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if j.rojas %}
+                                        {% for m in j.rojas %}
+                                            <span class="icon-incidencia icon-roja" title="Roja"><i class="fa-solid fa-square"></i>{{ m }}'</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if not j.tiene_incidencias %}<span style="color: #cbd5e1;">-</span>{% endif %}
+                                </td>
+                                <td style="text-align: center;">
+                                    <div class="signature-check-box mx-auto"></div>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 12px;">
+                                    Sin jugadores registrados o habilitados para este equipo.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- PLANILLA VISITANTE -->
+            <div class="roster-card">
+                <div class="roster-header visitante">
+                    <span class="roster-header-title">
+                        <i class="fa-solid fa-shield me-1"></i> {{ partido.equipo_visitante.nombre|upper }}
+                    </span>
+                    <span style="font-size: 8px; opacity: 0.9;">VISITANTE</span>
+                </div>
+                <table class="roster-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 28px; text-align: center;">N°</th>
+                            <th>Jugador</th>
+                            <th style="width: 75px; text-align: center;">Incidencias</th>
+                            <th style="width: 50px; text-align: center;">Firma</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for j in jugadores_visitante %}
+                            <tr>
+                                <td style="text-align: center;">
+                                    <span class="jersey-badge">{{ j.ficha.numero_camiseta|default:"-" }}</span>
+                                </td>
+                                <td class="player-name-cell">
+                                    {{ j.ficha.user.get_full_name|default:j.ficha.user.username }}
+                                </td>
+                                <td style="text-align: center;">
+                                    {% if j.goles %}
+                                        {% for m in j.goles %}
+                                            <span class="icon-incidencia icon-gol" title="Gol"><i class="fa-solid fa-futbol"></i>{{ m }}'</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if j.amarillas %}
+                                        {% for m in j.amarillas %}
+                                            <span class="icon-incidencia icon-amarilla" title="Amarilla"><i class="fa-solid fa-square"></i>{{ m }}'</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if j.rojas %}
+                                        {% for m in j.rojas %}
+                                            <span class="icon-incidencia icon-roja" title="Roja"><i class="fa-solid fa-square"></i>{{ m }}'</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if not j.tiene_incidencias %}<span style="color: #cbd5e1;">-</span>{% endif %}
+                                </td>
+                                <td style="text-align: center;">
+                                    <div class="signature-check-box mx-auto"></div>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 12px;">
+                                    Sin jugadores registrados o habilitados para este equipo.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+
+        <!-- 5. CRONOLOGÍA DE INCIDENCIAS DEL PARTIDO (BITÁCORA) -->
+        <section class="events-panel page-break-avoid">
+            <div class="section-bar">
+                <span><i class="fa-solid fa-list-check me-1"></i> Cronología Oficial de Incidencias y Sanciones</span>
+                <span>Total Goles: {{ total_goles_local }} - {{ total_goles_visitante }} | Amarillas: {{ total_amarillas_local|add:total_amarillas_visitante }} | Rojas: {{ total_rojas_local|add:total_rojas_visitante }}</span>
+            </div>
+            <table class="events-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px; text-align: center;">Minuto</th>
+                        <th style="width: 110px;">Incidencia</th>
+                        <th style="width: 180px;">Equipo</th>
+                        <th>Detalle del Evento / Jugador</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ev in eventos %}
+                        <tr>
+                            <td style="text-align: center;">
+                                <span class="minute-pill">{{ ev.minuto }}'</span>
+                            </td>
+                            <td>
+                                {% if ev.tipo == 'gol' %}
+                                    <span class="icon-incidencia icon-gol fw-bold"><i class="fa-solid fa-futbol"></i> GOL</span>
+                                {% elif ev.tipo == 'amarilla' %}
+                                    <span class="icon-incidencia icon-amarilla fw-bold"><i class="fa-solid fa-square"></i> T. AMARILLA</span>
+                                {% elif ev.tipo == 'roja' %}
+                                    <span class="icon-incidencia icon-roja fw-bold"><i class="fa-solid fa-square"></i> T. ROJA</span>
+                                {% elif ev.tipo == 'cambio' %}
+                                    <span class="icon-incidencia icon-cambio fw-bold"><i class="fa-solid fa-right-left"></i> SUSTITUCIÓN</span>
+                                {% else %}
+                                    <span class="fw-bold text-secondary">{{ ev.get_tipo_display|default:ev.tipo|upper }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="fw-bold">
+                                {{ ev.equipo.nombre }}
+                            </td>
+                            <td>
+                                {% if ev.jugador %}
+                                    <strong>{{ ev.jugador.get_full_name|default:ev.jugador.username }}</strong>
+                                    {% if ev.ficha_jugador and ev.ficha_jugador.numero_camiseta %}
+                                        <span class="jersey-badge ms-1">#{{ ev.ficha_jugador.numero_camiseta }}</span>
+                                    {% endif %}
+                                {% endif %}
+                                {% if ev.detalle %}
+                                    <span class="text-muted ms-1">({{ ev.detalle }})</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 10px;">
+                                No se registraron incidencias disciplinarias ni cambios en este encuentro.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 6. OBSERVACIONES DEL INFORME ARBITRAL Y VOCALÍA -->
+        <section class="notes-box page-break-avoid">
+            <div class="section-bar">
+                <span><i class="fa-solid fa-pen-nib me-1"></i> Observaciones e Informe del Árbitro / Vocal de Mesa</span>
+                <span>Firma bajo fe de hechos</span>
+            </div>
+            <div class="notes-content">
+                <div class="notes-lines">
+                    <div class="note-line"></div>
+                    <div class="note-line"></div>
+                    <div class="note-line"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. RECUADROS DE FIRMAS OFICIALES -->
+        <section class="signatures-grid page-break-avoid">
+            <!-- Firma Vocal -->
+            <div class="signature-slot">
+                <div class="sig-img-container">
+                    {% if partido.firma_vocal_img %}
+                        <img src="{{ partido.firma_vocal_img }}" alt="Firma Vocal">
+                    {% elif partido.firma_vocal %}
+                        <span class="sig-stamp-ok"><i class="fa-solid fa-check-circle"></i> FIRMADO DIGITAL</span>
+                    {% else %}
+                        <span style="color: #94a3b8; font-size: 8px; font-style: italic;">Espacio para firma</span>
+                    {% endif %}
+                </div>
+                <div class="sig-line">
+                    <div class="sig-role-title">Vocal de Mesa</div>
+                    <div class="sig-name">
+                        {% if partido.vocal %}{{ partido.vocal.get_full_name|default:partido.vocal.username }}{% else %}Vocal de Control{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Firma Árbitro -->
+            <div class="signature-slot">
+                <div class="sig-img-container">
+                    {% if partido.firma_arbitro_img %}
+                        <img src="{{ partido.firma_arbitro_img }}" alt="Firma Árbitro">
+                    {% else %}
+                        <span style="color: #94a3b8; font-size: 8px; font-style: italic;">Espacio para firma</span>
+                    {% endif %}
+                </div>
+                <div class="sig-line">
+                    <div class="sig-role-title">Árbitro Central</div>
+                    <div class="sig-name">
+                        {% if partido.arbitro %}{{ partido.arbitro.get_full_name|default:partido.arbitro.username }}{% else %}Árbitro Principal{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Firma Capitán Local -->
+            <div class="signature-slot">
+                <div class="sig-img-container">
+                    {% if partido.firma_entrenador_local_img %}
+                        <img src="{{ partido.firma_entrenador_local_img }}" alt="Firma Representante Local">
+                    {% else %}
+                        <span style="color: #94a3b8; font-size: 8px; font-style: italic;">Espacio para firma</span>
+                    {% endif %}
+                </div>
+                <div class="sig-line">
+                    <div class="sig-role-title">Capitán / Delegado Local</div>
+                    <div class="sig-name">{{ partido.equipo_local.nombre }}</div>
+                </div>
+            </div>
+
+            <!-- Firma Capitán Visitante -->
+            <div class="signature-slot">
+                <div class="sig-img-container">
+                    {% if partido.firma_entrenador_visitante_img %}
+                        <img src="{{ partido.firma_entrenador_visitante_img }}" alt="Firma Representante Visitante">
+                    {% else %}
+                        <span style="color: #94a3b8; font-size: 8px; font-style: italic;">Espacio para firma</span>
+                    {% endif %}
+                </div>
+                <div class="sig-line">
+                    <div class="sig-role-title">Capitán / Delegado Visitante</div>
+                    <div class="sig-name">{{ partido.equipo_visitante.nombre }}</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 8. PIE DE PÁGINA INSTITUCIONAL -->
+        <footer class="sheet-footer page-break-avoid">
+            <div class="footer-left">
+                <img src="{% static 'teams/images/logo.png' %}" alt="Fútbol Pro">
+                <span><strong>{{ organizacion.nombre|default:"Fútbol Pro" }}</strong> &bull; Sistema Digital de Torneos y Arbitraje</span>
+            </div>
+            <div>
+                Acta Certificada: <span class="font-mono"><strong>{{ codigo_acta }}</strong></span> &bull; Impreso: {{ fecha_impresion|date:"d/m/Y H:i:s" }}
+            </div>
+        </footer>
+
+    </div>
+
+</body>
+</html>

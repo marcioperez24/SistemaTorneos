@@ -651,6 +651,47 @@
             padding: 10px 24px !important;
             letter-spacing: 0.5px !important;
         }
+
+        /* REGLAS GLOBALES DE IMPRESIÓN: Ocultar menú lateral, navegación y controles del sistema */
+        @media print {
+            .sidebar, 
+            .sidebar-overlay, 
+            .sidebar-header, 
+            .sidebar-menu, 
+            .sidebar-user, 
+            .navbar, 
+            .top-navbar, 
+            .top-nav, 
+            .app-sidebar, 
+            aside, 
+            header, 
+            footer, 
+            .no-print, 
+            .btn, 
+            .btn-close,
+            #loadingOverlay,
+            .modal-backdrop,
+            .modal {
+                display: none !important;
+            }
+            .app-layout {
+                display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .main-content {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+        }
     </style>
     {% block extra_css %}{% endblock %}
 </head>

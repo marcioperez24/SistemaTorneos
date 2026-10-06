@@ -114,9 +114,9 @@
                     </button>
                 {% endif %}
             {% endif %}
-            <button onclick="window.print();" class="btn btn-custom-accent rounded-pill px-4 shadow">
-                <i class="fa-solid fa-print me-2"></i>Imprimir / Guardar PDF
-            </button>
+            <a href="{% url 'imprimir_acta_partido' partido.id %}" target="_blank" class="btn btn-custom-accent rounded-pill px-4 shadow text-decoration-none fw-bold">
+                <i class="fa-solid fa-print me-2"></i>Imprimir Acta Oficial
+            </a>
         </div>
     </div>
 

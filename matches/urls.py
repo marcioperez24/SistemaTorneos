@@ -22,6 +22,7 @@ urlpatterns = [
     
     # Detalle de Partido / Acta de Impresión / Anulación
     path('partido/<int:partido_id>/', views.detalle_partido, name='detalle_partido'),
+    path('partido/<int:partido_id>/imprimir-acta/', views.imprimir_acta_partido, name='imprimir_acta_partido'),
     path('partido/<int:partido_id>/anular/', views.anular_o_reabrir_partido, name='anular_o_reabrir_partido'),
     path('partidos/<int:partido_id>/anular-reabrir/', views.anular_o_reabrir_partido, name='anular_partido_alias'),
     

@@ -864,6 +864,145 @@ def detalle_partido(request, partido_id):
 
 
 @login_required
+def imprimir_acta_partido(request, partido_id):
+    """
+    Vista especializada para generar e imprimir la Hoja de Vocalía / Acta Oficial de Partido.
+    Diseñada en formato de alta calidad editorial sin menús ni elementos del sistema,
+    con logotipo institucional, marcador, autoridades, alineaciones, incidencias y firmas.
+    """
+    partido = get_object_or_404(Partido, id=partido_id)
+    organizacion = getattr(request, 'organizacion', None) or partido.organizacion
+    eventos = EventoPartido.objects.filter(partido=partido).select_related('jugador', 'equipo').order_by('minuto', 'id')
+    
+    # Jugadores inscritos/habilitados de cada equipo
+    jugadores_local_qs = FichaJugador.objects.filter(
+        equipo=partido.equipo_local, 
+        torneo=partido.torneo, 
+        estado_validacion='aprobado'
+    ).select_related('user').order_by('numero_camiseta', 'user__last_name', 'user__first_name')
+    if not jugadores_local_qs.exists():
+        jugadores_local_qs = FichaJugador.objects.filter(
+            equipo=partido.equipo_local,
+            estado_validacion='aprobado'
+        ).select_related('user').order_by('numero_camiseta', 'user__last_name', 'user__first_name')
+        
+    jugadores_visitante_qs = FichaJugador.objects.filter(
+        equipo=partido.equipo_visitante, 
+        torneo=partido.torneo, 
+        estado_validacion='aprobado'
+    ).select_related('user').order_by('numero_camiseta', 'user__last_name', 'user__first_name')
+    if not jugadores_visitante_qs.exists():
+        jugadores_visitante_qs = FichaJugador.objects.filter(
+            equipo=partido.equipo_visitante,
+            estado_validacion='aprobado'
+        ).select_related('user').order_by('numero_camiseta', 'user__last_name', 'user__first_name')
+
+    stats_local = {}
+    stats_visitante = {}
+    eventos_local = []
+    eventos_visitante = []
+    
+    total_goles_local = 0
+    total_goles_visitante = 0
+    total_amarillas_local = 0
+    total_amarillas_visitante = 0
+    total_rojas_local = 0
+    total_rojas_visitante = 0
+    
+    user_ids = [ev.jugador_id for ev in eventos if ev.jugador_id]
+    fichas_todas = FichaJugador.objects.filter(user_id__in=user_ids).select_related('user')
+    fichas_lookup = {}
+    for f in fichas_todas:
+        if f.user_id not in fichas_lookup or f.torneo_id == partido.torneo_id:
+            fichas_lookup[f.user_id] = f
+
+    for ev in eventos:
+        if ev.jugador_id and ev.jugador_id in fichas_lookup:
+            ev.ficha_jugador = fichas_lookup[ev.jugador_id]
+        else:
+            ev.ficha_jugador = None
+            
+        es_local = (ev.equipo_id == partido.equipo_local_id)
+        if es_local:
+            eventos_local.append(ev)
+            if ev.tipo == 'gol':
+                total_goles_local += 1
+            elif ev.tipo == 'amarilla':
+                total_amarillas_local += 1
+            elif ev.tipo == 'roja':
+                total_rojas_local += 1
+        elif ev.equipo_id == partido.equipo_visitante_id:
+            eventos_visitante.append(ev)
+            if ev.tipo == 'gol':
+                total_goles_visitante += 1
+            elif ev.tipo == 'amarilla':
+                total_amarillas_visitante += 1
+            elif ev.tipo == 'roja':
+                total_rojas_visitante += 1
+                
+        target_dict = stats_local if es_local else stats_visitante
+        if ev.jugador_id:
+            if ev.jugador_id not in target_dict:
+                target_dict[ev.jugador_id] = {'goles': [], 'amarillas': [], 'rojas': [], 'cambios': []}
+            if ev.tipo == 'gol':
+                target_dict[ev.jugador_id]['goles'].append(ev.minuto)
+            elif ev.tipo == 'amarilla':
+                target_dict[ev.jugador_id]['amarillas'].append(ev.minuto)
+            elif ev.tipo == 'roja':
+                target_dict[ev.jugador_id]['rojas'].append(ev.minuto)
+            elif ev.tipo == 'cambio':
+                target_dict[ev.jugador_id]['cambios'].append(ev.minuto)
+
+    lista_jugadores_local = []
+    for f in jugadores_local_qs:
+        st = stats_local.get(f.user_id, {'goles': [], 'amarillas': [], 'rojas': [], 'cambios': []})
+        lista_jugadores_local.append({
+            'ficha': f,
+            'goles': st['goles'],
+            'amarillas': st['amarillas'],
+            'rojas': st['rojas'],
+            'cambios': st['cambios'],
+            'tiene_incidencias': bool(st['goles'] or st['amarillas'] or st['rojas'] or st['cambios']),
+        })
+        
+    lista_jugadores_visitante = []
+    for f in jugadores_visitante_qs:
+        st = stats_visitante.get(f.user_id, {'goles': [], 'amarillas': [], 'rojas': [], 'cambios': []})
+        lista_jugadores_visitante.append({
+            'ficha': f,
+            'goles': st['goles'],
+            'amarillas': st['amarillas'],
+            'rojas': st['rojas'],
+            'cambios': st['cambios'],
+            'tiene_incidencias': bool(st['goles'] or st['amarillas'] or st['rojas'] or st['cambios']),
+        })
+
+    dt_local = partido.equipo_local.get_dt_name()
+    dt_visitante = partido.equipo_visitante.get_dt_name()
+
+    context = {
+        'partido': partido,
+        'organizacion': organizacion,
+        'eventos': eventos,
+        'eventos_local': eventos_local,
+        'eventos_visitante': eventos_visitante,
+        'jugadores_local': lista_jugadores_local,
+        'jugadores_visitante': lista_jugadores_visitante,
+        'total_goles_local': total_goles_local if total_goles_local > 0 else partido.goles_local,
+        'total_goles_visitante': total_goles_visitante if total_goles_visitante > 0 else partido.goles_visitante,
+        'total_amarillas_local': total_amarillas_local,
+        'total_amarillas_visitante': total_amarillas_visitante,
+        'total_rojas_local': total_rojas_local,
+        'total_rojas_visitante': total_rojas_visitante,
+        'dt_local': dt_local,
+        'dt_visitante': dt_visitante,
+        'fecha_impresion': timezone.now(),
+        'codigo_acta': f"ACTA-{partido.id:05d}-J{partido.jornada}",
+    }
+    return render(request, 'matches/imprimir_acta_partido.html', context)
+
+
+@login_required
 def gestion_arbitros(request):
     if request.user.role not in ['superadmin', 'comision']:
         messages.error(request, "No tienes autorización para acceder a la gestión de árbitros.")
