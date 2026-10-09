@@ -28,10 +28,12 @@ urlpatterns = [
     
     # Gestión de Árbitros
     path('arbitros/', views.gestion_arbitros, name='gestion_arbitros'),
+    path('arbitros/<int:arbitro_id>/editar/', views.editar_arbitro, name='editar_arbitro'),
     path('arbitros/eliminar/<int:arbitro_id>/', views.eliminar_arbitro, name='eliminar_arbitro'),
     
     # Gestión de Vocales de Mesa
     path('vocales/', views.gestion_vocales, name='gestion_vocales'),
+    path('vocales/<int:vocal_id>/editar/', views.editar_vocal, name='editar_vocal'),
     path('vocales/eliminar/<int:vocal_id>/', views.eliminar_vocal, name='eliminar_vocal'),
     
     # Gestión de Estadios y Canchas

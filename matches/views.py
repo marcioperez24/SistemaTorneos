@@ -8,7 +8,7 @@ from .models import Partido, EventoPartido, Torneo, Estadio, BitacoraTorneo
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Q, F, Count
-from .forms import ArbitroForm, VocalForm, TorneoForm, TorneoEdicionForm, EstadioForm
+from .forms import ArbitroForm, ArbitroEdicionForm, VocalForm, VocalEdicionForm, TorneoForm, TorneoEdicionForm, EstadioForm
 from finances.models import MultaTarjeta
 
 User = get_user_model()
@@ -1052,6 +1052,36 @@ def eliminar_arbitro(request, arbitro_id):
 
 
 @login_required
+def editar_arbitro(request, arbitro_id):
+    if request.user.role not in ['superadmin', 'comision']:
+        messages.error(request, "No tienes autorización para editar árbitros.")
+        return redirect('gestion_arbitros')
+        
+    arbitro = get_object_or_404(User, id=arbitro_id, role='arbitro', organizaciones__organizacion=request.organizacion)
+    
+    if request.method == 'POST':
+        form = ArbitroEdicionForm(request.POST, instance=arbitro)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Árbitro '{arbitro.get_full_name() or arbitro.username}' actualizado exitosamente.")
+            return redirect('gestion_arbitros')
+        else:
+            error_details = []
+            for field_name, errs in form.errors.items():
+                label = form.fields[field_name].label if field_name in form.fields else field_name
+                error_details.append(f"{label}: {', '.join(errs)}")
+            messages.error(request, f"Error al actualizar árbitro: {' | '.join(error_details)}")
+    else:
+        form = ArbitroEdicionForm(instance=arbitro)
+        
+    context = {
+        'form': form,
+        'arbitro': arbitro,
+    }
+    return render(request, 'matches/editar_arbitro.html', context)
+
+
+@login_required
 def gestion_vocales(request):
     if request.user.role not in ['superadmin', 'comision']:
         messages.error(request, "No tienes autorización para acceder a la gestión de vocales de mesa.")
@@ -1070,7 +1100,11 @@ def gestion_vocales(request):
             messages.success(request, f"Vocal de Mesa '{vocal.get_full_name() or vocal.username}' registrado exitosamente.")
             return redirect('gestion_vocales')
         else:
-            messages.error(request, "Error al registrar al vocal de mesa. Por favor, revisa los datos ingresados.")
+            error_details = []
+            for field_name, errs in form.errors.items():
+                label = form.fields[field_name].label if field_name in form.fields else field_name
+                error_details.append(f"{label}: {', '.join(errs)}")
+            messages.error(request, f"Error al registrar al vocal de mesa: {' | '.join(error_details)}")
     else:
         form = VocalForm()
         
@@ -1081,6 +1115,36 @@ def gestion_vocales(request):
         'vocales': vocales,
     }
     return render(request, 'matches/gestion_vocales.html', context)
+
+
+@login_required
+def editar_vocal(request, vocal_id):
+    if request.user.role not in ['superadmin', 'comision']:
+        messages.error(request, "No tienes autorización para editar vocales de mesa.")
+        return redirect('gestion_vocales')
+        
+    vocal = get_object_or_404(User, id=vocal_id, role='vocal', organizaciones__organizacion=request.organizacion)
+    
+    if request.method == 'POST':
+        form = VocalEdicionForm(request.POST, instance=vocal)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Vocal de mesa '{vocal.get_full_name() or vocal.username}' actualizado exitosamente.")
+            return redirect('gestion_vocales')
+        else:
+            error_details = []
+            for field_name, errs in form.errors.items():
+                label = form.fields[field_name].label if field_name in form.fields else field_name
+                error_details.append(f"{label}: {', '.join(errs)}")
+            messages.error(request, f"Error al actualizar vocal: {' | '.join(error_details)}")
+    else:
+        form = VocalEdicionForm(instance=vocal)
+        
+    context = {
+        'form': form,
+        'vocal': vocal,
+    }
+    return render(request, 'matches/editar_vocal.html', context)
 
 
 @login_required

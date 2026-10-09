@@ -64,6 +64,9 @@
                                         <span class="text-muted" style="font-size: 0.95rem;">{{ a.email|default:"Sin correo" }}</span>
                                     </td>
                                     <td class="py-3 text-end px-3">
+                                        <a href="{% url 'editar_arbitro' a.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3 py-1.5 align-middle shadow-sm me-1.5">
+                                            <i class="fa-solid fa-pen-to-square me-1"></i>Editar
+                                        </a>
                                         <form method="POST" action="{% url 'eliminar_arbitro' a.id %}" data-confirm="¿Estás seguro de que deseas eliminar al árbitro {{ a.get_full_name|default:a.username }}? Esta acción no se puede deshacer y los partidos que tenga asignados quedarán sin árbitro." class="d-inline">
                                             {% csrf_token %}
                                             <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1.5 align-middle shadow-sm">

@@ -21,7 +21,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-hf#8-!r-b(ns8-
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 't')
 
-allowed_hosts_env = os.environ.get('DJANGO_ALLOWED_HOSTS', 'torneos.sysacadep.win,torneos.futbolpro.win,127.0.0.1,localhost')
+allowed_hosts_env = os.environ.get('DJANGO_ALLOWED_HOSTS', 'torneos.sysacadep.win,torneos.futbolpro.win,futbolpro.win,sysacadep.win,127.0.0.1,localhost')
 ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_env.split(',') if h.strip()]
 
 
@@ -148,8 +148,30 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
-csrf_origins_env = os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', 'https://torneos.sysacadep.win')
-CSRF_TRUSTED_ORIGINS = [o.strip() for o in csrf_origins_env.split(',') if o.strip()]
+csrf_origins_env = os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '')
+if csrf_origins_env:
+    CSRF_TRUSTED_ORIGINS = [o.strip() for o in csrf_origins_env.split(',') if o.strip()]
+else:
+    CSRF_TRUSTED_ORIGINS = [
+        'https://torneos.futbolpro.win',
+        'http://torneos.futbolpro.win',
+        'https://futbolpro.win',
+        'http://futbolpro.win',
+        'https://torneos.sysacadep.win',
+        'http://torneos.sysacadep.win',
+        'https://sysacadep.win',
+        'http://sysacadep.win',
+        'http://127.0.0.1',
+        'http://localhost',
+    ]
+
+for host in ALLOWED_HOSTS:
+    clean_host = host.lstrip('.').strip()
+    if clean_host and clean_host not in ('*', '127.0.0.1', 'localhost'):
+        for scheme in ('https://', 'http://'):
+            orig = f"{scheme}{clean_host}"
+            if orig not in CSRF_TRUSTED_ORIGINS:
+                CSRF_TRUSTED_ORIGINS.append(orig)
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 

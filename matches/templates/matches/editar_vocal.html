@@ -1,0 +1,123 @@
+{% extends 'teams/base.html' %}
+{% block title %}Editar Vocal de Mesa - {{ vocal.get_full_name|default:vocal.username }} | Sistema Deportivo{% endblock %}
+
+{% block content %}
+<div class="gradient-header text-center py-5 shadow-sm">
+    <div class="container">
+        <h1 class="fw-bold mb-1 display-5">Editar Vocal de Mesa</h1>
+        <p class="text-white-50 mb-0 fs-5">Actualizar los datos de acceso o información de contacto del vocal oficial.</p>
+    </div>
+</div>
+
+<div class="container my-5" style="max-width: 650px;">
+    <div class="card card-custom p-4 border-0 shadow">
+        <div class="d-flex align-items-center mb-4 pb-2 border-bottom">
+            <div class="bg-warning-subtle text-warning rounded-circle p-3 me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                <i class="fa-solid fa-user-pen fa-lg"></i>
+            </div>
+            <div>
+                <h4 class="fw-bold mb-0">{{ vocal.get_full_name|default:vocal.username }}</h4>
+                <p class="text-muted mb-0 small"><code class="text-primary fw-bold">@{{ vocal.username }}</code> &bull; Vocal de Mesa Oficial</p>
+            </div>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+            
+            <!-- Nombre de Usuario -->
+            <div class="mb-3">
+                <label class="form-label fw-semibold text-secondary small mb-1">Nombre de Usuario</label>
+                <div class="input-group shadow-sm-hover">
+                    <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 8px 0 0 8px;"><i class="fa-solid fa-user"></i></span>
+                    <input type="text" name="username" class="form-control border-start-0 py-2.5" placeholder="Nombre de usuario" style="border-radius: 0 8px 8px 0;" value="{{ form.username.value|default:'' }}" required>
+                </div>
+                {% if form.username.errors %}
+                    {% for error in form.username.errors %}
+                        <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <!-- Nombres y Apellidos en dos columnas -->
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold text-secondary small mb-1">Nombre(s)</label>
+                    <div class="input-group shadow-sm-hover">
+                        <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 8px 0 0 8px;"><i class="fa-solid fa-signature"></i></span>
+                        <input type="text" name="first_name" class="form-control border-start-0 py-2.5" placeholder="Ej. Carlos" style="border-radius: 0 8px 8px 0;" value="{{ form.first_name.value|default:'' }}" required>
+                    </div>
+                    {% if form.first_name.errors %}
+                        {% for error in form.first_name.errors %}
+                            <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold text-secondary small mb-1">Apellido(s)</label>
+                    <div class="input-group shadow-sm-hover">
+                        <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 8px 0 0 8px;"><i class="fa-solid fa-signature"></i></span>
+                        <input type="text" name="last_name" class="form-control border-start-0 py-2.5" placeholder="Ej. Gómez" style="border-radius: 0 8px 8px 0;" value="{{ form.last_name.value|default:'' }}" required>
+                    </div>
+                    {% if form.last_name.errors %}
+                        {% for error in form.last_name.errors %}
+                            <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Email y Teléfono -->
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold text-secondary small mb-1">Correo Electrónico</label>
+                    <div class="input-group shadow-sm-hover">
+                        <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 8px 0 0 8px;"><i class="fa-solid fa-envelope"></i></span>
+                        <input type="email" name="email" class="form-control border-start-0 py-2.5" placeholder="carlos@example.com" style="border-radius: 0 8px 8px 0;" value="{{ form.email.value|default:'' }}">
+                    </div>
+                    {% if form.email.errors %}
+                        {% for error in form.email.errors %}
+                            <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold text-secondary small mb-1">Teléfono / WhatsApp</label>
+                    <div class="input-group shadow-sm-hover">
+                        <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 8px 0 0 8px;"><i class="fa-solid fa-phone"></i></span>
+                        <input type="text" name="telefono" class="form-control border-start-0 py-2.5" placeholder="Ej. 0987654321" style="border-radius: 0 8px 8px 0;" value="{{ form.telefono.value|default:'' }}">
+                    </div>
+                    {% if form.telefono.errors %}
+                        {% for error in form.telefono.errors %}
+                            <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ error }}</div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Cambio de Contraseña Opcional -->
+            <div class="mb-4">
+                <label class="form-label fw-semibold text-secondary small mb-1">Nueva Contraseña <span class="text-muted fw-normal">(Opcional)</span></label>
+                <div class="input-group shadow-sm-hover">
+                    <span class="input-group-text bg-light border-end-0 text-muted" style="border-radius: 8px 0 0 8px;"><i class="fa-solid fa-key"></i></span>
+                    <input type="password" name="password" class="form-control border-start-0 py-2.5" placeholder="Dejar en blanco para no cambiarla" style="border-radius: 0 8px 8px 0;">
+                </div>
+                <div class="form-text text-muted small mt-1">Solo ingresa un valor si deseas actualizar la clave de acceso del vocal.</div>
+                {% if form.password.errors %}
+                    {% for error in form.password.errors %}
+                        <div class="text-danger small mt-1"><i class="fa-solid fa-circle-exclamation me-1"></i>{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center pt-2">
+                <a href="{% url 'gestion_vocales' %}" class="btn btn-outline-secondary rounded-pill px-4">
+                    <i class="fa-solid fa-arrow-left me-1.5"></i>Volver
+                </a>
+                <button type="submit" class="btn btn-custom-accent rounded-pill px-4 shadow-sm fw-bold">
+                    <i class="fa-solid fa-floppy-disk me-1.5"></i>Guardar Cambios
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

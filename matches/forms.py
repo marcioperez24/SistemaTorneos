@@ -101,6 +101,102 @@ class VocalForm(forms.ModelForm):
         return user
 
 
+class VocalEdicionForm(forms.ModelForm):
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Dejar en blanco para mantener la contraseña actual'}),
+        label="Nueva Contraseña (Opcional)",
+        required=False
+    )
+    
+    class Meta:
+        model = User
+        fields = ['username', 'first_name', 'last_name', 'email', 'telefono', 'password']
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de usuario'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Carlos'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Gómez'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Ej. carlos.gomez@example.com'}),
+            'telefono': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. 0987654321'}),
+        }
+        labels = {
+            'username': 'Nombre de Usuario',
+            'first_name': 'Nombre(s)',
+            'last_name': 'Apellido(s)',
+            'email': 'Correo Electrónico',
+            'telefono': 'Teléfono / Celular',
+            'password': 'Nueva Contraseña (Opcional)',
+        }
+
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if User.objects.filter(username=username).exclude(id=self.instance.id).exists():
+            raise forms.ValidationError("Este nombre de usuario ya pertenece a otra persona.")
+        return username
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if email and User.objects.filter(email=email).exclude(id=self.instance.id).exists():
+            raise forms.ValidationError("Este correo electrónico ya está registrado.")
+        return email
+
+    def save(self, commit=True):
+        vocal = super().save(commit=False)
+        password = self.cleaned_data.get('password')
+        if password:
+            vocal.set_password(password)
+        if commit:
+            vocal.save()
+        return vocal
+
+
+class ArbitroEdicionForm(forms.ModelForm):
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Dejar en blanco para mantener la contraseña actual'}),
+        label="Nueva Contraseña (Opcional)",
+        required=False
+    )
+    
+    class Meta:
+        model = User
+        fields = ['username', 'first_name', 'last_name', 'email', 'telefono', 'password']
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre de usuario'}),
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Juan'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Pérez'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Ej. juan.perez@example.com'}),
+            'telefono': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. 0987654321'}),
+        }
+        labels = {
+            'username': 'Nombre de Usuario',
+            'first_name': 'Nombre(s)',
+            'last_name': 'Apellido(s)',
+            'email': 'Correo Electrónico',
+            'telefono': 'Teléfono / Celular',
+            'password': 'Nueva Contraseña (Opcional)',
+        }
+
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if User.objects.filter(username=username).exclude(id=self.instance.id).exists():
+            raise forms.ValidationError("Este nombre de usuario ya pertenece a otra persona.")
+        return username
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if email and User.objects.filter(email=email).exclude(id=self.instance.id).exists():
+            raise forms.ValidationError("Este correo electrónico ya está registrado.")
+        return email
+
+    def save(self, commit=True):
+        arbitro = super().save(commit=False)
+        password = self.cleaned_data.get('password')
+        if password:
+            arbitro.set_password(password)
+        if commit:
+            arbitro.save()
+        return arbitro
+
+
 from .models import Torneo, Estadio
 
 class EstadioForm(forms.ModelForm):
