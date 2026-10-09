@@ -21,8 +21,21 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-hf#8-!r-b(ns8-
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False').lower() in ('true', '1', 't')
 
-allowed_hosts_env = os.environ.get('DJANGO_ALLOWED_HOSTS', 'torneos.sysacadep.win,torneos.futbolpro.win,futbolpro.win,sysacadep.win,127.0.0.1,localhost')
-ALLOWED_HOSTS = [h.strip() for h in allowed_hosts_env.split(',') if h.strip()]
+DEFAULT_ALLOWED_HOSTS = [
+    'torneos.futbolpro.win',
+    'futbolpro.win',
+    'torneos.sysacadep.win',
+    'sysacadep.win',
+    '127.0.0.1',
+    'localhost',
+]
+
+allowed_hosts_env = os.environ.get('DJANGO_ALLOWED_HOSTS', '')
+if allowed_hosts_env:
+    env_hosts = [h.strip() for h in allowed_hosts_env.split(',') if h.strip()]
+    ALLOWED_HOSTS = list(dict.fromkeys(DEFAULT_ALLOWED_HOSTS + env_hosts))
+else:
+    ALLOWED_HOSTS = DEFAULT_ALLOWED_HOSTS.copy()
 
 
 # Application definition
@@ -148,22 +161,29 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
+DEFAULT_CSRF_ORIGINS = [
+    'https://torneos.futbolpro.win',
+    'http://torneos.futbolpro.win',
+    'https://futbolpro.win',
+    'http://futbolpro.win',
+    'https://*.futbolpro.win',
+    'http://*.futbolpro.win',
+    'https://torneos.sysacadep.win',
+    'http://torneos.sysacadep.win',
+    'https://sysacadep.win',
+    'http://sysacadep.win',
+    'https://*.sysacadep.win',
+    'http://*.sysacadep.win',
+    'http://127.0.0.1',
+    'http://localhost',
+    'http://127.0.0.1:8001',
+    'http://localhost:8001',
+]
+
 csrf_origins_env = os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '')
-if csrf_origins_env:
-    CSRF_TRUSTED_ORIGINS = [o.strip() for o in csrf_origins_env.split(',') if o.strip()]
-else:
-    CSRF_TRUSTED_ORIGINS = [
-        'https://torneos.futbolpro.win',
-        'http://torneos.futbolpro.win',
-        'https://futbolpro.win',
-        'http://futbolpro.win',
-        'https://torneos.sysacadep.win',
-        'http://torneos.sysacadep.win',
-        'https://sysacadep.win',
-        'http://sysacadep.win',
-        'http://127.0.0.1',
-        'http://localhost',
-    ]
+env_csrf = [o.strip() for o in csrf_origins_env.split(',') if o.strip()] if csrf_origins_env else []
+
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(DEFAULT_CSRF_ORIGINS + env_csrf))
 
 for host in ALLOWED_HOSTS:
     clean_host = host.lstrip('.').strip()
@@ -172,6 +192,9 @@ for host in ALLOWED_HOSTS:
             orig = f"{scheme}{clean_host}"
             if orig not in CSRF_TRUSTED_ORIGINS:
                 CSRF_TRUSTED_ORIGINS.append(orig)
+            wildcard = f"{scheme}*.{clean_host}"
+            if wildcard not in CSRF_TRUSTED_ORIGINS:
+                CSRF_TRUSTED_ORIGINS.append(wildcard)
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 

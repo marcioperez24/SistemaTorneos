@@ -59,6 +59,16 @@ jobs:
             git fetch origin main
             git pull --ff-only origin main
 
+            # Asegurar sincronización de variables en .env si existe
+            if [ -f .env ]; then
+              if grep -q "DJANGO_ALLOWED_HOSTS" .env && ! grep -q "torneos.futbolpro.win" .env; then
+                sed -i 's/DJANGO_ALLOWED_HOSTS=.*/&,torneos.futbolpro.win,futbolpro.win/' .env || true
+              fi
+              if grep -q "DJANGO_CSRF_TRUSTED_ORIGINS" .env && ! grep -q "torneos.futbolpro.win" .env; then
+                sed -i 's|DJANGO_CSRF_TRUSTED_ORIGINS=.*|&,https://torneos.futbolpro.win,https://futbolpro.win,http://torneos.futbolpro.win|' .env || true
+              fi
+            fi
+
             source .venv/bin/activate
 
             pip install -r requirements.txt
