@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.utils import timezone
 from .models import PagoInscripcion, MultaTarjeta, MovimientoCaja
 from teams.models import Equipo, FichaJugador
-from matches.models import EventoPartido, Partido
+from matches.models import EventoPartido, Partido, Torneo
 from django.db.models import Sum
 from decimal import Decimal
 
@@ -79,6 +79,7 @@ def resumen_financiero(request):
     multas = MultaTarjeta.objects.filter(organizacion=request.organizacion).select_related('jugador', 'equipo', 'partido').order_by('-id')
     movimientos = MovimientoCaja.objects.filter(organizacion=request.organizacion).select_related('registrado_por').order_by('-fecha')[:50]
     partidos_recientes = Partido.objects.filter(organizacion=request.organizacion).select_related('equipo_local', 'equipo_visitante', 'torneo').order_by('-id')[:60]
+    torneos = Torneo.objects.filter(organizacion=request.organizacion).order_by('-id')
 
     context = {
         'total_inscripciones': total_inscripciones,
@@ -91,6 +92,7 @@ def resumen_financiero(request):
         'movimientos': movimientos,
         'equipos': equipos,
         'partidos_recientes': partidos_recientes,
+        'torneos': torneos,
     }
     return render(request, 'finances/resumen.html', context)
 

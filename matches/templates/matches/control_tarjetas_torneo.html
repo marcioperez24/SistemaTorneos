@@ -113,9 +113,9 @@
                 <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
             </a>
             <!-- Imprimir Reporte -->
-            <button type="button" onclick="window.print()" class="btn btn-dark rounded-pill px-3 py-2 btn-sm fw-bold shadow-sm">
+            <a href="{% url 'imprimir_reporte_tarjetas_torneo' torneo.id %}" target="_blank" class="btn btn-dark rounded-pill px-3 py-2 btn-sm fw-bold shadow-sm">
                 <i class="bi bi-printer me-1"></i> Imprimir Reporte
-            </button>
+            </a>
         </div>
     </div>
 
@@ -350,21 +350,24 @@
                                         {% endif %}
                                     </td>
                                     <td class="text-center pe-3">
-                                        {% if item.tiene_deuda %}
-                                            {% if es_admin %}
-                                                <form action="{% url 'pagar_multas_equipo_torneo' torneo.id item.equipo.id %}" method="POST" class="d-inline" onsubmit="return confirm('¿Confirmas el cobro y registro de ${{ item.monto_pendiente }} en Tesorería para el equipo {{ item.equipo.nombre }}?');">
-                                                    {% csrf_token %}
-                                                    <input type="hidden" name="metodo_pago" value="efectivo">
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-3 py-1 shadow-sm d-inline-flex align-items-center gap-1">
-                                                        <i class="bi bi-cash-coin"></i> Cobrar Todo
-                                                    </button>
-                                                </form>
-                                            {% else %}
-                                                <span class="badge bg-warning-subtle text-warning-emphasis">Pendiente</span>
+                                        <div class="d-inline-flex align-items-center gap-1">
+                                            {% if item.tiene_deuda %}
+                                                {% if es_admin %}
+                                                    <form action="{% url 'pagar_multas_equipo_torneo' torneo.id item.equipo.id %}" method="POST" class="d-inline" onsubmit="return confirm('¿Confirmas el cobro y registro de ${{ item.monto_pendiente }} en Tesorería para el equipo {{ item.equipo.nombre }}?');">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="metodo_pago" value="efectivo">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill fw-bold px-2.5 py-1 shadow-sm d-inline-flex align-items-center gap-1" title="Cobrar todas las multas del equipo">
+                                                            <i class="bi bi-cash-coin"></i> Cobrar
+                                                        </button>
+                                                    </form>
+                                                {% else %}
+                                                    <span class="badge bg-warning-subtle text-warning-emphasis">Pendiente</span>
+                                                {% endif %}
                                             {% endif %}
-                                        {% else %}
-                                            <span class="text-muted small"><i class="bi bi-dash"></i></span>
-                                        {% endif %}
+                                            <a href="{% url 'imprimir_reporte_tarjetas_torneo' torneo.id %}?tipo=equipo&equipo_id={{ item.equipo.id }}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 shadow-sm d-inline-flex align-items-center gap-1" title="Imprimir Estado de Cuenta / Boleta">
+                                                <i class="bi bi-printer"></i> Boleta
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% empty %}
@@ -417,6 +420,9 @@
                                         {% else %}
                                             <span class="badge bg-success-subtle text-success rounded-pill px-2 py-1">Al Día</span>
                                         {% endif %}
+                                        <a href="{% url 'imprimir_reporte_tarjetas_torneo' torneo.id %}?tipo=jornada&jornada={{ f.numero_fecha }}" target="_blank" class="btn btn-outline-dark btn-sm rounded-pill px-2.5 py-0.5 ms-1" title="Imprimir Planilla de la Fecha {{ f.numero_fecha }}">
+                                            <i class="bi bi-printer me-1"></i>Imprimir Fecha
+                                        </a>
                                     </div>
                                 </div>
                                 <div class="card-body p-0">

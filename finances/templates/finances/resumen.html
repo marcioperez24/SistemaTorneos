@@ -184,6 +184,25 @@
                         <button type="button" class="btn btn-outline-secondary btn-filtro-multa" data-filtro="pendiente">Pendientes</button>
                         <button type="button" class="btn btn-outline-secondary btn-filtro-multa" data-filtro="pagado">Cobradas</button>
                     </div>
+                    <!-- Reportes de Multas por Torneo -->
+                    {% if torneos %}
+                    <div class="dropdown">
+                        <button class="btn btn-outline-primary btn-sm rounded-pill px-3 dropdown-toggle fw-bold" type="button" data-bs-toggle="dropdown">
+                            <i class="fa-solid fa-file-invoice me-1"></i>Reportes por Torneo
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="max-height: 280px; overflow-y: auto;">
+                            <li class="dropdown-header text-uppercase fs-9 fw-bold">Seleccionar Torneo</li>
+                            {% for t in torneos %}
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center justify-content-between py-2" href="{% url 'imprimir_reporte_tarjetas_torneo' t.id %}" target="_blank">
+                                    <span class="text-truncate fw-semibold" style="max-width: 200px;">{{ t.nombre }}</span>
+                                    <i class="fa-solid fa-print text-muted fs-8 ms-2"></i>
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
                     <!-- Botón Registrar Multa Manual -->
                     <button type="button" class="btn btn-danger btn-sm px-3 rounded-pill" data-bs-toggle="modal" data-bs-target="#modalMultaManual">
                         <i class="fa-solid fa-circle-plus me-1.5"></i>Registrar Multa / Arbitraje

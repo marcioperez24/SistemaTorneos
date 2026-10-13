@@ -104,6 +104,7 @@ urlpatterns = [
     path('torneos/<int:torneo_id>/exportar-excel-consolidado/', views_panel_personalizado.exportar_excel_consolidado_view, name='exportar_excel_consolidado_personalizado'),
     path('torneos/<int:torneo_id>/imprimir-consolidado/', views_panel_personalizado.imprimir_torneo_consolidado_view, name='imprimir_torneo_consolidado_personalizado'),
     path('torneos/<int:torneo_id>/tarjetas/', views_tarjetas_torneo.control_tarjetas_torneo_view, name='control_tarjetas_torneo'),
+    path('torneos/<int:torneo_id>/tarjetas/imprimir/', views_tarjetas_torneo.imprimir_reporte_tarjetas_torneo, name='imprimir_reporte_tarjetas_torneo'),
     path('torneos/<int:torneo_id>/tarjetas/excel/', views_tarjetas_torneo.exportar_excel_tarjetas_torneo, name='exportar_excel_tarjetas_torneo'),
     path('torneos/<int:torneo_id>/tarjetas/pagar-equipo/<int:equipo_id>/', views_tarjetas_torneo.pagar_multas_equipo_torneo, name='pagar_multas_equipo_torneo'),
     path('publico/torneo/<uuid:public_uuid>/', views_publica_personalizado.vista_publica_torneo_view, name='vista_publica_torneo'),

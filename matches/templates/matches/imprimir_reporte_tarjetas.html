@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Multas y Sanciones - {{ torneo.nombre }}</title>
+    <!-- Bootstrap 5 & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary-color: #1e3a8a;
+            --accent-yellow: #d97706;
+            --accent-red: #dc2626;
+            --accent-green: #059669;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f1f5f9;
+            color: #0f172a;
+            margin: 0;
+            padding: 0;
+            font-size: 13px;
+        }
+
+        /* Toolbar interactivo flotante (no se imprime) */
+        .print-toolbar {
+            background: #ffffff;
+            border-bottom: 2px solid #e2e8f0;
+            padding: 12px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Hoja de impresión tipo A4 / Letter */
+        .sheet-container {
+            max-width: 1024px;
+            margin: 24px auto;
+            background: #ffffff;
+            padding: 40px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.07);
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .header-logo {
+            max-height: 70px;
+            max-width: 130px;
+            object-fit: contain;
+        }
+
+        .header-title-box {
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+
+        .badge-tarjeta-amarilla {
+            background-color: #fef3c7;
+            color: #92400e;
+            border: 1px solid #f59e0b;
+            font-weight: 700;
+        }
+
+        .badge-tarjeta-roja {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+            font-weight: 700;
+        }
+
+        .table-custom {
+            border-color: #cbd5e1;
+            font-size: 12px;
+        }
+
+        .table-custom th {
+            background-color: #0f172a !important;
+            color: #ffffff !important;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            padding: 8px 10px;
+            vertical-align: middle;
+        }
+
+        .table-custom td {
+            padding: 8px 10px;
+            vertical-align: middle;
+            border-color: #e2e8f0;
+        }
+
+        .kpi-print-box {
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 10px 14px;
+            background: #f8fafc;
+        }
+
+        .signature-box {
+            margin-top: 50px;
+            padding-top: 10px;
+        }
+
+        .signature-line {
+            border-top: 1.5px solid #0f172a;
+            width: 80%;
+            margin: 0 auto 6px auto;
+        }
+
+        .page-break {
+            page-break-after: always;
+            break-after: page;
+        }
+
+        /* Reglas estrictas de impresión */
+        @media print {
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                font-size: 11px !important;
+            }
+
+            .print-toolbar {
+                display: none !important;
+            }
+
+            .sheet-container {
+                margin: 0 !important;
+                padding: 15px !important;
+                box-shadow: none !important;
+                border: none !important;
+                max-width: 100% !important;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .table-custom th {
+                background-color: #1e293b !important;
+                color: #ffffff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .kpi-print-box {
+                background: #f8fafc !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .badge-tarjeta-amarilla, .badge-tarjeta-roja {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ================= TOOLBAR DE CONTROL INTERACTIVO ================= -->
+    <div class="print-toolbar no-print">
+        <div class="container-fluid d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <a href="{% url 'control_tarjetas_torneo' torneo.id %}" class="btn btn-outline-secondary btn-sm rounded-pill fw-semibold">
+                    <i class="bi bi-arrow-left me-1"></i> Volver al Control
+                </a>
+                <div class="vr"></div>
+                <h6 class="mb-0 fw-bold text-dark d-none d-md-block">
+                    <i class="bi bi-file-earmark-bar-graph text-primary me-1"></i> Reporte Disciplinario & Tesorería
+                </h6>
+            </div>
+
+            <!-- Controles de Filtros Dinámicos -->
+            <form method="GET" class="d-flex flex-wrap align-items-center gap-2 m-0" id="filterForm">
+                <!-- Modo de Reporte -->
+                <div class="d-flex align-items-center gap-1">
+                    <label class="small text-muted fw-bold text-uppercase" style="font-size: 11px;">Vista:</label>
+                    <select name="tipo" class="form-select form-select-sm rounded-pill fw-semibold" style="width: 195px;" onchange="actualizarModo(this.value)">
+                        <option value="total" {% if tipo == 'total' %}selected{% endif %}>📊 Consolidado General</option>
+                        <option value="equipo" {% if tipo == 'equipo' %}selected{% endif %}>🛡️ Por Equipo (Estado de Cuenta)</option>
+                        <option value="jornada" {% if tipo == 'jornada' %}selected{% endif %}>📅 Por Programación / Fecha</option>
+                        <option value="historial" {% if tipo == 'historial' %}selected{% endif %}>📋 Historial Completo</option>
+                    </select>
+                </div>
+
+                <!-- Selector de Equipo (cuando tipo == equipo) -->
+                <div id="selectorEquipoContainer" class="{% if tipo != 'equipo' %}d-none{% endif %}">
+                    <select name="equipo_id" class="form-select form-select-sm rounded-pill" style="width: 190px;" onchange="this.form.submit()">
+                        <option value="">-- Todos los Equipos --</option>
+                        {% for eq in lista_equipos %}
+                            <option value="{{ eq.id }}" {% if equipo_id == eq.id|stringformat:"i" %}selected{% endif %}>{{ eq.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Selector de Jornada (cuando tipo == jornada) -->
+                <div id="selectorJornadaContainer" class="{% if tipo != 'jornada' %}d-none{% endif %}">
+                    <select name="jornada" class="form-select form-select-sm rounded-pill" style="width: 170px;" onchange="this.form.submit()">
+                        <option value="">-- Todas las Fechas --</option>
+                        {% for j_num in lista_jornadas %}
+                            <option value="{{ j_num }}" {% if jornada == j_num|stringformat:"i" %}selected{% endif %}>Fecha / Jornada {{ j_num }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Filtro de Estado -->
+                <div>
+                    <select name="estado" class="form-select form-select-sm rounded-pill" style="width: 150px;" onchange="this.form.submit()">
+                        <option value="todos" {% if filtro_estado == 'todos' %}selected{% endif %}>Todos los Estados</option>
+                        <option value="pendiente" {% if filtro_estado == 'pendiente' %}selected{% endif %}>⚠️ Solo Pendientes</option>
+                        <option value="pagado" {% if filtro_estado == 'pagado' %}selected{% endif %}>✅ Solo Pagadas</option>
+                    </select>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="d-flex align-items-center gap-2 ms-lg-2">
+                    <button type="button" onclick="window.print()" class="btn btn-primary btn-sm rounded-pill fw-bold px-3 shadow-sm">
+                        <i class="bi bi-printer me-1"></i> Imprimir / PDF
+                    </button>
+                    <a id="btnExcel" href="{% url 'exportar_excel_tarjetas_torneo' torneo.id %}?tipo={{ tipo }}&equipo_id={{ equipo_id }}&jornada={{ jornada }}" class="btn btn-success btn-sm rounded-pill fw-bold px-3 shadow-sm">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Excel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================= HOJA DE IMPRESIÓN ================= -->
+    <div class="sheet-container">
+        
+        <!-- ENCABEZADO INSTITUCIONAL -->
+        <div class="row align-items-center header-title-box">
+            <div class="col-3 text-start">
+                {% if torneo.organizacion.logo %}
+                    <img src="{{ torneo.organizacion.logo.url }}" alt="Logo" class="header-logo">
+                {% else %}
+                    <div class="fw-bold text-primary fs-5 text-uppercase">
+                        <i class="bi bi-trophy-fill me-1"></i> {{ torneo.organizacion.nombre }}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="col-6 text-center">
+                <div class="text-uppercase fw-bold text-muted small tracking-wide" style="letter-spacing: 1px;">
+                    {{ torneo.organizacion.nombre }}
+                </div>
+                <h3 class="fw-bold mb-1 text-dark text-uppercase">{{ torneo.nombre }}</h3>
+                <div class="text-muted small fw-semibold">
+                    Categoría: {{ torneo.categoria.nombre|default:"General" }} &bull; Temporada {{ torneo.temporada }} &bull; {{ torneo.modalidad }}
+                </div>
+                <div class="badge bg-dark rounded-pill px-3 py-1 mt-1 fs-8">
+                    {% if tipo == 'equipo' %}
+                        {% if equipo_seleccionado %}
+                            ESTADO DE CUENTA Y LIQUIDACIÓN - CLUB {{ equipo_seleccionado.equipo.nombre|upper }}
+                        {% else %}
+                            ESTADOS DE CUENTA POR EQUIPO (CONSOLIDADO DISCIPLINARIO)
+                        {% endif %}
+                    {% elif tipo == 'jornada' %}
+                        {% if jornada_seleccionada %}
+                            PLANILLA OFICIAL DE SANCIONES - FECHA {{ jornada_seleccionada.numero_fecha }}
+                        {% else %}
+                            PLANILLA DISCIPLINARIA POR PROGRAMACIÓN DE FECHAS
+                        {% endif %}
+                    {% elif tipo == 'historial' %}
+                        HISTORIAL CRONOLÓGICO DE AMONESTACIONES Y MULTAS
+                    {% else %}
+                        INFORME GENERAL DE CONTROL DISCIPLINARIO Y MULTAS DE TESORERÍA
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-3 text-end small">
+                <div class="fw-bold text-dark">Emisión Oficial</div>
+                <div class="text-muted">{{ fecha_impresion|date:"d/m/Y" }}</div>
+                <div class="text-muted">{{ fecha_impresion|date:"H:i" }} hrs</div>
+                <div class="text-muted mt-1" style="font-size: 10px;">
+                    Tarifas: Amarilla ${{ torneo.costo_amarilla|floatformat:2 }} | Roja ${{ torneo.costo_roja|floatformat:2 }}
+                </div>
+            </div>
+        </div>
+
+        <!-- RESUMEN DE CIFRAS FINANCIERAS (KPIS) -->
+        <div class="row g-2 mb-4">
+            <div class="col">
+                <div class="kpi-print-box text-center">
+                    <div class="text-muted small text-uppercase fw-semibold" style="font-size: 10px;">Amarillas</div>
+                    <div class="fs-5 fw-bold text-warning">{{ totales.amarillas_count }}</div>
+                    <div class="text-muted small" style="font-size: 10px;">${{ totales.monto_amarillas|floatformat:2 }}</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="kpi-print-box text-center">
+                    <div class="text-muted small text-uppercase fw-semibold" style="font-size: 10px;">Rojas</div>
+                    <div class="fs-5 fw-bold text-danger">{{ totales.rojas_count }}</div>
+                    <div class="text-muted small" style="font-size: 10px;">${{ totales.monto_rojas|floatformat:2 }}</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="kpi-print-box text-center">
+                    <div class="text-muted small text-uppercase fw-semibold" style="font-size: 10px;">Total Sanciones</div>
+                    <div class="fs-5 fw-bold text-dark">${{ totales.monto_total|floatformat:2 }}</div>
+                    <div class="text-muted small" style="font-size: 10px;">{{ totales.total_sanciones }} tarjetas</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="kpi-print-box text-center">
+                    <div class="text-muted small text-uppercase fw-semibold" style="font-size: 10px;">Recaudado Caja</div>
+                    <div class="fs-5 fw-bold text-success">${{ totales.monto_pagado|floatformat:2 }}</div>
+                    <div class="text-success small fw-semibold" style="font-size: 10px;">{{ totales.multas_pagadas_count }} pagadas</div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="kpi-print-box text-center">
+                    <div class="text-muted small text-uppercase fw-semibold" style="font-size: 10px;">Saldo por Cobrar</div>
+                    <div class="fs-5 fw-bold {% if totales.monto_pendiente > 0 %}text-danger{% else %}text-muted{% endif %}">${{ totales.monto_pendiente|floatformat:2 }}</div>
+                    <div class="{% if totales.monto_pendiente > 0 %}text-danger{% else %}text-muted{% endif %} small fw-semibold" style="font-size: 10px;">{{ totales.multas_pendientes_count }} pendientes</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= CONTENIDO DEL REPORTE SEGÚN EL TIPO ================= -->
+
+        <!-- 1. VISTA: ESTADO DE CUENTA POR EQUIPO (INDIVIDUAL O TODOS) -->
+        {% if tipo == 'equipo' %}
+            {% if equipo_seleccionado %}
+                <!-- Reporte Individual de Un Solo Equipo -->
+                <div class="card border rounded-3 mb-4 p-3 bg-light">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center">
+                        <div>
+                            <h4 class="fw-bold mb-0 text-dark">{{ equipo_seleccionado.equipo.nombre }}</h4>
+                            <span class="text-muted small">Grupo: {{ equipo_seleccionado.grupo_nombre }}</span>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge {% if equipo_seleccionado.monto_pendiente > 0 %}bg-danger{% else %}bg-success{% endif %} fs-7 px-3 py-1.5 rounded-pill">
+                                {% if equipo_seleccionado.monto_pendiente > 0 %}
+                                    DEUDA PENDIENTE: ${{ equipo_seleccionado.monto_pendiente|floatformat:2 }}
+                                {% else %}
+                                    AL DÍA EN TESORERÍA
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="fw-bold text-dark text-uppercase mb-2">Desglose de Amonestaciones y Multas</h6>
+                <table class="table table-bordered table-sm table-custom align-middle">
+                    <thead>
+                        <tr>
+                            <th class="text-center" style="width: 5%;">#</th>
+                            <th style="width: 15%;">Fecha / Jornada</th>
+                            <th style="width: 25%;">Partido / Rival</th>
+                            <th style="width: 8%;">Min</th>
+                            <th class="text-center" style="width: 12%;">Tarjeta</th>
+                            <th>Deportista Sancionado</th>
+                            <th class="text-end" style="width: 12%;">Monto ($)</th>
+                            <th class="text-center" style="width: 12%;">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in equipo_seleccionado.multas_list %}
+                            {% if filtro_estado == 'todos' or m.estado == filtro_estado %}
+                            <tr>
+                                <td class="text-center text-muted">{{ forloop.counter }}</td>
+                                <td>Fecha {{ m.partido.jornada|default:"-" }}</td>
+                                <td>
+                                    {% if m.partido %}
+                                        {% if m.partido.equipo_local_id == equipo_seleccionado.equipo.id %}
+                                            vs {{ m.partido.equipo_visitante.nombre }}
+                                        {% else %}
+                                            vs {{ m.partido.equipo_local.nombre }}
+                                        {% endif %}
+                                    {% else %}
+                                        Sanción Administrativa
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">{{ m.evento.minuto|default:"-" }}'</td>
+                                <td class="text-center">
+                                    {% if m.motivo == 'amarilla' %}
+                                        <span class="badge badge-tarjeta-amarilla px-2 py-0.5 rounded-pill">Amarilla</span>
+                                    {% elif m.motivo == 'roja' %}
+                                        <span class="badge badge-tarjeta-roja px-2 py-0.5 rounded-pill">Roja</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary px-2 py-0.5 rounded-pill">{{ m.get_motivo_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="fw-bold">{{ m.jugador.get_full_name|default:m.jugador.username|default:"Sanción al Club" }}</td>
+                                <td class="text-end font-monospace fw-bold">${{ m.monto|floatformat:2 }}</td>
+                                <td class="text-center">
+                                    {% if m.estado == 'pagado' %}
+                                        <span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>Pagado</span>
+                                    {% else %}
+                                        <span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i>Pendiente</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                        {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center py-3 text-muted fst-italic">Este equipo no registra tarjetas ni multas en el torneo.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-light fw-bold">
+                        <tr>
+                            <td colspan="6" class="text-end text-uppercase">Total Facturado:</td>
+                            <td class="text-end font-monospace">${{ equipo_seleccionado.monto_total|floatformat:2 }}</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td colspan="6" class="text-end text-uppercase text-success">Total Cobrado en Tesorería:</td>
+                            <td class="text-end font-monospace text-success">${{ equipo_seleccionado.monto_pagado|floatformat:2 }}</td>
+                            <td></td>
+                        </tr>
+                        <tr class="table-warning">
+                            <td colspan="6" class="text-end text-uppercase text-danger fs-6">Saldo Pendiente a Cancelar:</td>
+                            <td class="text-end font-monospace text-danger fs-6">${{ equipo_seleccionado.monto_pendiente|floatformat:2 }}</td>
+                            <td class="text-center text-danger">{% if equipo_seleccionado.monto_pendiente > 0 %}OBLIGATORIO{% else %}AL DÍA{% endif %}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+            {% else %}
+                <!-- Todos los Equipos (Desglose uno tras otro para impresión masiva) -->
+                {% for ed in equipos_data %}
+                    {% if filtro_estado == 'todos' or ed.monto_pendiente > 0 and filtro_estado == 'pendiente' or ed.monto_pagado > 0 and filtro_estado == 'pagado' %}
+                    <div class="border rounded-3 p-3 mb-4 {% if not forloop.last %}page-break{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                            <div>
+                                <h5 class="fw-bold mb-0 text-dark">{{ ed.equipo.nombre }}</h5>
+                                <span class="text-muted small">Grupo: {{ ed.grupo_nombre }} &bull; Tarjetas: {{ ed.total_tarjetas }} ({{ ed.amarillas }} A / {{ ed.rojas }} R)</span>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge {% if ed.monto_pendiente > 0 %}bg-danger{% else %}bg-success{% endif %} fs-8 px-2.5 py-1 rounded-pill">
+                                    Saldo: ${{ ed.monto_pendiente|floatformat:2 }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <table class="table table-bordered table-sm table-custom align-middle mb-2">
+                            <thead>
+                                <tr>
+                                    <th style="width: 15%;">Fecha</th>
+                                    <th style="width: 25%;">Partido</th>
+                                    <th class="text-center" style="width: 10%;">Min</th>
+                                    <th class="text-center" style="width: 15%;">Tarjeta</th>
+                                    <th>Deportista Sancionado</th>
+                                    <th class="text-end" style="width: 15%;">Monto ($)</th>
+                                    <th class="text-center" style="width: 15%;">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for m in ed.multas_list %}
+                                    {% if filtro_estado == 'todos' or m.estado == filtro_estado %}
+                                    <tr>
+                                        <td>Fecha {{ m.partido.jornada|default:"-" }}</td>
+                                        <td>
+                                            {% if m.partido %}
+                                                {% if m.partido.equipo_local_id == ed.equipo.id %}
+                                                    vs {{ m.partido.equipo_visitante.nombre }}
+                                                {% else %}
+                                                    vs {{ m.partido.equipo_local.nombre }}
+                                                {% endif %}
+                                            {% else %}-{% endif %}
+                                        </td>
+                                        <td class="text-center">{{ m.evento.minuto|default:"-" }}'</td>
+                                        <td class="text-center">
+                                            {% if m.motivo == 'amarilla' %}
+                                                <span class="badge badge-tarjeta-amarilla px-2 py-0.5 rounded-pill">Amarilla</span>
+                                            {% elif m.motivo == 'roja' %}
+                                                <span class="badge badge-tarjeta-roja px-2 py-0.5 rounded-pill">Roja</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary px-2 py-0.5 rounded-pill">{{ m.get_motivo_display }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="fw-bold">{{ m.jugador.get_full_name|default:m.jugador.username|default:"Equipo" }}</td>
+                                        <td class="text-end font-monospace">${{ m.monto|floatformat:2 }}</td>
+                                        <td class="text-center fw-semibold {% if m.estado == 'pagado' %}text-success{% else %}text-danger{% endif %}">
+                                            {{ m.get_estado_display }}
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted fst-italic">Sin multas registradas</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light fw-bold small">
+                                <tr>
+                                    <td colspan="5" class="text-end">TOTAL FACTURADO: ${{ ed.monto_total|floatformat:2 }} | COBRADO: ${{ ed.monto_pagado|floatformat:2 }} | SALDO PENDIENTE:</td>
+                                    <td colspan="2" class="text-center text-danger fs-7 font-monospace">${{ ed.monto_pendiente|floatformat:2 }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+
+        <!-- 2. VISTA: POR PROGRAMACIÓN / JORNADA -->
+        {% elif tipo == 'jornada' %}
+            {% if jornada_seleccionada %}
+                <!-- Reporte de Una Sola Jornada -->
+                <div class="card border rounded-3 mb-3 p-3 bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h4 class="fw-bold mb-0 text-dark">Programación de Partidos - Fecha {{ jornada_seleccionada.numero_fecha }}</h4>
+                        <div>
+                            <span class="badge bg-primary rounded-pill px-3 py-1.5 fs-7">
+                                {{ jornada_seleccionada.partidos|length }} Partido{{ jornada_seleccionada.partidos|pluralize:"s" }}
+                            </span>
+                            <span class="badge bg-warning text-dark rounded-pill px-2.5 py-1.5 fs-7 ms-1">
+                                {{ jornada_seleccionada.total_amarillas }} Amarillas
+                            </span>
+                            <span class="badge bg-danger rounded-pill px-2.5 py-1.5 fs-7 ms-1">
+                                {{ jornada_seleccionada.total_rojas }} Rojas
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <table class="table table-bordered table-sm table-custom align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%;">Partido / Encuentro</th>
+                            <th class="text-center" style="width: 10%;">Tarjetas</th>
+                            <th>Amonestaciones del Partido</th>
+                            <th class="text-end" style="width: 14%;">Subtotal ($)</th>
+                            <th class="text-center" style="width: 14%;">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p_item in jornada_seleccionada.partidos %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-dark">{{ p_item.partido.equipo_local.nombre }} vs {{ p_item.partido.equipo_visitante.nombre }}</div>
+                                <small class="text-muted">
+                                    {{ p_item.partido.fecha_hora|date:"d/m/Y H:i"|default:"Por programar" }}
+                                    {% if p_item.partido.estadio %} &bull; {{ p_item.partido.estadio.nombre }}{% endif %}
+                                </small>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-tarjeta-amarilla px-1.5 py-0.5 rounded-pill">{{ p_item.amarillas }} A</span>
+                                <span class="badge badge-tarjeta-roja px-1.5 py-0.5 rounded-pill ms-1">{{ p_item.rojas }} R</span>
+                            </td>
+                            <td>
+                                {% if p_item.eventos %}
+                                    <ul class="list-unstyled mb-0 small">
+                                        {% for ev in p_item.eventos %}
+                                            {% if filtro_estado == 'todos' or ev.pagada and filtro_estado == 'pagado' or not ev.pagada and filtro_estado == 'pendiente' %}
+                                            <li class="mb-1">
+                                                {% if ev.evento.tipo == 'amarilla' %}
+                                                    <span class="badge badge-tarjeta-amarilla px-1.5 py-0.5 rounded-pill">A</span>
+                                                {% else %}
+                                                    <span class="badge badge-tarjeta-roja px-1.5 py-0.5 rounded-pill">R</span>
+                                                {% endif %}
+                                                <strong>{{ ev.evento.jugador.get_full_name|default:ev.evento.jugador }}</strong> ({{ ev.evento.minuto }}')
+                                                <span class="text-muted">[{{ ev.evento.equipo.nombre }}]</span> &bull;
+                                                <span class="font-monospace fw-semibold">${{ ev.monto|floatformat:2 }}</span>
+                                                {% if ev.pagada %}
+                                                    <span class="text-success fw-bold ms-1">(Pagado)</span>
+                                                {% else %}
+                                                    <span class="text-danger fw-bold ms-1">(Pendiente)</span>
+                                                {% endif %}
+                                            </li>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <span class="text-muted fst-italic small">Sin tarjetas registradas en este partido</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end font-monospace fw-bold">${{ p_item.monto_multas|floatformat:2 }}</td>
+                            <td class="text-center">
+                                {% if p_item.monto_pendiente == 0 %}
+                                    <span class="text-success fw-bold small"><i class="bi bi-check-circle-fill me-1"></i>Liquidado</span>
+                                {% else %}
+                                    <span class="text-danger fw-bold small">${{ p_item.monto_pendiente|floatformat:2 }} Pendiente</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-light fw-bold">
+                        <tr>
+                            <td colspan="3" class="text-end text-uppercase">Total de la Jornada {{ jornada_seleccionada.numero_fecha }}:</td>
+                            <td class="text-end font-monospace">${{ jornada_seleccionada.total_multas_monto|floatformat:2 }}</td>
+                            <td class="text-center text-danger font-monospace">Pendiente: ${{ jornada_seleccionada.total_pendiente_monto|floatformat:2 }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+            {% else %}
+                <!-- Todas las Jornadas -->
+                {% for fd in fechas_data %}
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center bg-light p-2.5 px-3 border rounded-top">
+                        <h6 class="fw-bold mb-0 text-dark">
+                            <i class="bi bi-calendar3 me-1.5 text-primary"></i> Fecha / Jornada {{ fd.numero_fecha }}
+                        </h6>
+                        <div class="small fw-bold">
+                            <span class="text-muted me-2">{{ fd.partidos|length }} Partidos</span>
+                            <span class="badge badge-tarjeta-amarilla rounded-pill px-2 py-0.5">{{ fd.total_amarillas }} A</span>
+                            <span class="badge badge-tarjeta-roja rounded-pill px-2 py-0.5 ms-1">{{ fd.total_rojas }} R</span>
+                            <span class="ms-3 text-dark">Total: ${{ fd.total_multas_monto|floatformat:2 }}</span>
+                            <span class="ms-2 text-danger">Pendiente: ${{ fd.total_pendiente_monto|floatformat:2 }}</span>
+                        </div>
+                    </div>
+
+                    <table class="table table-bordered table-sm table-custom align-middle mb-3">
+                        <thead>
+                            <tr>
+                                <th style="width: 30%;">Partido</th>
+                                <th>Amonestados / Incidencias</th>
+                                <th class="text-end" style="width: 15%;">Subtotal ($)</th>
+                                <th class="text-center" style="width: 15%;">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p_item in fd.partidos %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">{{ p_item.partido.equipo_local.nombre }} vs {{ p_item.partido.equipo_visitante.nombre }}</div>
+                                    <small class="text-muted">{{ p_item.partido.fecha_hora|date:"d/m H:i"|default:"-" }}</small>
+                                </td>
+                                <td>
+                                    {% if p_item.eventos %}
+                                        <div class="small">
+                                            {% for ev in p_item.eventos %}
+                                                <span class="d-inline-block me-2 mb-1">
+                                                    {% if ev.evento.tipo == 'amarilla' %}
+                                                        <span class="badge badge-tarjeta-amarilla px-1.5 py-0.2 rounded-pill">A</span>
+                                                    {% else %}
+                                                        <span class="badge badge-tarjeta-roja px-1.5 py-0.2 rounded-pill">R</span>
+                                                    {% endif %}
+                                                    <strong>{{ ev.evento.jugador.get_full_name|default:ev.evento.jugador }}</strong> ({{ ev.evento.minuto }}')
+                                                    <span class="text-muted">[{{ ev.evento.equipo.nombre }}]</span>
+                                                    {% if ev.pagada %}<span class="text-success">&check;</span>{% else %}<span class="text-danger">&bull;</span>{% endif %}
+                                                </span>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted small fst-italic">Sin tarjetas</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end font-monospace fw-semibold">${{ p_item.monto_multas|floatformat:2 }}</td>
+                                <td class="text-center small">
+                                    {% if p_item.monto_pendiente == 0 %}
+                                        <span class="text-success fw-bold">Al Día</span>
+                                    {% else %}
+                                        <span class="text-danger fw-bold">${{ p_item.monto_pendiente|floatformat:2 }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endfor %}
+            {% endif %}
+
+        <!-- 3. VISTA: HISTORIAL CRONOLÓGICO -->
+        {% elif tipo == 'historial' %}
+            <table class="table table-bordered table-sm table-custom align-middle">
+                <thead>
+                    <tr>
+                        <th class="text-center" style="width: 5%;">#</th>
+                        <th style="width: 12%;">Fecha / Jornada</th>
+                        <th style="width: 25%;">Partido</th>
+                        <th class="text-center" style="width: 6%;">Min</th>
+                        <th class="text-center" style="width: 10%;">Tarjeta</th>
+                        <th>Deportista Sancionado</th>
+                        <th style="width: 16%;">Club</th>
+                        <th class="text-end" style="width: 10%;">Monto ($)</th>
+                        <th class="text-center" style="width: 10%;">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in historial_tarjetas %}
+                        {% if filtro_estado == 'todos' or h.multa.estado == filtro_estado %}
+                        <tr>
+                            <td class="text-center text-muted">{{ h.multa.id }}</td>
+                            <td>Fecha {{ h.numero_fecha }}</td>
+                            <td class="small">
+                                {% if h.multa.partido %}
+                                    {{ h.multa.partido.equipo_local.nombre }} vs {{ h.multa.partido.equipo_visitante.nombre }}
+                                {% else %}-{% endif %}
+                            </td>
+                            <td class="text-center">{{ h.evento.minuto|default:"-" }}'</td>
+                            <td class="text-center">
+                                {% if h.multa.motivo == 'amarilla' %}
+                                    <span class="badge badge-tarjeta-amarilla px-2 py-0.5 rounded-pill">Amarilla</span>
+                                {% elif h.multa.motivo == 'roja' %}
+                                    <span class="badge badge-tarjeta-roja px-2 py-0.5 rounded-pill">Roja</span>
+                                {% else %}
+                                    <span class="badge bg-secondary px-2 py-0.5 rounded-pill">{{ h.multa.get_motivo_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="fw-bold">{{ h.multa.jugador.get_full_name|default:h.multa.jugador.username|default:"Equipo" }}</td>
+                            <td>{{ h.multa.equipo.nombre }}</td>
+                            <td class="text-end font-monospace fw-bold">${{ h.monto|floatformat:2 }}</td>
+                            <td class="text-center">
+                                {% if h.pagada %}
+                                    <span class="text-success fw-bold small"><i class="bi bi-check-circle-fill me-1"></i>Cobrado</span>
+                                {% else %}
+                                    <span class="text-danger fw-bold small"><i class="bi bi-exclamation-triangle-fill me-1"></i>Pendiente</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        <!-- 4. VISTA POR DEFECTO: CONSOLIDADO GENERAL (TOTAL) -->
+        {% else %}
+            <table class="table table-bordered table-sm table-custom align-middle">
+                <thead>
+                    <tr>
+                        <th class="text-center" style="width: 4%;">#</th>
+                        <th style="width: 25%;">Club / Equipo</th>
+                        <th style="width: 14%;">Grupo</th>
+                        <th class="text-center" style="width: 8%;">Amarillas</th>
+                        <th class="text-center" style="width: 8%;">Rojas</th>
+                        <th class="text-center" style="width: 10%;">Total Tarjetas</th>
+                        <th class="text-end" style="width: 11%;">Total Sanciones ($)</th>
+                        <th class="text-end" style="width: 10%;">Cobrado ($)</th>
+                        <th class="text-end" style="width: 10%;">Pendiente ($)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ed in equipos_data %}
+                        {% if filtro_estado == 'todos' or ed.monto_pendiente > 0 and filtro_estado == 'pendiente' or ed.monto_pagado > 0 and filtro_estado == 'pagado' %}
+                        <tr>
+                            <td class="text-center text-muted">{{ forloop.counter }}</td>
+                            <td class="fw-bold text-dark">{{ ed.equipo.nombre }}</td>
+                            <td>{{ ed.grupo_nombre }}</td>
+                            <td class="text-center">
+                                <span class="badge badge-tarjeta-amarilla px-2 py-0.5 rounded-pill">{{ ed.amarillas }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-tarjeta-roja px-2 py-0.5 rounded-pill">{{ ed.rojas }}</span>
+                            </td>
+                            <td class="text-center fw-bold">{{ ed.total_tarjetas }}</td>
+                            <td class="text-end font-monospace">${{ ed.monto_total|floatformat:2 }}</td>
+                            <td class="text-end font-monospace text-success">${{ ed.monto_pagado|floatformat:2 }}</td>
+                            <td class="text-end font-monospace fw-bold {% if ed.monto_pendiente > 0 %}text-danger{% else %}text-muted{% endif %}">
+                                ${{ ed.monto_pendiente|floatformat:2 }}
+                            </td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-light fw-bold">
+                    <tr class="fs-7">
+                        <td colspan="3" class="text-end text-uppercase">TOTALES GENERALES DEL TORNEO:</td>
+                        <td class="text-center text-warning fw-bold">{{ totales.amarillas_count }}</td>
+                        <td class="text-center text-danger fw-bold">{{ totales.rojas_count }}</td>
+                        <td class="text-center fw-bold">{{ totales.total_sanciones }}</td>
+                        <td class="text-end font-monospace text-dark">${{ totales.monto_total|floatformat:2 }}</td>
+                        <td class="text-end font-monospace text-success">${{ totales.monto_pagado|floatformat:2 }}</td>
+                        <td class="text-end font-monospace text-danger fs-6">${{ totales.monto_pendiente|floatformat:2 }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        {% endif %}
+
+        <!-- PIE DE FIRMAS INSTITUCIONALES -->
+        <div class="row signature-box">
+            <div class="col-4 text-center">
+                <div class="signature-line"></div>
+                <div class="fw-bold small text-dark">TESORERÍA GENERAL</div>
+                <div class="text-muted" style="font-size: 11px;">Control y Recaudación de Fondos</div>
+            </div>
+            <div class="col-4 text-center">
+                <div class="signature-line"></div>
+                <div class="fw-bold small text-dark">COMISIÓN TÉCNICA / VOCALÍA</div>
+                <div class="text-muted" style="font-size: 11px;">Validación de Actas e Informes</div>
+            </div>
+            <div class="col-4 text-center">
+                <div class="signature-line"></div>
+                <div class="fw-bold small text-dark">
+                    {% if tipo == 'equipo' and equipo_seleccionado %}
+                        DELEGADO CLUB {{ equipo_seleccionado.equipo.nombre|upper }}
+                    {% else %}
+                        PRESIDENTE DE LA LIGA
+                    {% endif %}
+                </div>
+                <div class="text-muted" style="font-size: 11px;">Conformidad y Recepción</div>
+            </div>
+        </div>
+
+        <div class="text-center text-muted mt-4 pt-2 border-top" style="font-size: 10px;">
+            Documento emitido electrónicamente por el Sistema Deportivo Fútbol Pro &bull; {{ fecha_impresion|date:"Y-m-d H:i:s" }}
+        </div>
+
+    </div>
+
+    <!-- Script para actualizar controles dinámicos de forma instantánea -->
+    <script>
+        function actualizarModo(modo) {
+            const eqContainer = document.getElementById('selectorEquipoContainer');
+            const jContainer = document.getElementById('selectorJornadaContainer');
+            
+            if (modo === 'equipo') {
+                eqContainer.classList.remove('d-none');
+                jContainer.classList.add('d-none');
+            } else if (modo === 'jornada') {
+                eqContainer.classList.add('d-none');
+                jContainer.classList.remove('d-none');
+            } else {
+                eqContainer.classList.add('d-none');
+                jContainer.classList.add('d-none');
+            }
+            document.getElementById('filterForm').submit();
+        }
+    </script>
+</body>
+</html>

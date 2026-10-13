@@ -77,16 +77,12 @@ def _obtener_mapa_grupos_torneo(torneo):
     return grupos_equipos, lista_grupos
 
 
-@login_required
-def control_tarjetas_torneo_view(request, torneo_id):
+def _calcular_datos_tarjetas(torneo, org):
     """
-    Vista integral de Control de Tarjetas (Amarillas y Rojas) y Multas Financieras del Torneo.
-    Permite visualizar y calcular por Fecha/Jornada, por Equipo y por Grupos, con enlace directo
-    a Tesorería para registrar pagos individuales o colectivos.
+    Calcula de manera centralizada y optimizada todos los datos disciplinarios y financieros
+    del torneo: KPIs, agrupación por equipo con detalle de multas, agrupación por fecha/jornada
+    con partidos y eventos, agrupación por grupos e historial completo.
     """
-    torneo = _get_torneo_safe(request, torneo_id)
-    org = getattr(request, 'organizacion', None) or torneo.organizacion
-
     # 1. Sincronización proactiva: asegurar que todo evento de tarjeta tenga su MultaTarjeta
     eventos_tarjetas = EventoPartido.objects.filter(
         partido__torneo=torneo,
@@ -174,6 +170,7 @@ def control_tarjetas_torneo_view(request, torneo_id):
             'monto_pendiente': Decimal('0.00'),
             'tiene_deuda': False,
             'multas_pendientes_ids': [],
+            'multas_list': [],
         }
 
     for m in multas_qs:
@@ -189,9 +186,11 @@ def control_tarjetas_torneo_view(request, torneo_id):
                 'monto_pendiente': Decimal('0.00'),
                 'tiene_deuda': False,
                 'multas_pendientes_ids': [],
+                'multas_list': [],
             }
         ed = equipos_dict[m.equipo_id]
         ed['total_tarjetas'] += 1
+        ed['multas_list'].append(m)
         if m.motivo == 'amarilla':
             ed['amarillas'] += 1
         elif m.motivo == 'roja':
@@ -317,6 +316,34 @@ def control_tarjetas_torneo_view(request, torneo_id):
             'pagada': m.estado == 'pagado'
         })
 
+    lista_equipos = sorted([ed['equipo'] for ed in equipos_data if ed['equipo']], key=lambda x: x.nombre)
+    lista_jornadas = [fd['numero_fecha'] for fd in fechas_data]
+
+    return {
+        'totales': totales,
+        'equipos_data': equipos_data,
+        'fechas_data': fechas_data,
+        'grupos_data': grupos_data,
+        'historial_tarjetas': historial_tarjetas,
+        'multas_qs': multas_qs,
+        'lista_equipos': lista_equipos,
+        'lista_jornadas': lista_jornadas,
+        'grupos_equipos': grupos_equipos,
+    }
+
+
+@login_required
+def control_tarjetas_torneo_view(request, torneo_id):
+    """
+    Vista integral de Control de Tarjetas (Amarillas y Rojas) y Multas Financieras del Torneo.
+    Permite visualizar y calcular por Fecha/Jornada, por Equipo y por Grupos, con enlace directo
+    a Tesorería para registrar pagos individuales o colectivos.
+    """
+    torneo = _get_torneo_safe(request, torneo_id)
+    org = getattr(request, 'organizacion', None) or torneo.organizacion
+
+    datos = _calcular_datos_tarjetas(torneo, org)
+
     es_admin = bool(
         request.user.is_superuser or 
         getattr(request.user, 'role', '') in ['tesorero', 'tesoreria', 'superadmin', 'comision', 'organizador']
@@ -325,13 +352,70 @@ def control_tarjetas_torneo_view(request, torneo_id):
     context = {
         'torneo': torneo,
         'es_admin': es_admin,
-        'totales': totales,
-        'equipos_data': equipos_data,
-        'fechas_data': fechas_data,
-        'grupos_data': grupos_data,
-        'historial_tarjetas': historial_tarjetas,
+        'totales': datos['totales'],
+        'equipos_data': datos['equipos_data'],
+        'fechas_data': datos['fechas_data'],
+        'grupos_data': datos['grupos_data'],
+        'historial_tarjetas': datos['historial_tarjetas'],
     }
     return render(request, 'matches/control_tarjetas_torneo.html', context)
+
+
+@login_required
+def imprimir_reporte_tarjetas_torneo(request, torneo_id):
+    """
+    Vista especializada de Impresión / Exportación PDF de Sanciones y Multas Financieras.
+    Permite generar reportes:
+    - total: Consolidado general de todos los equipos del torneo.
+    - equipo: Estado de cuenta y liquidación individual de un equipo o de todos.
+    - jornada: Planilla disciplinaria por fecha de programación con partidos y amonestados.
+    - historial: Registro cronológico completo de amonestaciones.
+    """
+    torneo = _get_torneo_safe(request, torneo_id)
+    org = getattr(request, 'organizacion', None) or torneo.organizacion
+
+    datos = _calcular_datos_tarjetas(torneo, org)
+
+    tipo = request.GET.get('tipo', 'total')  # 'total', 'equipo', 'jornada', 'historial'
+    equipo_id_raw = request.GET.get('equipo_id', '')
+    jornada_raw = request.GET.get('jornada', '')
+    filtro_estado = request.GET.get('estado', 'todos')  # 'todos', 'pendiente', 'pagado'
+
+    equipo_seleccionado = None
+    if equipo_id_raw and equipo_id_raw.isdigit():
+        eid = int(equipo_id_raw)
+        for ed in datos['equipos_data']:
+            if ed['equipo'] and ed['equipo'].id == eid:
+                equipo_seleccionado = ed
+                break
+
+    jornada_seleccionada = None
+    if jornada_raw and jornada_raw.isdigit():
+        jnum = int(jornada_raw)
+        for fd in datos['fechas_data']:
+            if fd['numero_fecha'] == jnum:
+                jornada_seleccionada = fd
+                break
+
+    context = {
+        'torneo': torneo,
+        'organizacion': org,
+        'totales': datos['totales'],
+        'equipos_data': datos['equipos_data'],
+        'fechas_data': datos['fechas_data'],
+        'grupos_data': datos['grupos_data'],
+        'historial_tarjetas': datos['historial_tarjetas'],
+        'lista_equipos': datos['lista_equipos'],
+        'lista_jornadas': datos['lista_jornadas'],
+        'tipo': tipo,
+        'equipo_id': equipo_id_raw,
+        'equipo_seleccionado': equipo_seleccionado,
+        'jornada': jornada_raw,
+        'jornada_seleccionada': jornada_seleccionada,
+        'filtro_estado': filtro_estado,
+        'fecha_impresion': timezone.now(),
+    }
+    return render(request, 'matches/imprimir_reporte_tarjetas.html', context)
 
 
 @login_required
@@ -393,29 +477,29 @@ def pagar_multas_equipo_torneo(request, torneo_id, equipo_id):
 @login_required
 def exportar_excel_tarjetas_torneo(request, torneo_id):
     """
-    Exporta a Excel (.xlsx) el reporte financiero y disciplinario de tarjetas del torneo
-    con pestañas: Resumen por Equipo, Desglose por Fechas e Historial de Amonestaciones.
+    Exporta a Excel (.xlsx) el reporte financiero y disciplinario de tarjetas del torneo:
+    - Si tipo='equipo' y equipo_id: genera el Estado de Cuenta detallado del club.
+    - Si tipo='jornada' y jornada: genera la Planilla Disciplinaria de esa fecha/programación.
+    - Por defecto: genera el libro consolidado con 2 pestañas (Resumen por Equipo + Historial).
     """
     import openpyxl
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
     torneo = _get_torneo_safe(request, torneo_id)
     org = getattr(request, 'organizacion', None) or torneo.organizacion
+    datos = _calcular_datos_tarjetas(torneo, org)
+    multas_qs = datos['multas_qs']
 
-    multas_filter = {'partido__torneo': torneo}
-    if org:
-        multas_filter['organizacion'] = org
-
-    multas_qs = MultaTarjeta.objects.filter(**multas_filter).select_related(
-        'jugador', 'equipo', 'partido', 'evento'
-    )
+    tipo = request.GET.get('tipo', 'total')
+    equipo_id_raw = request.GET.get('equipo_id', '')
+    jornada_raw = request.GET.get('jornada', '')
 
     wb = openpyxl.Workbook()
 
-    # Estilos comunes
     font_header = Font(name="Arial", size=10, bold=True, color="FFFFFF")
     fill_header = PatternFill(start_color="1E3A8A", end_color="1E3A8A", fill_type="solid")
     fill_header_gold = PatternFill(start_color="D97706", end_color="D97706", fill_type="solid")
+    fill_header_green = PatternFill(start_color="059669", end_color="059669", fill_type="solid")
     thin_border = Border(
         left=Side(style='thin', color='CBD5E1'),
         right=Side(style='thin', color='CBD5E1'),
@@ -423,9 +507,145 @@ def exportar_excel_tarjetas_torneo(request, torneo_id):
         bottom=Side(style='thin', color='CBD5E1')
     )
 
-    # ----------------------------------------------------
-    # HOJA 1: RESUMEN POR EQUIPO
-    # ----------------------------------------------------
+    # 1. Exportación filtrada por Equipo
+    if tipo == 'equipo' and equipo_id_raw.isdigit():
+        eid = int(equipo_id_raw)
+        ed = next((x for x in datos['equipos_data'] if x['equipo'] and x['equipo'].id == eid), None)
+        if ed:
+            ws = wb.active
+            ws.title = f"Multas - {ed['equipo'].nombre[:25]}"
+            ws.views.sheetView[0].showGridLines = True
+            ws.append([f"ESTADO DE CUENTA DE SANCIONES Y MULTAS - {ed['equipo'].nombre.upper()}"])
+            ws.cell(row=1, column=1).font = Font(name="Arial", size=13, bold=True, color="1E3A8A")
+            ws.append([f"Torneo: {torneo.nombre} | Grupo: {ed['grupo_nombre']} | Emisión: {timezone.now().strftime('%d/%m/%Y %H:%M')}"])
+            ws.append([f"Tarjetas: {ed['total_tarjetas']} ({ed['amarillas']} Amarillas, {ed['rojas']} Rojas) | Total: ${ed['monto_total']} | Pagado: ${ed['monto_pagado']} | Pendiente: ${ed['monto_pendiente']}"])
+            ws.append([])
+
+            headers = ["N° Multa", "Fecha / Jornada", "Partido / Rival", "Minuto", "Tarjeta", "Jugador Sancionado", "Monto ($)", "Estado", "Fecha de Pago"]
+            ws.append(headers)
+            for col_num in range(1, len(headers) + 1):
+                cell = ws.cell(row=5, column=col_num)
+                cell.font = font_header
+                cell.fill = fill_header_green
+                cell.alignment = Alignment(horizontal="center", vertical="center")
+
+            row_idx = 6
+            for m in ed['multas_list']:
+                p = m.partido
+                if p:
+                    rival = p.equipo_visitante.nombre if p.equipo_local_id == ed['equipo'].id else p.equipo_local.nombre
+                    p_txt = f"vs {rival}"
+                    f_txt = f"Fecha {p.jornada}" if p.jornada else "-"
+                else:
+                    p_txt = "Sanción Administrativa"
+                    f_txt = "-"
+                min_txt = f"{m.evento.minuto}'" if m.evento and m.evento.minuto else "-"
+                jug_txt = (m.jugador.get_full_name() or m.jugador.username) if m.jugador else "-"
+                pago_txt = m.fecha_pago.strftime('%d/%m/%Y %H:%M') if m.fecha_pago else "-"
+
+                ws.append([
+                    m.id,
+                    f_txt,
+                    p_txt,
+                    min_txt,
+                    m.get_motivo_display(),
+                    jug_txt,
+                    float(m.monto),
+                    m.get_estado_display(),
+                    pago_txt
+                ])
+                for c in range(1, 10):
+                    cell = ws.cell(row=row_idx, column=c)
+                    cell.border = thin_border
+                    if c in [1, 2, 4, 5, 8, 9]:
+                        cell.alignment = Alignment(horizontal="center")
+                    elif c == 7:
+                        cell.number_format = "$#,##0.00"
+                        cell.alignment = Alignment(horizontal="right")
+                row_idx += 1
+
+            for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']:
+                ws.column_dimensions[col].width = 18
+            ws.column_dimensions['C'].width = 25
+            ws.column_dimensions['F'].width = 28
+
+            output = io.BytesIO()
+            wb.save(output)
+            output.seek(0)
+            filename = f"Multas_{ed['equipo'].nombre.replace(' ', '_')}_{timezone.now().strftime('%Y%m%d')}.xlsx"
+            response = HttpResponse(output.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+
+    # 2. Exportación filtrada por Jornada / Programación
+    if tipo == 'jornada' and jornada_raw.isdigit():
+        jnum = int(jornada_raw)
+        fd = next((x for x in datos['fechas_data'] if x['numero_fecha'] == jnum), None)
+        if fd:
+            ws = wb.active
+            ws.title = f"Multas Fecha {jnum}"
+            ws.views.sheetView[0].showGridLines = True
+            ws.append([f"PLANILLA DE SANCIONES DISCIPLINARIAS - FECHA {jnum}"])
+            ws.cell(row=1, column=1).font = Font(name="Arial", size=13, bold=True, color="1E3A8A")
+            ws.append([f"Torneo: {torneo.nombre} | Emisión: {timezone.now().strftime('%d/%m/%Y %H:%M')}"])
+            ws.append([f"Amarillas: {fd['total_amarillas']} | Rojas: {fd['total_rojas']} | Total Multas: ${fd['total_multas_monto']} | Pagado: ${fd['total_pagado_monto']} | Pendiente: ${fd['total_pendiente_monto']}"])
+            ws.append([])
+
+            headers = ["Partido", "Grupo", "Min", "Tarjeta", "Jugador", "Equipo", "Valor ($)", "Estado"]
+            ws.append(headers)
+            for col_num in range(1, len(headers) + 1):
+                cell = ws.cell(row=5, column=col_num)
+                cell.font = font_header
+                cell.fill = fill_header_gold
+                cell.alignment = Alignment(horizontal="center", vertical="center")
+
+            row_idx = 6
+            for p_item in fd['partidos']:
+                p = p_item['partido']
+                p_label = f"{p.equipo_local.nombre} vs {p.equipo_visitante.nombre}"
+                g_label = p.grupo.nombre if p.grupo else "General"
+                for ev_info in p_item['eventos']:
+                    ev = ev_info['evento']
+                    min_txt = f"{ev.minuto}'" if ev.minuto else "-"
+                    jug_txt = (ev.jugador.get_full_name() or ev.jugador.username) if ev.jugador else "-"
+                    eq_txt = ev.equipo.nombre if ev.equipo else "-"
+                    monto_val = float(ev_info['monto'])
+                    estado_txt = "Pagado" if ev_info['pagada'] else "Pendiente"
+
+                    ws.append([
+                        p_label,
+                        g_label,
+                        min_txt,
+                        ev.get_tipo_display() if hasattr(ev, 'get_tipo_display') else str(ev.tipo).capitalize(),
+                        jug_txt,
+                        eq_txt,
+                        monto_val,
+                        estado_txt
+                    ])
+                    for c in range(1, 9):
+                        cell = ws.cell(row=row_idx, column=c)
+                        cell.border = thin_border
+                        if c in [2, 3, 4, 8]:
+                            cell.alignment = Alignment(horizontal="center")
+                        elif c == 7:
+                            cell.number_format = "$#,##0.00"
+                            cell.alignment = Alignment(horizontal="right")
+                    row_idx += 1
+
+            for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']:
+                ws.column_dimensions[col].width = 20
+            ws.column_dimensions['A'].width = 30
+            ws.column_dimensions['E'].width = 25
+
+            output = io.BytesIO()
+            wb.save(output)
+            output.seek(0)
+            filename = f"Multas_Fecha_{jnum}_{torneo.nombre.replace(' ', '_')}_{timezone.now().strftime('%Y%m%d')}.xlsx"
+            response = HttpResponse(output.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            return response
+
+    # 3. Exportación Consolidada General (2 Hojas)
     ws1 = wb.active
     ws1.title = "Resumen por Equipo"
     ws1.views.sheetView[0].showGridLines = True
@@ -443,54 +663,18 @@ def exportar_excel_tarjetas_torneo(request, torneo_id):
         cell.fill = fill_header
         cell.alignment = Alignment(horizontal="center", vertical="center")
 
-    grupos_equipos, lista_grupos = _obtener_mapa_grupos_torneo(torneo)
-
-    equipos_map = {}
-    for eq in torneo.equipos.all():
-        equipos_map[eq.id] = {
-            'nombre': eq.nombre,
-            'grupo': grupos_equipos.get(eq.id, "General"),
-            'amarillas': 0,
-            'rojas': 0,
-            'total': Decimal('0.00'),
-            'pagado': Decimal('0.00'),
-            'pendiente': Decimal('0.00')
-        }
-
-    for m in multas_qs:
-        if m.equipo_id not in equipos_map:
-            equipos_map[m.equipo_id] = {
-                'nombre': m.equipo.nombre if m.equipo else "Equipo",
-                'grupo': grupos_equipos.get(m.equipo_id, "General"),
-                'amarillas': 0,
-                'rojas': 0,
-                'total': Decimal('0.00'),
-                'pagado': Decimal('0.00'),
-                'pendiente': Decimal('0.00')
-            }
-        ed = equipos_map[m.equipo_id]
-        if m.motivo == 'amarilla':
-            ed['amarillas'] += 1
-        elif m.motivo == 'roja':
-            ed['rojas'] += 1
-        ed['total'] += m.monto
-        if m.estado == 'pagado':
-            ed['pagado'] += m.monto
-        else:
-            ed['pendiente'] += m.monto
-
     row_idx = 5
-    for eq_id, d in sorted(equipos_map.items(), key=lambda x: (-x[1]['pendiente'], -x[1]['amarillas'] - x[1]['rojas'])):
-        estado_txt = "Al Día" if d['pendiente'] == Decimal('0.00') else "Pendiente"
+    for ed in datos['equipos_data']:
+        estado_txt = "Al Día" if ed['monto_pendiente'] == Decimal('0.00') else "Pendiente"
         ws1.append([
-            d['nombre'],
-            d['grupo'],
-            d['amarillas'],
-            d['rojas'],
-            d['amarillas'] + d['rojas'],
-            float(d['total']),
-            float(d['pagado']),
-            float(d['pendiente']),
+            ed['equipo'].nombre if ed['equipo'] else "Equipo",
+            ed['grupo_nombre'],
+            ed['amarillas'],
+            ed['rojas'],
+            ed['total_tarjetas'],
+            float(ed['monto_total']),
+            float(ed['monto_pagado']),
+            float(ed['monto_pendiente']),
             estado_txt
         ])
         for c in range(1, 10):
@@ -503,22 +687,13 @@ def exportar_excel_tarjetas_torneo(request, torneo_id):
                 cell.alignment = Alignment(horizontal="right")
         row_idx += 1
 
+    for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I']:
+        ws1.column_dimensions[col].width = 16
     ws1.column_dimensions['A'].width = 28
-    ws1.column_dimensions['B'].width = 20
-    ws1.column_dimensions['C'].width = 12
-    ws1.column_dimensions['D'].width = 10
-    ws1.column_dimensions['E'].width = 14
-    ws1.column_dimensions['F'].width = 16
-    ws1.column_dimensions['G'].width = 14
-    ws1.column_dimensions['H'].width = 14
-    ws1.column_dimensions['I'].width = 16
 
-    # ----------------------------------------------------
-    # HOJA 2: HISTORIAL COMPLETO
-    # ----------------------------------------------------
+    # HOJA 2: Historial Completo
     ws2 = wb.create_sheet(title="Historial de Amonestaciones")
     ws2.views.sheetView[0].showGridLines = True
-
     headers2 = ["ID", "Fecha / Jornada", "Partido", "Minuto", "Tarjeta", "Deportista Sancionado", "Equipo", "Monto ($)", "Estado", "Fecha de Pago"]
     ws2.append(headers2)
     for col_num in range(1, len(headers2) + 1):
@@ -552,11 +727,7 @@ def exportar_excel_tarjetas_torneo(request, torneo_id):
     output = io.BytesIO()
     wb.save(output)
     output.seek(0)
-
     filename = f"Tarjetas_Multas_{torneo.nombre.replace(' ', '_')}_{timezone.now().strftime('%Y%m%d')}.xlsx"
-    response = HttpResponse(
-        output.getvalue(),
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
+    response = HttpResponse(output.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     return response
