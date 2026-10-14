@@ -31,14 +31,31 @@ def clean_phone_for_whatsapp(phone):
         digits = '593' + digits
     return digits
 
+def get_user_home_url(user):
+    if user.is_superuser:
+        return 'torre_control'
+    if user.role == 'vocal':
+        return 'vocalia_dashboard'
+    if user.role == 'arbitro':
+        return 'lista_partidos'
+    if user.role in ['tesorero', 'tesoreria']:
+        return 'resumen_financiero'
+    if user.role == 'secretaria':
+        return 'secretaria_dashboard'
+    if user.has_module_access('equipos'):
+        return 'club_portal'
+    if user.has_module_access('vocalia'):
+        return 'vocalia_dashboard'
+    if user.has_module_access('partidos'):
+        return 'lista_partidos'
+    return 'club_portal'
+
 def login_view(request):
     if request.user.is_authenticated:
         next_url = request.GET.get('next') or request.POST.get('next')
-        if next_url:
+        if next_url and next_url not in ['/', '/login/', '/login']:
             return redirect(next_url)
-        if request.user.is_superuser:
-            return redirect('torre_control')
-        return redirect('club_portal')
+        return redirect(get_user_home_url(request.user))
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
         if form.is_valid():
@@ -49,11 +66,9 @@ def login_view(request):
                 login(request, user)
                 messages.success(request, f"¡Bienvenido, {user.username}!")
                 next_url = request.GET.get('next') or request.POST.get('next')
-                if next_url:
+                if next_url and next_url not in ['/', '/login/', '/login']:
                     return redirect(next_url)
-                if user.is_superuser:
-                    return redirect('torre_control')
-                return redirect('club_portal')
+                return redirect(get_user_home_url(user))
         else:
             messages.error(request, "Usuario o contraseña incorrectos.")
     else:
@@ -69,27 +84,34 @@ def logout_view(request):
 def club_portal(request):
     # Si el usuario tiene el rol de 'jugador'
     if request.user.role == 'jugador':
-        try:
-            ficha = request.user.ficha_jugador
-            # Si no está aprobado, lo mandamos a la pantalla de validación en curso/rechazo
-            if ficha.estado_validacion != 'aprobado':
-                return render(request, 'teams/registro_exito.html', {'ficha': ficha, 'hide_navbar': False})
-        except FichaJugador.DoesNotExist:
+        ficha = getattr(request.user, 'ficha_jugador', None)
+        if ficha and ficha.estado_validacion != 'aprobado':
+            return render(request, 'teams/registro_exito.html', {'ficha': ficha, 'hide_navbar': False})
+        elif not ficha:
             messages.error(request, "No tienes una ficha de registro asociada a tu cuenta.")
             logout(request)
             return redirect('login')
 
     if not request.user.has_module_access('equipos'):
+        if request.user.has_module_access('vocalia'):
+            return redirect('vocalia_dashboard')
+        elif request.user.has_module_access('partidos'):
+            return redirect('lista_partidos')
+        elif request.user.has_module_access('tesoreria'):
+            return redirect('resumen_financiero')
+        elif request.user.has_module_access('secretaria'):
+            return redirect('secretaria_dashboard')
         messages.error(request, "No tienes permisos para acceder al Portal del Club.")
-        return redirect('gestion_usuarios') if request.user.role == 'superadmin' else redirect('/login/')
+        return redirect('gestion_usuarios' if request.user.role == 'superadmin' else 'login')
 
     # Equipos que administra o a los que pertenece
     if request.user.role in ['superadmin', 'comision'] or request.user.is_superuser:
         equipos_qs = Equipo.objects.filter(organizacion=request.organizacion)
     elif request.user.role == 'jugador':
         # Mostrar únicamente el equipo al que pertenece el jugador
-        if request.user.ficha_jugador.equipo:
-            equipos_qs = Equipo.objects.filter(id=request.user.ficha_jugador.equipo.id)
+        ficha = getattr(request.user, 'ficha_jugador', None)
+        if ficha and ficha.equipo:
+            equipos_qs = Equipo.objects.filter(id=ficha.equipo.id)
         else:
             equipos_qs = Equipo.objects.none()
     else:
@@ -123,8 +145,8 @@ def club_portal(request):
             })
             
         # 2. Multas por tarjetas
-        for multa in MultaTarjeta.objects.filter(equipo_id__in=equipos_ids).select_related('jugador'):
-            nombre_jugador = multa.jugador.get_full_name() or multa.jugador.username
+        for multa in MultaTarjeta.objects.filter(equipo_id__in=equipos_ids).select_related('jugador', 'equipo'):
+            nombre_jugador = (multa.jugador.get_full_name() or multa.jugador.username) if multa.jugador else (multa.equipo.nombre if multa.equipo else "Sanción al Equipo")
             pagos_by_equipo[multa.equipo_id].append({
                 'concepto': f"{multa.get_motivo_display()} - {nombre_jugador}",
                 'monto': multa.monto,

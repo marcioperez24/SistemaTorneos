@@ -47,4 +47,8 @@ class OrganizacionMiddleware(MiddlewareMixin):
                         request.rol_organizacion = usuario_org.rol
                         request.session['current_organizacion_id'] = request.organizacion.id
                     else:
+                        first_org = Organizacion.objects.filter(estado='activa').first() or Organizacion.objects.first()
+                        if first_org:
+                            request.organizacion = first_org
+                            request.session['current_organizacion_id'] = first_org.id
                         request.rol_organizacion = request.user.role
