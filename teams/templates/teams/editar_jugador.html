@@ -1,0 +1,290 @@
+{% extends 'teams/base.html' %}
+{% load static %}
+
+{% block title %}Editar Participante - {{ ficha.user.get_full_name|default:ficha.user.username }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3 px-md-4">
+    <!-- Breadcrumb y Volver -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1 fs-8">
+                    <li class="breadcrumb-item"><a href="{% url 'club_portal' %}" class="text-decoration-none">Portal del Club</a></li>
+                    {% if ficha.equipo %}
+                    <li class="breadcrumb-item active text-truncate" style="max-width: 200px;">{{ ficha.equipo.nombre }}</li>
+                    {% endif %}
+                    <li class="breadcrumb-item active" aria-current="page">Editar Datos</li>
+                </ol>
+            </nav>
+            <h3 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+                <i class="fa-solid fa-user-pen text-primary"></i>
+                Editar Datos de {% if tipo == 'dt' %}Director Técnico / Staff{% else %}Jugador / Deportista{% endif %}
+            </h3>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{% if next %}{{ next }}{% else %}{% url 'club_portal' %}{% endif %}" class="btn btn-outline-secondary rounded-pill px-3 py-1.5 fw-semibold fs-8">
+                <i class="fa-solid fa-arrow-left me-1.5"></i>Volver
+            </a>
+            <a href="{% url 'ver_ficha' ficha.id %}?tipo={{ tipo }}" target="_blank" class="btn btn-outline-primary rounded-pill px-3 py-1.5 fw-semibold fs-8">
+                <i class="fa-solid fa-print me-1.5"></i>Ver Ficha Impresa
+            </a>
+            {% if ficha.estado_validacion == 'aprobado' %}
+            <a href="{% url 'ver_carnet' ficha.id %}?tipo={{ tipo }}" target="_blank" class="btn btn-outline-success rounded-pill px-3 py-1.5 fw-semibold fs-8">
+                <i class="fa-solid fa-id-card me-1.5"></i>Ver Carnet
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Tarjeta de Identificación Rápida -->
+    <div class="card card-custom p-3.5 mb-4 bg-white border-0 shadow-sm rounded-4">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                {% if ficha.foto %}
+                    <img src="{{ ficha.foto.url }}" alt="Foto" class="rounded-circle shadow-sm border border-2 border-primary-subtle" style="width: 70px; height: 70px; object-fit: cover;">
+                {% else %}
+                    <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm" style="width: 70px; height: 70px; font-size: 24px;">
+                        {{ ficha.user.first_name|slice:":1"|upper }}{{ ficha.user.last_name|slice:":1"|upper }}
+                    </div>
+                {% endif %}
+                <div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <h4 class="fw-bold mb-0 text-dark">{{ ficha.user.get_full_name|default:ficha.user.username }}</h4>
+                        {% if ficha.numero_camiseta %}
+                            <span class="badge bg-dark fs-7 px-2.5 py-1 font-monospace">#{{ ficha.numero_camiseta }}</span>
+                        {% endif %}
+                        {% if ficha.estado_validacion == 'aprobado' %}
+                            <span class="badge bg-success py-1 px-2.5 rounded-pill fs-8"><i class="fa-solid fa-circle-check me-1"></i>Habilitado / Aprobado</span>
+                        {% elif ficha.estado_validacion == 'pendiente' %}
+                            <span class="badge bg-warning text-dark py-1 px-2.5 rounded-pill fs-8"><i class="fa-solid fa-hourglass-half me-1"></i>Pendiente Secretaría</span>
+                        {% else %}
+                            <span class="badge bg-danger py-1 px-2.5 rounded-pill fs-8"><i class="fa-solid fa-circle-xmark me-1"></i>Rechazado</span>
+                        {% endif %}
+                    </div>
+                    <div class="text-muted fs-8 mt-1 d-flex flex-wrap align-items-center gap-3">
+                        <span><i class="fa-solid fa-shield-halved text-primary me-1"></i><strong>Club:</strong> {{ ficha.equipo.nombre|default:"Sin Equipo" }}</span>
+                        <span><i class="fa-solid fa-trophy text-warning me-1"></i><strong>Torneo:</strong> {{ ficha.torneo.nombre|default:"General" }}</span>
+                        <span><i class="fa-solid fa-id-card text-secondary me-1"></i><strong>Cédula:</strong> {{ ficha.nro_cedula|default:"No registrada" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botón de Expulsión Rápida -->
+            <div>
+                <form action="{% url 'eliminar_jugador' ficha.id %}?tipo={{ tipo }}" method="POST" class="d-inline"
+                      data-confirm="¿CONFIRMAS QUE DESEAS EXPULSAR Y ELIMINAR A {{ ficha.user.get_full_name|default:ficha.user.username|upper }} DEL EQUIPO {{ ficha.equipo.nombre|upper }}? ESTA ACCIÓN LIBERARÁ EL CUPO EN LA PLANTILLA.">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ next }}">
+                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-2 fw-bold d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-user-xmark"></i>
+                        <span>Expulsar del Equipo</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de Edición -->
+    <form method="POST" enctype="multipart/form-data" id="formEditarJugador">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger shadow-sm border-0 rounded-3 mb-4">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i>{{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <div class="row g-4">
+            <!-- Columna Izquierda: Datos Personales y Deportivos -->
+            <div class="col-12 col-lg-8">
+                <!-- SECCIÓN 1: IDENTIDAD Y CONTACTO -->
+                <div class="card card-custom p-4 mb-4 bg-white border-0 shadow-sm rounded-4">
+                    <h5 class="fw-bold mb-3 text-dark pb-2 border-bottom d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-id-badge text-primary"></i>Datos de Identidad y Contacto
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold fs-8 text-secondary">Nombres <span class="text-danger">*</span></label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}<div class="text-danger fs-9 mt-1">{{ form.first_name.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold fs-8 text-secondary">Apellidos <span class="text-danger">*</span></label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}<div class="text-danger fs-9 mt-1">{{ form.last_name.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold fs-8 text-secondary">Número de Cédula / DNI <span class="text-danger">*</span></label>
+                            {{ form.nro_cedula }}
+                            {% if form.nro_cedula.errors %}<div class="text-danger fs-9 mt-1">{{ form.nro_cedula.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold fs-8 text-secondary">Teléfono / WhatsApp</label>
+                            {{ form.telefono }}
+                            {% if form.telefono.errors %}<div class="text-danger fs-9 mt-1">{{ form.telefono.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold fs-8 text-secondary">Correo Electrónico</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}<div class="text-danger fs-9 mt-1">{{ form.email.errors }}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 2: ASIGNACIÓN DEPORTIVA -->
+                <div class="card card-custom p-4 mb-4 bg-white border-0 shadow-sm rounded-4">
+                    <h5 class="fw-bold mb-3 text-dark pb-2 border-bottom d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-shirt text-success"></i>Asignación de Equipo y Torneo
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold fs-8 text-secondary">Club / Equipo Asignado <span class="text-danger">*</span></label>
+                            {{ form.equipo }}
+                            {% if form.equipo.errors %}<div class="text-danger fs-9 mt-1">{{ form.equipo.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold fs-8 text-secondary">Torneo / Campeonato</label>
+                            {{ form.torneo }}
+                            {% if form.torneo.errors %}<div class="text-danger fs-9 mt-1">{{ form.torneo.errors }}</div>{% endif %}
+                        </div>
+                        {% if tipo == 'jugador' %}
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold fs-8 text-secondary">Número de Camiseta (Dorsal)</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light fw-bold text-primary font-monospace">#</span>
+                                {{ form.numero_camiseta }}
+                            </div>
+                            <small class="text-muted fs-9">Número único por equipo (1 al 99).</small>
+                            {% if form.numero_camiseta.errors %}<div class="text-danger fs-9 mt-1">{{ form.numero_camiseta.errors }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center mt-md-4">
+                            <div class="form-check form-switch mt-2">
+                                {{ form.es_lesionado }}
+                                <label class="form-check-label fw-bold text-danger fs-8" for="{{ form.es_lesionado.id_for_label }}">
+                                    <i class="fa-solid fa-briefcase-medical me-1"></i>Reportar como Lesionado (Libera cupo temporal)
+                                </label>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- SECCIÓN 3: SALUD Y EMERGENCIA -->
+                <div class="card card-custom p-4 mb-4 bg-white border-0 shadow-sm rounded-4">
+                    <h5 class="fw-bold mb-3 text-dark pb-2 border-bottom d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-heart-pulse text-danger"></i>Ficha Médica y Contacto de Emergencia
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold fs-8 text-secondary">Tipo de Sangre</label>
+                            {{ form.tipo_sangre }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold fs-8 text-secondary">Contacto de Emergencia</label>
+                            {{ form.contacto_emergencia }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold fs-8 text-secondary">Teléfono de Emergencia</label>
+                            {{ form.telefono_emergencia }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna Derecha: Control de Secretaría y Documentos -->
+            <div class="col-12 col-lg-4">
+                <!-- ESTADO DE SECRETARÍA Y DISCIPLINARIO -->
+                <div class="card card-custom p-4 mb-4 bg-white border-0 shadow-sm rounded-4">
+                    <h5 class="fw-bold mb-3 text-dark pb-2 border-bottom d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-stamp text-warning"></i>Control de Secretaría
+                    </h5>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold fs-8 text-secondary">Estado del Carnet</label>
+                        {{ form.estado_validacion }}
+                        {% if form.estado_validacion.errors %}<div class="text-danger fs-9 mt-1">{{ form.estado_validacion.errors }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold fs-8 text-secondary">Motivo de Rechazo (si aplica)</label>
+                        {{ form.motivo_rechazo }}
+                        {% if form.motivo_rechazo.errors %}<div class="text-danger fs-9 mt-1">{{ form.motivo_rechazo.errors }}</div>{% endif %}
+                    </div>
+                    {% if tipo == 'jugador' %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold fs-8 text-secondary">Partidos de Suspensión Pendientes</label>
+                        {{ form.partidos_suspension }}
+                        <small class="text-muted fs-9">Generados automáticamente por tarjetas rojas o límite de amarillas.</small>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- ARCHIVOS Y FOTOS -->
+                <div class="card card-custom p-4 mb-4 bg-white border-0 shadow-sm rounded-4">
+                    <h5 class="fw-bold mb-3 text-dark pb-2 border-bottom d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-image text-info"></i>Fotografías y Documentos
+                    </h5>
+                    
+                    <!-- Foto Carnet -->
+                    <div class="mb-3 pb-3 border-bottom">
+                        <label class="form-label fw-semibold fs-8 text-secondary d-flex justify-content-between align-items-center">
+                            <span>Foto / Selfie Carnet</span>
+                            {% if ficha.foto %}
+                                <a href="{{ ficha.foto.url }}" target="_blank" class="fs-9 text-primary text-decoration-none"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Ver actual</a>
+                            {% endif %}
+                        </label>
+                        {% if ficha.foto %}
+                            <div class="mb-2 text-center">
+                                <img src="{{ ficha.foto.url }}" class="rounded shadow-sm" style="max-height: 110px; max-width: 100%; object-fit: cover;">
+                            </div>
+                        {% endif %}
+                        {{ form.foto }}
+                    </div>
+
+                    <!-- Cédula Frontal -->
+                    <div class="mb-3 pb-3 border-bottom">
+                        <label class="form-label fw-semibold fs-8 text-secondary d-flex justify-content-between align-items-center">
+                            <span>Cédula Frontal</span>
+                            {% if ficha.cedula_frontal %}
+                                <a href="{{ ficha.cedula_frontal.url }}" target="_blank" class="fs-9 text-primary text-decoration-none"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Ver actual</a>
+                            {% endif %}
+                        </label>
+                        {% if ficha.cedula_frontal %}
+                            <div class="mb-2 text-center">
+                                <img src="{{ ficha.cedula_frontal.url }}" class="rounded shadow-sm border" style="max-height: 90px; max-width: 100%; object-fit: contain;">
+                            </div>
+                        {% endif %}
+                        {{ form.cedula_frontal }}
+                    </div>
+
+                    <!-- Cédula Posterior -->
+                    <div class="mb-2">
+                        <label class="form-label fw-semibold fs-8 text-secondary d-flex justify-content-between align-items-center">
+                            <span>Cédula Posterior</span>
+                            {% if ficha.cedula_posterior %}
+                                <a href="{{ ficha.cedula_posterior.url }}" target="_blank" class="fs-9 text-primary text-decoration-none"><i class="fa-solid fa-arrow-up-right-from-square me-1"></i>Ver actual</a>
+                            {% endif %}
+                        </label>
+                        {% if ficha.cedula_posterior %}
+                            <div class="mb-2 text-center">
+                                <img src="{{ ficha.cedula_posterior.url }}" class="rounded shadow-sm border" style="max-height: 90px; max-width: 100%; object-fit: contain;">
+                            </div>
+                        {% endif %}
+                        {{ form.cedula_posterior }}
+                    </div>
+                </div>
+
+                <!-- BOTONES DE ACCIÓN PRINCIPALES -->
+                <div class="card card-custom p-3 bg-white border-0 shadow-sm rounded-4">
+                    <button type="submit" class="btn btn-primary w-100 py-2.5 rounded-pill fw-bold shadow-sm mb-2">
+                        <i class="fa-solid fa-floppy-disk me-2"></i>Guardar Cambios
+                    </button>
+                    <a href="{% if next %}{{ next }}{% else %}{% url 'club_portal' %}{% endif %}" class="btn btn-outline-secondary w-100 py-2 rounded-pill fw-semibold fs-8">
+                        Cancelar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

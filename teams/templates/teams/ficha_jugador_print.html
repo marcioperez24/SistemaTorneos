@@ -158,9 +158,17 @@
             <a href="{% url 'club_portal' %}" class="btn btn-outline-secondary">
                 <i class="fa-solid fa-arrow-left me-2"></i>Volver al Portal
             </a>
-            <button onclick="window.print()" class="btn btn-success px-4 py-2 fw-bold shadow">
-                <i class="fa-solid fa-print me-2"></i>Imprimir Ficha Oficial
-            </button>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{% url 'editar_jugador' ficha.id %}{% if es_dt %}?tipo=dt{% endif %}" class="btn btn-primary px-3 py-2 fw-bold shadow-sm">
+                    <i class="fa-solid fa-user-pen me-2"></i>Editar Datos
+                </a>
+                <a href="{% url 'eliminar_jugador' ficha.id %}{% if es_dt %}?tipo=dt{% endif %}" class="btn btn-outline-danger px-3 py-2 fw-bold shadow-sm">
+                    <i class="fa-solid fa-user-xmark me-2"></i>Expulsar
+                </a>
+                <button onclick="window.print()" class="btn btn-success px-4 py-2 fw-bold shadow">
+                    <i class="fa-solid fa-print me-2"></i>Imprimir Ficha Oficial
+                </button>
+            </div>
         </div>
     </div>
 

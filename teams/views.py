@@ -9,7 +9,7 @@ import urllib.parse
 from django.db import models, transaction, IntegrityError
 import logging
 from .models import Equipo, InvitacionEquipo, FichaJugador, FichaDT, Categoria
-from .forms import EquipoForm, PlayerRegistrationForm, DTRegistrationForm, CategoriaForm
+from .forms import EquipoForm, PlayerRegistrationForm, DTRegistrationForm, CategoriaForm, PlayerEditForm, DTEditForm
 from django.contrib.auth.forms import AuthenticationForm
 from matches.models import Torneo
 from finances.models import PagoInscripcion, MultaTarjeta, CobroEquipo
@@ -944,6 +944,99 @@ def ver_ficha(request, ficha_id):
         'tipo': tipo
     }
     return render(request, 'teams/ficha_jugador_print.html', context)
+
+@login_required
+def editar_jugador(request, ficha_id):
+    tipo = request.GET.get('tipo', 'jugador')
+    if tipo == 'dt':
+        ficha = get_object_or_404(FichaDT, id=ficha_id, organizacion=request.organizacion)
+        FormClass = DTEditForm
+    else:
+        ficha = get_object_or_404(FichaJugador, id=ficha_id, organizacion=request.organizacion)
+        FormClass = PlayerEditForm
+
+    # Permisos: Superadmin, Comisión, Secretaría o el dirigente del equipo
+    es_dirigente = (ficha.equipo and ficha.equipo.dirigente == request.user)
+    es_staff = (request.user.role in ['superadmin', 'comision', 'secretaria'] 
+                or request.user.is_superuser 
+                or request.user.has_module_access('equipos') 
+                or request.user.has_module_access('secretaria'))
+    if not (es_dirigente or es_staff):
+        messages.error(request, "No tienes permisos para editar los datos de este participante.")
+        return redirect('club_portal')
+
+    if request.method == 'POST':
+        form = FormClass(request.POST, request.FILES, instance=ficha, user=request.user, organizacion=request.organizacion)
+        if form.is_valid():
+            form.save()
+            nombre = ficha.user.get_full_name() or ficha.user.username
+            rol_str = "Director Técnico" if tipo == 'dt' else "Jugador"
+            messages.success(request, f"¡Los datos de {nombre} ({rol_str}) se han actualizado correctamente!")
+            next_url = request.POST.get('next') or request.GET.get('next')
+            if next_url:
+                return redirect(next_url)
+            return redirect('club_portal')
+    else:
+        form = FormClass(instance=ficha, user=request.user, organizacion=request.organizacion)
+
+    context = {
+        'form': form,
+        'ficha': ficha,
+        'tipo': tipo,
+        'next': request.GET.get('next', ''),
+    }
+    return render(request, 'teams/editar_jugador.html', context)
+
+
+@login_required
+def eliminar_jugador(request, ficha_id):
+    tipo = request.GET.get('tipo', 'jugador')
+    if tipo == 'dt':
+        ficha = get_object_or_404(FichaDT, id=ficha_id, organizacion=request.organizacion)
+    else:
+        ficha = get_object_or_404(FichaJugador, id=ficha_id, organizacion=request.organizacion)
+
+    # Permisos: Superadmin, Comisión, Secretaría o el dirigente del equipo
+    es_dirigente = (ficha.equipo and ficha.equipo.dirigente == request.user)
+    es_staff = (request.user.role in ['superadmin', 'comision', 'secretaria'] 
+                or request.user.is_superuser 
+                or request.user.has_module_access('equipos') 
+                or request.user.has_module_access('secretaria'))
+    if not (es_dirigente or es_staff):
+        messages.error(request, "No tienes permisos para expulsar o eliminar a este participante.")
+        return redirect('club_portal')
+
+    usuario = ficha.user
+    nombre = usuario.get_full_name() or usuario.username
+    equipo_nombre = ficha.equipo.nombre if ficha.equipo else "su equipo"
+    rol_str = "Director Técnico" if tipo == 'dt' else "Jugador"
+
+    if request.method == 'POST':
+        # Eliminar la ficha del equipo y torneo
+        ficha.delete()
+
+        # Si el usuario no tiene ninguna otra ficha y no tiene eventos de partido registrados ni roles administrativos, podemos limpiar su usuario
+        from matches.models import EventoPartido
+        tiene_otras_fichas = FichaJugador.objects.filter(user=usuario).exists() or FichaDT.objects.filter(user=usuario).exists()
+        tiene_eventos = EventoPartido.objects.filter(jugador=usuario).exists()
+        es_usuario_sistema = usuario.is_superuser or usuario.role in ['superadmin', 'vocal', 'arbitro', 'tesoreria', 'comision', 'secretaria', 'dirigente']
+
+        if not tiene_otras_fichas and not tiene_eventos and not es_usuario_sistema:
+            usuario.delete()
+
+        messages.success(request, f"¡{nombre} ({rol_str}) ha sido expulsado y eliminado del equipo '{equipo_nombre}' exitosamente! El cupo en la plantilla ha quedado liberado.")
+        
+        next_url = request.POST.get('next') or request.GET.get('next')
+        if next_url:
+            return redirect(next_url)
+        return redirect('club_portal')
+
+    context = {
+        'ficha': ficha,
+        'tipo': tipo,
+        'next': request.GET.get('next', ''),
+    }
+    return render(request, 'teams/confirmar_eliminar_jugador.html', context)
 
 @login_required
 def guardar_alineacion(request, equipo_id):

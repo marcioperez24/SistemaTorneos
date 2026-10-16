@@ -377,3 +377,186 @@ class CategoriaForm(forms.ModelForm):
         labels = {
             'nombre': 'Nombre de la Categoría',
         }
+
+
+class PlayerEditForm(forms.ModelForm):
+    first_name = forms.CharField(max_length=150, label="Nombres", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombres del jugador'}))
+    last_name = forms.CharField(max_length=150, label="Apellidos", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Apellidos del jugador'}))
+    email = forms.EmailField(required=False, label="Correo Electrónico", widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'correo@ejemplo.com'}))
+    telefono = forms.CharField(max_length=20, required=False, label="Teléfono / WhatsApp", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. 0987654321'}))
+
+    class Meta:
+        model = FichaJugador
+        fields = [
+            'nro_cedula', 'numero_camiseta', 'equipo', 'torneo',
+            'estado_validacion', 'motivo_rechazo', 'partidos_suspension', 'es_lesionado',
+            'tipo_sangre', 'contacto_emergencia', 'telefono_emergencia',
+            'foto', 'cedula_frontal', 'cedula_posterior'
+        ]
+        widgets = {
+            'nro_cedula': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. 1712345678'}),
+            'numero_camiseta': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Ej. 10', 'min': '1', 'max': '99'}),
+            'equipo': forms.Select(attrs={'class': 'form-select'}),
+            'torneo': forms.Select(attrs={'class': 'form-select'}),
+            'estado_validacion': forms.Select(attrs={'class': 'form-select'}),
+            'motivo_rechazo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Motivo si se rechaza'}),
+            'partidos_suspension': forms.NumberInput(attrs={'class': 'form-control', 'min': '0'}),
+            'es_lesionado': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'tipo_sangre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. O+'}),
+            'contacto_emergencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre familiar'}),
+            'telefono_emergencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Teléfono emergencia'}),
+            'foto': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'cedula_frontal': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'cedula_posterior': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
+        labels = {
+            'nro_cedula': 'Número de Cédula / Identificación',
+            'numero_camiseta': 'Número de Camiseta (Dorsal)',
+            'equipo': 'Equipo / Club Asignado',
+            'torneo': 'Torneo / Campeonato',
+            'estado_validacion': 'Estado del Carnet (Secretaría)',
+            'motivo_rechazo': 'Observación / Motivo de Rechazo',
+            'partidos_suspension': 'Partidos de Suspensión',
+            'es_lesionado': 'Reportar como Lesionado (Libera cupo)',
+            'tipo_sangre': 'Tipo de Sangre',
+            'contacto_emergencia': 'Contacto de Emergencia',
+            'telefono_emergencia': 'Teléfono de Emergencia',
+            'foto': 'Foto de Perfil / Selfie Carnet',
+            'cedula_frontal': 'Cédula Frontal',
+            'cedula_posterior': 'Cédula Posterior',
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        self.organizacion = kwargs.pop('organizacion', None)
+        super().__init__(*args, **kwargs)
+
+        if self.instance and self.instance.user:
+            self.fields['first_name'].initial = self.instance.user.first_name
+            self.fields['last_name'].initial = self.instance.user.last_name
+            self.fields['email'].initial = self.instance.user.email
+            self.fields['telefono'].initial = self.instance.user.telefono
+
+        from matches.models import Torneo
+        if self.organizacion:
+            self.fields['equipo'].queryset = Equipo.objects.filter(organizacion=self.organizacion).order_by('nombre')
+            self.fields['torneo'].queryset = Torneo.objects.filter(organizacion=self.organizacion).order_by('-id')
+
+        es_admin = (self.user and (self.user.role in ['superadmin', 'comision', 'secretaria'] or self.user.is_superuser))
+        if not es_admin:
+            self.fields['estado_validacion'].disabled = True
+            self.fields['motivo_rechazo'].disabled = True
+            self.fields['partidos_suspension'].disabled = True
+            if self.user and self.user.role == 'dirigente':
+                self.fields['equipo'].disabled = True
+
+    def clean_numero_camiseta(self):
+        numero = self.cleaned_data.get('numero_camiseta')
+        equipo = self.cleaned_data.get('equipo') or (self.instance.equipo if self.instance else None)
+        if numero is not None and equipo:
+            if numero < 1 or numero > 99:
+                raise forms.ValidationError("El número de camiseta debe estar entre 1 y 99.")
+            qs = FichaJugador.objects.filter(
+                equipo=equipo,
+                numero_camiseta=numero
+            ).exclude(estado_validacion='rechazado')
+            if self.instance and self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                ocupante = qs.first()
+                nombre_oc = ocupante.user.get_full_name() or ocupante.user.username
+                raise forms.ValidationError(
+                    f"El dorsal #{numero} ya está asignado a {nombre_oc} en el equipo '{equipo.nombre}'."
+                )
+        return numero
+
+    def save(self, commit=True):
+        ficha = super().save(commit=False)
+        if ficha.user:
+            user = ficha.user
+            user.first_name = self.cleaned_data.get('first_name', user.first_name)
+            user.last_name = self.cleaned_data.get('last_name', user.last_name)
+            user.email = self.cleaned_data.get('email', user.email)
+            user.telefono = self.cleaned_data.get('telefono', user.telefono)
+            user.save()
+        if commit:
+            ficha.save()
+        return ficha
+
+
+class DTEditForm(forms.ModelForm):
+    first_name = forms.CharField(max_length=150, label="Nombres", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombres'}))
+    last_name = forms.CharField(max_length=150, label="Apellidos", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Apellidos'}))
+    email = forms.EmailField(required=False, label="Correo Electrónico", widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'correo@ejemplo.com'}))
+    telefono = forms.CharField(max_length=20, required=False, label="Teléfono / WhatsApp", widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. 0987654321'}))
+
+    class Meta:
+        model = FichaDT
+        fields = [
+            'nro_cedula', 'equipo', 'torneo',
+            'estado_validacion', 'motivo_rechazo',
+            'tipo_sangre', 'contacto_emergencia', 'telefono_emergencia',
+            'foto', 'cedula_frontal', 'cedula_posterior'
+        ]
+        widgets = {
+            'nro_cedula': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. 1712345678'}),
+            'equipo': forms.Select(attrs={'class': 'form-select'}),
+            'torneo': forms.Select(attrs={'class': 'form-select'}),
+            'estado_validacion': forms.Select(attrs={'class': 'form-select'}),
+            'motivo_rechazo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Motivo si se rechaza'}),
+            'tipo_sangre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. O+'}),
+            'contacto_emergencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Nombre familiar'}),
+            'telefono_emergencia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Teléfono emergencia'}),
+            'foto': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'cedula_frontal': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+            'cedula_posterior': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
+        labels = {
+            'nro_cedula': 'Número de Cédula / Identificación',
+            'equipo': 'Equipo / Club Asignado',
+            'torneo': 'Torneo / Campeonato',
+            'estado_validacion': 'Estado del Carnet (Secretaría)',
+            'motivo_rechazo': 'Observación / Motivo de Rechazo',
+            'tipo_sangre': 'Tipo de Sangre',
+            'contacto_emergencia': 'Contacto de Emergencia',
+            'telefono_emergencia': 'Teléfono de Emergencia',
+            'foto': 'Foto de Perfil / Carnet',
+            'cedula_frontal': 'Cédula Frontal',
+            'cedula_posterior': 'Cédula Posterior',
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        self.organizacion = kwargs.pop('organizacion', None)
+        super().__init__(*args, **kwargs)
+
+        if self.instance and self.instance.user:
+            self.fields['first_name'].initial = self.instance.user.first_name
+            self.fields['last_name'].initial = self.instance.user.last_name
+            self.fields['email'].initial = self.instance.user.email
+            self.fields['telefono'].initial = self.instance.user.telefono
+
+        from matches.models import Torneo
+        if self.organizacion:
+            self.fields['equipo'].queryset = Equipo.objects.filter(organizacion=self.organizacion).order_by('nombre')
+            self.fields['torneo'].queryset = Torneo.objects.filter(organizacion=self.organizacion).order_by('-id')
+
+        es_admin = (self.user and (self.user.role in ['superadmin', 'comision', 'secretaria'] or self.user.is_superuser))
+        if not es_admin:
+            self.fields['estado_validacion'].disabled = True
+            self.fields['motivo_rechazo'].disabled = True
+            if self.user and self.user.role == 'dirigente':
+                self.fields['equipo'].disabled = True
+
+    def save(self, commit=True):
+        ficha = super().save(commit=False)
+        if ficha.user:
+            user = ficha.user
+            user.first_name = self.cleaned_data.get('first_name', user.first_name)
+            user.last_name = self.cleaned_data.get('last_name', user.last_name)
+            user.email = self.cleaned_data.get('email', user.email)
+            user.telefono = self.cleaned_data.get('telefono', user.telefono)
+            user.save()
+        if commit:
+            ficha.save()
+        return ficha

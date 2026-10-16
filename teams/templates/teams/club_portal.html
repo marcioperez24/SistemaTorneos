@@ -353,6 +353,10 @@
                                         {% else %}
                                             <span class="text-warning font-monospace ms-1" style="font-size: 0.7rem;">(En Revisión)</span>
                                         {% endif %}
+                                        <a href="{% url 'editar_jugador' dt_ficha.id %}?tipo=dt" class="text-primary ms-1" title="Editar datos del DT"><i class="fa-solid fa-user-pen"></i></a>
+                                        {% if request.user.role != 'jugador' %}
+                                            <a href="{% url 'eliminar_jugador' dt_ficha.id %}?tipo=dt" class="text-danger ms-1" title="Dar de baja / Expulsar al DT"><i class="fa-solid fa-user-xmark"></i></a>
+                                        {% endif %}
                                     </span>
                                 {% else %}
                                     <span class="badge bg-light text-muted border px-3 py-1.5 rounded-pill" style="font-size: 0.78rem;">
@@ -629,12 +633,20 @@
                                                         {% endif %}
                                                     </form>
                                                     {% endif %}
-                                                    <a href="{% url 'ver_ficha' jugador.id %}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1.5 fs-8 fw-semibold w-100" style="min-width: 85px;">
+                                                    <a href="{% url 'editar_jugador' jugador.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 fs-8 fw-semibold w-100" style="min-width: 85px;" title="Editar datos y dorsal del jugador">
+                                                        <i class="fa-solid fa-user-pen me-1"></i>Editar
+                                                    </a>
+                                                    <a href="{% url 'ver_ficha' jugador.id %}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 fs-8 fw-semibold w-100" style="min-width: 85px;">
                                                         <i class="fa-solid fa-print me-1"></i>Ficha
                                                     </a>
                                                     {% if jugador.estado_validacion == 'aprobado' %}
-                                                        <a href="{% url 'ver_carnet' jugador.id %}" target="_blank" class="btn btn-sm btn-outline-success rounded-pill px-2.5 py-1.5 fs-8 fw-semibold w-100" style="min-width: 85px;">
+                                                        <a href="{% url 'ver_carnet' jugador.id %}" target="_blank" class="btn btn-sm btn-outline-success rounded-pill px-2.5 py-1 fs-8 fw-semibold w-100" style="min-width: 85px;">
                                                             <i class="fa-solid fa-id-card me-1"></i>Carnet
+                                                        </a>
+                                                    {% endif %}
+                                                    {% if request.user.role != 'jugador' %}
+                                                        <a href="{% url 'eliminar_jugador' jugador.id %}" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1 fs-8 fw-semibold w-100" style="min-width: 85px;" title="Expulsar jugador y liberar cupo">
+                                                            <i class="fa-solid fa-user-xmark me-1"></i>Expulsar
                                                         </a>
                                                     {% endif %}
                                                 </div>
