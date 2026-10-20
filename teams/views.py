@@ -990,7 +990,7 @@ def editar_jugador(request, ficha_id):
 
 @login_required
 def eliminar_jugador(request, ficha_id):
-    tipo = request.GET.get('tipo', 'jugador')
+    tipo = request.POST.get('tipo') or request.GET.get('tipo', 'jugador')
     if tipo == 'dt':
         ficha = get_object_or_404(FichaDT, id=ficha_id, organizacion=request.organizacion)
     else:
@@ -1016,15 +1016,18 @@ def eliminar_jugador(request, ficha_id):
         ficha.delete()
 
         # Si el usuario no tiene ninguna otra ficha y no tiene eventos de partido registrados ni roles administrativos, podemos limpiar su usuario
-        from matches.models import EventoPartido
-        tiene_otras_fichas = FichaJugador.objects.filter(user=usuario).exists() or FichaDT.objects.filter(user=usuario).exists()
-        tiene_eventos = EventoPartido.objects.filter(jugador=usuario).exists()
-        es_usuario_sistema = usuario.is_superuser or usuario.role in ['superadmin', 'vocal', 'arbitro', 'tesoreria', 'comision', 'secretaria', 'dirigente']
+        try:
+            from matches.models import EventoPartido
+            tiene_otras_fichas = FichaJugador.objects.filter(user=usuario).exists() or FichaDT.objects.filter(user=usuario).exists()
+            tiene_eventos = EventoPartido.objects.filter(jugador=usuario).exists()
+            es_usuario_sistema = usuario.is_superuser or usuario.role in ['superadmin', 'vocal', 'arbitro', 'tesoreria', 'comision', 'secretaria', 'dirigente']
 
-        if not tiene_otras_fichas and not tiene_eventos and not es_usuario_sistema:
-            usuario.delete()
+            if not tiene_otras_fichas and not tiene_eventos and not es_usuario_sistema:
+                usuario.delete()
+        except Exception as e:
+            logger.warning(f"No se pudo limpiar usuario tras expulsar ficha: {e}")
 
-        messages.success(request, f"¡{nombre} ({rol_str}) ha sido expulsado y eliminado del equipo '{equipo_nombre}' exitosamente! El cupo en la plantilla ha quedado liberado.")
+        messages.success(request, f"¡{nombre} ({rol_str}) ha sido expulsado y dado de baja del equipo '{equipo_nombre}' exitosamente! El cupo en la plantilla ha quedado liberado.")
         
         next_url = request.POST.get('next') or request.GET.get('next')
         if next_url:

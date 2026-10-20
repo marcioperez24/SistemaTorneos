@@ -230,6 +230,34 @@
         align-items: center;
         justify-content: center;
     }
+
+    /* Modal responsive del portal de clubes */
+    @media (min-width: 992px) {
+        .modal-club-responsive {
+            max-width: 95vw !important;
+            width: 95vw !important;
+        }
+    }
+    .table-club-roster th, .table-club-roster td {
+        padding: 0.65rem 0.6rem;
+        vertical-align: middle;
+    }
+    .btn-action-compact {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        transition: all 0.15s ease-in-out;
+    }
+    .btn-action-compact:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+    }
+
 </style>
 {% endblock %}
 
@@ -430,7 +458,7 @@
 
             <!-- Modal XL de Gestión para {{ equipo.nombre }} -->
             <div class="modal fade" id="modalGestionEquipo{{ equipo.id }}" tabindex="-1" aria-labelledby="modalGestionEquipoLabel{{ equipo.id }}" aria-hidden="true">
-                <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-dialog modal-fullscreen-lg-down modal-xl modal-dialog-centered modal-dialog-scrollable modal-club-responsive">
                     <div class="modal-content border-0 shadow-lg rounded-4">
                         <div class="modal-header bg-dark text-white rounded-top-4 py-3 px-4">
                             <div class="d-flex align-items-center gap-3">
@@ -543,111 +571,135 @@
                             </div>
                         </div>
 
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle" style="min-width: 800px;">
-                                <thead class="table-light text-uppercase fs-7 tracking-wider">
+                        <!-- VISTA TABLA COMPACTA (Pantallas >= 768px) -->
+                        <div class="table-responsive d-none d-md-block">
+                            <table class="table table-hover align-middle table-club-roster mb-0">
+                                <thead class="table-light text-uppercase fs-8 text-secondary tracking-wider">
                                     <tr>
-                                        <th>Foto</th>
-                                        <th>Nombre Completo</th>
-                                        <th>Cédula</th>
-                                        <th>Torneo / Categoría</th>
-                                        <th>Camiseta</th>
-                                        <th>Tipo Sangre</th>
-                                        <th>Contacto Emergencia</th>
-                                        <th>Firma Salud</th>
-                                        <th>Estado Carnet</th>
-                                        <th class="text-center">Acciones</th>
+                                        <th style="width: 50px;" class="text-center">#</th>
+                                        <th>Jugador / Datos</th>
+                                        <th>Torneo</th>
+                                        <th>Salud / Emergencia</th>
+                                        <th class="text-center" style="width: 120px;">Estado</th>
+                                        <th class="text-end" style="width: 180px;">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for jugador in equipo.jugadores.all %}
                                         <tr>
-                                            <td>
-                                                {% if jugador.foto %}
-                                                    <img src="{{ jugador.foto.url }}" alt="{{ jugador.user.get_full_name }}" class="rounded shadow-sm" loading="lazy" decoding="async" style="width: 50px; height: 50px; object-fit: cover;">
-                                                {% else %}
-                                                    <div class="bg-secondary rounded shadow-sm d-flex align-items-center justify-content-center text-white" style="width: 50px; height: 50px;">
-                                                        <i class="fa-regular fa-user"></i>
-                                                    </div>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                <div class="fw-bold">
-                                                    {{ jugador.user.get_full_name }}
-                                                    {% if jugador.es_lesionado %}
-                                                        <span class="badge bg-danger ms-2"><i class="fa-solid fa-briefcase-medical me-1"></i>LESIONADO</span>
-                                                    {% endif %}
-                                                </div>
-                                                <small class="text-muted d-block">{{ jugador.user.email }}</small>
-                                                {% if jugador.user.telefono %}
-                                                    <small class="text-primary d-block fw-semibold mt-0.5"><i class="fa-solid fa-phone me-1 fs-9"></i>{{ jugador.user.telefono }}</small>
-                                                {% endif %}
-                                            </td>
-                                            <td class="font-monospace text-secondary">{{ jugador.nro_cedula|default:"-" }}</td>
-                                            <td>
-                                                <span class="badge bg-secondary px-2 py-1">{{ jugador.torneo.nombre|default:"Sin Torneo" }}</span>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle font-monospace fw-bold px-2.5 py-1.5" style="font-size: 0.85rem;">
+                                            <!-- Camiseta -->
+                                            <td class="text-center">
+                                                <span class="badge bg-primary text-white font-monospace fw-bold px-2 py-1 fs-7 rounded-2 shadow-2xs">
                                                     #{{ jugador.numero_camiseta|default:"-" }}
                                                 </span>
                                             </td>
+
+                                            <!-- Jugador (Foto, Nombre, Cédula, Teléfono) -->
                                             <td>
-                                                <span class="badge bg-light text-dark font-monospace border">{{ jugador.tipo_sangre|default:"-" }}</span>
+                                                <div class="d-flex align-items-center gap-2.5">
+                                                    {% if jugador.foto %}
+                                                        <img src="{{ jugador.foto.url }}" alt="{{ jugador.user.get_full_name }}" class="rounded-circle shadow-xs flex-shrink-0" loading="lazy" decoding="async" style="width: 40px; height: 40px; object-fit: cover;">
+                                                    {% else %}
+                                                        <div class="bg-light border text-muted rounded-circle shadow-xs d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px;">
+                                                            <i class="fa-solid fa-user"></i>
+                                                        </div>
+                                                    {% endif %}
+                                                    <div class="lh-sm text-truncate" style="max-width: 250px;">
+                                                        <span class="fw-bold text-dark d-block text-truncate" title="{{ jugador.user.get_full_name }}">
+                                                            {{ jugador.user.get_full_name }}
+                                                            {% if jugador.es_lesionado %}
+                                                                <span class="badge bg-danger ms-1 px-1.5 py-0.5 fs-9"><i class="fa-solid fa-briefcase-medical me-0.5"></i>LES</span>
+                                                            {% endif %}
+                                                        </span>
+                                                        <small class="text-muted font-monospace fs-8">
+                                                            C.I: {{ jugador.nro_cedula|default:jugador.user.username }}
+                                                            {% if jugador.user.telefono %} • <i class="fa-solid fa-phone fs-9 text-secondary"></i> {{ jugador.user.telefono }}{% endif %}
+                                                        </small>
+                                                    </div>
+                                                </div>
                                             </td>
+
+                                            <!-- Torneo / Categoría -->
                                             <td>
-                                                <div>{{ jugador.contacto_emergencia|default:"-" }}</div>
-                                                <small class="text-muted">{{ jugador.telefono_emergencia|default:"" }}</small>
-                                            </td>
-                                            <td>
-                                                {% if jugador.firma_digital %}
-                                                    <span class="text-success"><i class="fa-solid fa-circle-check me-1"></i>Firmada</span>
-                                                {% else %}
-                                                    <span class="text-danger"><i class="fa-solid fa-circle-xmark me-1"></i>Pendiente</span>
+                                                <span class="badge bg-light text-dark border px-2 py-1 text-truncate d-inline-block" style="max-width: 170px;" title="{{ jugador.torneo.nombre|default:'Sin Torneo' }}">
+                                                    <i class="fa-solid fa-trophy text-warning me-1"></i>{{ jugador.torneo.nombre|default:"Sin Torneo" }}
+                                                </span>
+                                                {% if equipo.categoria %}
+                                                    <small class="text-muted d-block mt-0.5 fs-8">Cat: {{ equipo.get_categoria_display }}</small>
                                                 {% endif %}
                                             </td>
+
+                                            <!-- Salud / Emergencia -->
                                             <td>
+                                                <div class="d-flex flex-wrap align-items-center gap-1">
+                                                    <span class="badge bg-secondary-subtle text-secondary border font-monospace px-1.5 py-0.5 fs-8" title="Tipo de sangre">
+                                                        {{ jugador.tipo_sangre|default:"S/D" }}
+                                                    </span>
+                                                    {% if jugador.firma_digital %}
+                                                        <span class="badge bg-success-subtle text-success border border-success-subtle px-1.5 py-0.5 fs-9" title="Firma digital de salud"><i class="fa-solid fa-signature"></i> Firmado</span>
+                                                    {% else %}
+                                                        <span class="badge bg-warning-subtle text-dark border border-warning-subtle px-1.5 py-0.5 fs-9" title="Firma pendiente"><i class="fa-solid fa-clock"></i> Sin firma</span>
+                                                    {% endif %}
+                                                </div>
+                                                {% if jugador.contacto_emergencia %}
+                                                    <div class="text-muted fs-9 text-truncate mt-0.5" style="max-width: 160px;" title="Emergencia: {{ jugador.contacto_emergencia }} {{ jugador.telefono_emergencia|default:'' }}">
+                                                        <i class="fa-solid fa-heart-pulse me-0.5 text-danger"></i>{{ jugador.contacto_emergencia }}
+                                                    </div>
+                                                {% endif %}
+                                            </td>
+
+                                            <!-- Estado Carnet -->
+                                            <td class="text-center">
                                                 {% if jugador.estado_validacion == 'aprobado' %}
-                                                    <span class="badge bg-success py-2 px-3 rounded-pill text-uppercase fs-8"><i class="fa-solid fa-id-card me-1"></i>Aprobado</span>
+                                                    <span class="badge bg-success px-2 py-1 rounded-pill fs-8"><i class="fa-solid fa-id-card me-1"></i>Aprobado</span>
                                                 {% elif jugador.estado_validacion == 'pendiente' %}
-                                                    <span class="badge bg-warning text-dark py-2 px-3 rounded-pill text-uppercase fs-8"><i class="fa-solid fa-hourglass-half me-1"></i>En Revisión</span>
+                                                    <span class="badge bg-warning text-dark px-2 py-1 rounded-pill fs-8"><i class="fa-solid fa-hourglass-half me-1"></i>Revisión</span>
                                                 {% else %}
-                                                    <span class="badge bg-danger py-2 px-3 rounded-pill text-uppercase fs-8" data-bs-toggle="tooltip" title="{{ jugador.motivo_rechazo }}">
+                                                    <span class="badge bg-danger px-2 py-1 rounded-pill fs-8" data-bs-toggle="tooltip" title="{{ jugador.motivo_rechazo }}">
                                                         <i class="fa-solid fa-triangle-exclamation me-1"></i>Rechazado
                                                     </span>
                                                 {% endif %}
                                             </td>
-                                            <td class="text-center">
-                                                <div class="d-flex flex-column gap-1 align-items-center">
+
+                                            <!-- Acciones Compactas -->
+                                            <td class="text-end">
+                                                <div class="d-inline-flex align-items-center justify-content-end gap-1">
+                                                    <!-- Editar -->
+                                                    <a href="{% url 'editar_jugador' jugador.id %}" class="btn btn-outline-primary btn-action-compact" data-bs-toggle="tooltip" title="Editar datos y dorsal">
+                                                        <i class="fa-solid fa-user-pen"></i>
+                                                    </a>
+
+                                                    <!-- Ficha Oficial -->
+                                                    <a href="{% url 'ver_ficha' jugador.id %}" target="_blank" class="btn btn-outline-secondary btn-action-compact" data-bs-toggle="tooltip" title="Imprimir Ficha Oficial">
+                                                        <i class="fa-solid fa-print"></i>
+                                                    </a>
+
+                                                    <!-- Carnet -->
+                                                    {% if jugador.estado_validacion == 'aprobado' %}
+                                                    <a href="{% url 'ver_carnet' jugador.id %}" target="_blank" class="btn btn-outline-success btn-action-compact" data-bs-toggle="tooltip" title="Ver Carnet">
+                                                        <i class="fa-solid fa-id-card"></i>
+                                                    </a>
+                                                    {% endif %}
+
+                                                    <!-- Lesión -->
                                                     {% if request.user.role != 'jugador' %}
-                                                    <form action="{% url 'toggle_lesion' jugador.id %}" method="POST" class="w-100 mb-1">
+                                                    <form action="{% url 'toggle_lesion' jugador.id %}" method="POST" class="d-inline m-0 p-0">
                                                         {% csrf_token %}
                                                         {% if jugador.es_lesionado %}
-                                                            <button type="submit" class="btn btn-success btn-sm w-100" title="Dar de Alta (Quitar Lesión)">
-                                                                <i class="fa-solid fa-notes-medical me-1"></i>Alta
+                                                            <button type="submit" class="btn btn-success btn-action-compact" data-bs-toggle="tooltip" title="Dar de Alta médica (Quitar lesión)">
+                                                                <i class="fa-solid fa-notes-medical"></i>
                                                             </button>
                                                         {% else %}
-                                                            <button type="submit" data-confirm="¿Estás seguro de que deseas reportar la lesión de este jugador? Al hacerlo, se liberará un cupo temporal y podrás inscribir a otro jugador más." class="btn btn-outline-danger btn-sm w-100" title="Reportar Lesión (Libera un cupo temporal)">
-                                                                <i class="fa-solid fa-briefcase-medical me-1"></i>Lesión
+                                                            <button type="submit" data-confirm="¿Reportar lesión de este jugador? Se liberará un cupo temporal." class="btn btn-outline-warning text-dark btn-action-compact" data-bs-toggle="tooltip" title="Reportar Lesión (Libera cupo temporal)">
+                                                                <i class="fa-solid fa-briefcase-medical"></i>
                                                             </button>
                                                         {% endif %}
                                                     </form>
-                                                    {% endif %}
-                                                    <a href="{% url 'editar_jugador' jugador.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-2.5 py-1 fs-8 fw-semibold w-100" style="min-width: 85px;" title="Editar datos y dorsal del jugador">
-                                                        <i class="fa-solid fa-user-pen me-1"></i>Editar
-                                                    </a>
-                                                    <a href="{% url 'ver_ficha' jugador.id %}" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5 py-1 fs-8 fw-semibold w-100" style="min-width: 85px;">
-                                                        <i class="fa-solid fa-print me-1"></i>Ficha
-                                                    </a>
-                                                    {% if jugador.estado_validacion == 'aprobado' %}
-                                                        <a href="{% url 'ver_carnet' jugador.id %}" target="_blank" class="btn btn-sm btn-outline-success rounded-pill px-2.5 py-1 fs-8 fw-semibold w-100" style="min-width: 85px;">
-                                                            <i class="fa-solid fa-id-card me-1"></i>Carnet
-                                                        </a>
-                                                    {% endif %}
-                                                    {% if request.user.role != 'jugador' %}
-                                                        <a href="{% url 'eliminar_jugador' jugador.id %}" class="btn btn-sm btn-outline-danger rounded-pill px-2.5 py-1 fs-8 fw-semibold w-100" style="min-width: 85px;" title="Expulsar jugador y liberar cupo">
-                                                            <i class="fa-solid fa-user-xmark me-1"></i>Expulsar
-                                                        </a>
+
+                                                    <!-- Expulsar / Eliminar -->
+                                                    <button type="button" class="btn btn-outline-danger btn-action-compact" onclick="confirmarExpulsionDirecta({{ jugador.id }}, '{{ jugador.user.get_full_name|escapejs }}', '{{ equipo.nombre|escapejs }}', 'jugador')" data-bs-toggle="tooltip" title="Expulsar jugador y liberar cupo">
+                                                        <i class="fa-solid fa-user-xmark"></i>
+                                                    </button>
                                                     {% endif %}
                                                 </div>
                                             </td>
@@ -655,6 +707,72 @@
                                     {% endfor %}
                                 </tbody>
                             </table>
+                        </div>
+
+                        <!-- VISTA TARJETAS RESPONSIVE (Móviles < 768px) -->
+                        <div class="d-md-none d-flex flex-column gap-2.5">
+                            {% for jugador in equipo.jugadores.all %}
+                                <div class="card border rounded-3 p-3 shadow-2xs bg-white">
+                                    <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                                        <div class="d-flex align-items-center gap-2">
+                                            {% if jugador.foto %}
+                                                <img src="{{ jugador.foto.url }}" alt="{{ jugador.user.get_full_name }}" class="rounded-circle shadow-xs" style="width: 42px; height: 42px; object-fit: cover;">
+                                            {% else %}
+                                                <div class="bg-light border text-muted rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                                                    <i class="fa-solid fa-user"></i>
+                                                </div>
+                                            {% endif %}
+                                            <div>
+                                                <div class="fw-bold text-dark lh-sm">
+                                                    {{ jugador.user.get_full_name }}
+                                                </div>
+                                                <small class="text-muted font-monospace fs-8">
+                                                    C.I: {{ jugador.nro_cedula|default:jugador.user.username }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                        <span class="badge bg-primary text-white font-monospace fs-7 px-2 py-1 rounded-2">
+                                            #{{ jugador.numero_camiseta|default:"-" }}
+                                        </span>
+                                    </div>
+
+                                    <div class="d-flex flex-wrap gap-1.5 align-items-center mb-2.5 fs-8">
+                                        {% if jugador.estado_validacion == 'aprobado' %}
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle"><i class="fa-solid fa-check me-1"></i>Aprobado</span>
+                                        {% elif jugador.estado_validacion == 'pendiente' %}
+                                            <span class="badge bg-warning-subtle text-dark border border-warning-subtle"><i class="fa-solid fa-clock me-1"></i>En Revisión</span>
+                                        {% else %}
+                                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle"><i class="fa-solid fa-times me-1"></i>Rechazado</span>
+                                        {% endif %}
+
+                                        <span class="badge bg-light text-secondary border font-monospace">{{ jugador.tipo_sangre|default:"S/D" }}</span>
+
+                                        {% if jugador.es_lesionado %}
+                                            <span class="badge bg-danger text-white"><i class="fa-solid fa-briefcase-medical me-1"></i>Lesionado</span>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Botones de Acción Móvil -->
+                                    <div class="d-flex gap-1.5 align-items-center">
+                                        <a href="{% url 'editar_jugador' jugador.id %}" class="btn btn-sm btn-outline-primary py-1 px-2.5 fs-8 fw-semibold rounded-2 flex-fill text-center">
+                                            <i class="fa-solid fa-user-pen me-1"></i>Editar
+                                        </a>
+                                        <a href="{% url 'ver_ficha' jugador.id %}" target="_blank" class="btn btn-sm btn-outline-secondary py-1 px-2 fs-8 fw-semibold rounded-2 text-center" title="Ficha">
+                                            <i class="fa-solid fa-print"></i>
+                                        </a>
+                                        {% if jugador.estado_validacion == 'aprobado' %}
+                                        <a href="{% url 'ver_carnet' jugador.id %}" target="_blank" class="btn btn-sm btn-outline-success py-1 px-2 fs-8 fw-semibold rounded-2 text-center" title="Carnet">
+                                            <i class="fa-solid fa-id-card"></i>
+                                        </a>
+                                        {% endif %}
+                                        {% if request.user.role != 'jugador' %}
+                                        <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2.5 fs-8 fw-semibold rounded-2 flex-fill text-center" onclick="confirmarExpulsionDirecta({{ jugador.id }}, '{{ jugador.user.get_full_name|escapejs }}', '{{ equipo.nombre|escapejs }}', 'jugador')">
+                                            <i class="fa-solid fa-user-xmark me-1"></i>Expulsar
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
                         </div>
                     {% endif %}
                     </div> <!-- /roster-pane -->
@@ -1347,6 +1465,16 @@
             alert('Error al conectar con el servidor.');
         });
     }
+
+    function confirmarExpulsionDirecta(fichaId, nombre, equipo, tipo) {
+        document.getElementById('expulsionNombre').textContent = nombre;
+        document.getElementById('expulsionEquipo').textContent = 'Equipo: ' + equipo;
+        document.getElementById('expulsionTipo').value = tipo || 'jugador';
+        document.getElementById('formExpulsionDirecta').action = '/equipos/ficha/' + fichaId + '/eliminar/';
+        var modal = new bootstrap.Modal(document.getElementById('modalConfirmarExpulsion'));
+        modal.show();
+    }
+
 </script>
 
 <!-- Modal: Carga Masiva de Equipos vía Excel -->
@@ -1418,4 +1546,40 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de Confirmación de Expulsión Rápida -->
+<div class="modal fade" id="modalConfirmarExpulsion" tabindex="-1" aria-labelledby="modalConfirmarExpulsionLabel" aria-hidden="true" style="z-index: 1070;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="modal-header bg-danger text-white py-2.5 px-3">
+                <h6 class="modal-title fw-bold mb-0" id="modalConfirmarExpulsionLabel">
+                    <i class="fa-solid fa-user-xmark me-2"></i>Confirmar Expulsión / Baja
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" id="formExpulsionDirecta" action="">
+                {% csrf_token %}
+                <input type="hidden" name="tipo" id="expulsionTipo" value="jugador">
+                <div class="modal-body p-4 text-center">
+                    <div class="rounded-circle bg-danger-subtle text-danger d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                        <i class="fa-solid fa-user-xmark fa-2x"></i>
+                    </div>
+                    <h5 class="fw-bold mb-1 text-dark" id="expulsionNombre">Nombre del Jugador</h5>
+                    <p class="text-muted small mb-3" id="expulsionEquipo">Equipo</p>
+                    <div class="alert alert-warning text-start small mb-0 py-2.5 px-3 border-0 bg-warning-subtle rounded-3">
+                        <i class="fa-solid fa-triangle-exclamation text-warning me-1"></i>
+                        El participante será dado de baja del equipo y <strong>se liberará su cupo de inmediato</strong> en la plantilla.
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-2 px-3 border-0 d-flex justify-content-end gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-sm btn-danger rounded-pill px-3 fw-bold shadow-sm">
+                        <i class="fa-solid fa-trash-can me-1"></i>Sí, Expulsar del Equipo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

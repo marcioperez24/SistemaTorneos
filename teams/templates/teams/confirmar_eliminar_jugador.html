@@ -1,4 +1,4 @@
-{% extends "base_sidebar.html" %}
+{% extends 'teams/base.html' %}
 {% load static %}
 
 {% block title %}Confirmar Expulsión / Eliminación | Sistema de Torneos{% endblock %}
@@ -27,6 +27,11 @@
                     {% if ficha.numero_camiseta %}
                         <span class="badge bg-primary">Dorsal: #{{ ficha.numero_camiseta }}</span>
                     {% endif %}
+                    {% if tipo == 'dt' %}
+                        <span class="badge bg-dark">Director Técnico</span>
+                    {% else %}
+                        <span class="badge bg-info text-dark">Jugador</span>
+                    {% endif %}
                 </p>
                 <div class="p-3 bg-light rounded-3 text-start small border">
                     <div class="row g-2">
@@ -34,9 +39,9 @@
                         <div class="col-6"><strong>Torneo:</strong> {{ ficha.torneo.nombre|default:"Sin torneo" }}</div>
                         <div class="col-6"><strong>Posición / Rol:</strong> {{ ficha.posicion|default:"No especificado" }}</div>
                         <div class="col-6"><strong>Estado Ficha:</strong> 
-                            {% if ficha.estado_validacion == 'aprobada' %}
+                            {% if ficha.estado_validacion == 'aprobada' or ficha.estado_validacion == 'aprobado' %}
                                 <span class="badge bg-success">Aprobada</span>
-                            {% elif ficha.estado_validacion == 'rechazada' %}
+                            {% elif ficha.estado_validacion == 'rechazada' or ficha.estado_validacion == 'rechazado' %}
                                 <span class="badge bg-danger">Rechazada</span>
                             {% else %}
                                 <span class="badge bg-warning text-dark">Pendiente</span>
@@ -51,16 +56,18 @@
                 <div>
                     <h6 class="fw-bold mb-1">¿Qué sucederá al expulsar o eliminar?</h6>
                     <ul class="mb-0 ps-3 small">
-                        <li>El jugador o miembro del cuerpo técnico será <strong>dado de baja de la plantilla</strong> de {{ ficha.equipo.nombre }}.</li>
-                        <li><strong>Se liberará de inmediato el cupo</strong> en la plantilla del equipo.</li>
-                        <li>Si no tiene registros de partidos jugados o sanciones históricas, su cuenta será retirada del sistema para permitir volver a registrarlo limpiamente si fuera necesario.</li>
+                        <li>El participante será <strong>dado de baja de la plantilla</strong> de {{ ficha.equipo.nombre }}.</li>
+                        <li><strong>Se liberará de inmediato el cupo</strong> en la plantilla del equipo para inscribir a otro jugador si lo deseas.</li>
+                        <li>Si no tiene registros de partidos jugados o sanciones históricas, su usuario se limpiará del sistema para que pueda volver a ser registrado a futuro sin conflictos de cédula.</li>
                     </ul>
                 </div>
             </div>
 
             <form method="POST" action="{% url 'eliminar_jugador' ficha.id %}" class="d-flex justify-content-center gap-3">
                 {% csrf_token %}
-                <a href="javascript:history.back()" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-semibold">
+                <input type="hidden" name="tipo" value="{{ tipo|default:'jugador' }}">
+                <input type="hidden" name="next" value="{{ next|default:'' }}">
+                <a href="{% if next %}{{ next }}{% else %}{% url 'club_portal' %}{% endif %}" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-semibold">
                     <i class="fas fa-arrow-left me-1"></i> Cancelar
                 </a>
                 <button type="submit" class="btn btn-danger px-4 py-2 rounded-pill fw-bold shadow-sm">
