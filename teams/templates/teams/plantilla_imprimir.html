@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planilla Oficial de Jugadores - {{ equipo.nombre }} | {{ organizacion.nombre|default:"Fútbol Pro" }}</title>
+    <title>Planilla Oficial de Jugadores - {{ equipo.nombre }} | {{ organizacion.nombre|default:"FÃºtbol Pro" }}</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -163,7 +163,7 @@
             color: #ffffff;
         }
 
-        /* HOJA DE IMPRESIÓN (ESTILO DOCUMENTO OFICIAL) */
+        /* HOJA DE IMPRESIÃN (ESTILO DOCUMENTO OFICIAL) */
         .page-wrapper {
             padding: 24px;
             display: flex;
@@ -181,7 +181,7 @@
             position: relative;
         }
 
-        /* ENCABEZADO DUAL: SISTEMA / ORGANIZACIÓN Y EQUIPO */
+        /* ENCABEZADO DUAL: SISTEMA / ORGANIZACIÃN Y EQUIPO */
         .sheet-header {
             display: grid;
             grid-template-columns: 1fr auto 1fr;
@@ -192,7 +192,7 @@
             margin-bottom: 14px;
         }
 
-        /* LADO IZQUIERDO: SISTEMA Y ORGANIZACIÓN */
+        /* LADO IZQUIERDO: SISTEMA Y ORGANIZACIÃN */
         .header-system {
             display: flex;
             align-items: center;
@@ -255,7 +255,7 @@
             margin-top: 2px;
         }
 
-        /* CENTRO: TÍTULO DEL DOCUMENTO Y TORNEO */
+        /* CENTRO: TÃTULO DEL DOCUMENTO Y TORNEO */
         .header-title-box {
             text-align: center;
             padding: 0 10px;
@@ -382,7 +382,7 @@
             font-size: 1.2rem;
         }
 
-        /* BARRA RESUMEN DE NÓMINA (KPIs) */
+        /* BARRA RESUMEN DE NÃMINA (KPIs) */
         .roster-summary-bar {
             display: flex;
             align-items: center;
@@ -471,7 +471,7 @@
             color: #1e293b;
         }
 
-        /* CELDA DE FOTO PEQUEÑA */
+        /* CELDA DE FOTO PEQUEÃA */
         .player-thumb-cell {
             width: 44px;
             text-align: center;
@@ -580,10 +580,48 @@
             font-weight: 800;
         }
 
-        /* LÍNEA DE FIRMA PARA CADA FILA */
+        /* LÃNEA DE FIRMA PARA CADA FILA */
+        /* LÍNEA Y RECUADRO DE FIRMA PARA CADA FILA */
         .sign-cell {
-            min-width: 105px;
+            width: 130px;
+            min-width: 115px;
+            max-width: 145px;
             text-align: center;
+            vertical-align: middle;
+            padding: 2px 4px !important;
+        }
+
+        .player-sign-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 38px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .player-sign-img {
+            max-height: 36px;
+            max-width: 125px;
+            width: auto;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+            filter: contrast(130%) brightness(90%);
+        }
+
+        .sign-badge-digital {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            font-size: 0.58rem;
+            font-weight: 700;
+            color: #166534;
+            background: #dcfce7;
+            border: 1px solid #bbf7d0;
+            padding: 1px 4px;
+            border-radius: 3px;
+            text-transform: uppercase;
         }
 
         .sign-line-placeholder {
@@ -593,7 +631,14 @@
             width: 90%;
         }
 
-        /* SECCIÓN CUERPO TÉCNICO (DT / STAFF) */
+        @media print {
+            .player-sign-img {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+
+        /* SECCIÃN CUERPO TÃCNICO (DT / STAFF) */
         .section-dt {
             margin-top: 14px;
             margin-bottom: 16px;
@@ -720,7 +765,7 @@
             color: #64748b;
         }
 
-        /* PIE DE PÁGINA DEL DOCUMENTO */
+        /* PIE DE PÃGINA DEL DOCUMENTO */
         .sheet-footer {
             margin-top: 14px;
             padding-top: 10px;
@@ -745,7 +790,7 @@
             width: auto;
         }
 
-        /* ESTILOS DE IMPRESIÓN OFICIAL */
+        /* ESTILOS DE IMPRESIÃN OFICIAL */
         @media print {
             @page {
                 size: letter portrait;
@@ -825,14 +870,14 @@
 </head>
 <body>
 
-    <!-- BARRA DE ACCIÓN FLOTANTE (SOLO PANTALLA) -->
+    <!-- BARRA DE ACCIÃN FLOTANTE (SOLO PANTALLA) -->
     <div class="print-toolbar">
         <div class="toolbar-info">
             <div class="toolbar-logo-badge">
                 {% if organizacion.logo %}
                     <img src="{{ organizacion.logo.url }}" alt="{{ organizacion.nombre }}">
                 {% else %}
-                    <img src="{% static 'teams/images/logo.png' %}" alt="Fútbol Pro">
+                    <img src="{% static 'teams/images/logo.png' %}" alt="FÃºtbol Pro">
                 {% endif %}
             </div>
             <div>
@@ -841,7 +886,7 @@
                     Planilla de Jugadores: {{ equipo.nombre }}
                 </h1>
                 <p>
-                    {{ organizacion.nombre|default:"Fútbol Pro" }} • {{ torneo.nombre|default:"Torneo Oficial" }} • {{ equipo.get_categoria_display }}
+                    {{ organizacion.nombre|default:"FÃºtbol Pro" }} â¢ {{ torneo.nombre|default:"Torneo Oficial" }} â¢ {{ equipo.get_categoria_display }}
                 </p>
             </div>
         </div>
@@ -853,13 +898,13 @@
                     <i class="fa-solid fa-list"></i>
                     Todos ({{ total_registrados }})
                 </a>
-                <a href="?estado=aprobados{% if autoprint %}&autoprint=1{% endif %}" class="btn-toolbar btn-filter {% if estado_filtro == 'aprobados' %}active{% endif %}" title="Mostrar únicamente habilitados">
+                <a href="?estado=aprobados{% if autoprint %}&autoprint=1{% endif %}" class="btn-toolbar btn-filter {% if estado_filtro == 'aprobados' %}active{% endif %}" title="Mostrar Ãºnicamente habilitados">
                     <i class="fa-solid fa-circle-check text-emerald-400"></i>
                     Solo Habilitados ({{ total_aprobados }})
                 </a>
             </div>
 
-            <!-- Botón de Imprimir -->
+            <!-- BotÃ³n de Imprimir -->
             <button onclick="window.print()" class="btn-toolbar btn-print-main" title="Imprimir o Guardar como PDF">
                 <i class="fa-solid fa-print"></i>
                 Imprimir Planilla / PDF
@@ -882,41 +927,41 @@
     <div class="page-wrapper">
         <div class="official-sheet">
 
-            <!-- ENCABEZADO DUAL: SISTEMA/ORGANIZACIÓN + TÍTULO CENTRAL + EQUIPO -->
+            <!-- ENCABEZADO DUAL: SISTEMA/ORGANIZACIÃN + TÃTULO CENTRAL + EQUIPO -->
             <header class="sheet-header">
-                <!-- Lado Izquierdo: Sistema & Organización -->
+                <!-- Lado Izquierdo: Sistema & OrganizaciÃ³n -->
                 <div class="header-system">
                     <div class="system-logo-wrap">
                         {% if organizacion.logo %}
                             <img src="{{ organizacion.logo.url }}" alt="{{ organizacion.nombre }}" title="{{ organizacion.nombre }}">
                         {% else %}
-                            <img src="{% static 'teams/images/logo.png' %}" alt="Fútbol Pro" title="Fútbol Pro">
+                            <img src="{% static 'teams/images/logo.png' %}" alt="FÃºtbol Pro" title="FÃºtbol Pro">
                         {% endif %}
                     </div>
                     <div class="system-details">
-                        <div class="system-org-name">{{ organizacion.nombre|default:"FÚTBOL PRO" }}</div>
+                        <div class="system-org-name">{{ organizacion.nombre|default:"FÃTBOL PRO" }}</div>
                         <div class="system-platform-tag">
                             <img src="{% static 'teams/images/logo.png' %}" alt="Logo" style="height: 12px; width: auto; vertical-align: middle;">
-                            <span>SISTEMA FÚTBOL PRO</span>
+                            <span>SISTEMA FÃTBOL PRO</span>
                         </div>
                         <div class="system-extra-meta">
-                            {% if organizacion.telefono %}Tel: {{ organizacion.telefono }} • {% endif %}
+                            {% if organizacion.telefono %}Tel: {{ organizacion.telefono }} â¢ {% endif %}
                             {% if organizacion.correo %}{{ organizacion.correo }}{% else %}Control Oficial de Torneos{% endif %}
                         </div>
                     </div>
                 </div>
 
-                <!-- Centro: Título Oficial de la Planilla -->
+                <!-- Centro: TÃ­tulo Oficial de la Planilla -->
                 <div class="header-title-box">
                     <div class="doc-badge">DOCUMENTO OFICIAL DE COMPETENCIA</div>
                     <h2 class="doc-main-title">PLANILLA DE JUGADORES</h2>
                     <div class="doc-tournament">{{ torneo.nombre|default:"TORNEO OFICIAL"|upper }}</div>
                     <div class="doc-meta-pills">
-                        <span>CATEGORÍA: {{ equipo.get_categoria_display|upper }}</span>
-                        <span class="dot">•</span>
+                        <span>CATEGORÃA: {{ equipo.get_categoria_display|upper }}</span>
+                        <span class="dot">â¢</span>
                         <span>TEMPORADA: {{ torneo.temporada|default:"2026" }}</span>
-                        <span class="dot">•</span>
-                        <span>EMISIÓN: {{ fecha_impresion|date:"d/m/Y H:i" }}</span>
+                        <span class="dot">â¢</span>
+                        <span>EMISIÃN: {{ fecha_impresion|date:"d/m/Y H:i" }}</span>
                     </div>
                 </div>
 
@@ -944,7 +989,7 @@
                 </div>
             </header>
 
-            <!-- BARRA DE RESUMEN DE NÓMINA -->
+            <!-- BARRA DE RESUMEN DE NÃMINA -->
             <div class="roster-summary-bar">
                 <div class="summary-item">
                     <i class="fa-solid fa-users"></i>
@@ -975,7 +1020,7 @@
                 </div>
             </div>
 
-            <!-- TABLA PRINCIPAL DE JUGADORES CON SUS FOTOS PEQUEÑAS -->
+            <!-- TABLA PRINCIPAL DE JUGADORES CON SUS FOTOS PEQUEÃAS -->
             <div class="table-roster-wrap">
                 <table class="table-roster">
                     <thead>
@@ -983,9 +1028,9 @@
                             <th class="text-center" style="width: 32px;">#</th>
                             <th class="text-center" style="width: 48px;">FOTO</th>
                             <th style="width: 220px;">APELLIDOS Y NOMBRES</th>
-                            <th style="width: 105px;">CÉDULA / ID</th>
+                            <th style="width: 105px;">CÃDULA / ID</th>
                             <th class="text-center" style="width: 50px;">SANGRE</th>
-                            <th style="width: 110px;">TELÉFONO</th>
+                            <th style="width: 110px;">TELÃFONO</th>
                             <th style="width: 115px;">EMERGENCIA</th>
                             <th class="text-center" style="width: 85px;">ESTADO</th>
                             <th class="text-center" style="width: 110px;">FIRMA / ASISTENCIA</th>
@@ -1004,7 +1049,7 @@
                                         {% endif %}
                                     </td>
 
-                                    <!-- Foto Pequeña -->
+                                    <!-- Foto PequeÃ±a -->
                                     <td class="player-thumb-cell">
                                         <div class="player-thumb-box">
                                             {% if j.foto %}
@@ -1025,7 +1070,7 @@
                                         </div>
                                     </td>
 
-                                    <!-- Cédula -->
+                                    <!-- CÃ©dula -->
                                     <td>
                                         <strong style="font-family: monospace; font-size: 0.74rem;">
                                             {{ j.nro_cedula|default:j.user.username }}
@@ -1041,7 +1086,7 @@
                                         {% endif %}
                                     </td>
 
-                                    <!-- Teléfono Jugador -->
+                                    <!-- TelÃ©fono Jugador -->
                                     <td>
                                         {% if j.user.telefono %}
                                             <span style="font-size: 0.68rem; font-weight: 600;">
@@ -1072,7 +1117,7 @@
                                     <td class="text-center">
                                         {% if j.es_lesionado %}
                                             <span class="status-badge-table lesionado">
-                                                <i class="fa-solid fa-briefcase-medical"></i>Lesión
+                                                <i class="fa-solid fa-briefcase-medical"></i>LesiÃ³n
                                             </span>
                                         {% elif j.estado_validacion == 'aprobado' %}
                                             <span class="status-badge-table aprobado">
@@ -1091,7 +1136,18 @@
 
                                     <!-- Espacio para Firma / Control -->
                                     <td class="sign-cell">
-                                        <div class="sign-line-placeholder"></div>
+                                        {% if j.firma_imagen %}
+                                            <div class="player-sign-box">
+                                                <img src="{{ j.firma_imagen }}" class="player-sign-img" alt="Firma de {{ j.user.get_full_name }}">
+                                            </div>
+                                        {% elif j.firma_digital %}
+                                            <div class="player-sign-box flex-column justify-content-center">
+                                                <span class="sign-badge-digital"><i class="fa-solid fa-check"></i> Firmado</span>
+                                                <div class="sign-line-placeholder mt-0.5" style="width: 80%;"></div>
+                                            </div>
+                                        {% else %}
+                                            <div class="sign-line-placeholder"></div>
+                                        {% endif %}
                                     </td>
                                 </tr>
                             {% endfor %}
@@ -1107,12 +1163,12 @@
                 </table>
             </div>
 
-            <!-- CUERPO TÉCNICO (DT / ASISTENTES / DELEGADOS) SI EXISTE -->
+            <!-- CUERPO TÃCNICO (DT / ASISTENTES / DELEGADOS) SI EXISTE -->
             {% if cuerpo_tecnico %}
                 <div class="section-dt">
                     <div class="section-dt-title">
                         <i class="fa-solid fa-clipboard-user text-primary"></i>
-                        Cuerpo Técnico y Oficiales de Equipo
+                        Cuerpo TÃ©cnico y Oficiales de Equipo
                     </div>
                     <div class="dt-cards-grid">
                         {% for dt in cuerpo_tecnico %}
@@ -1126,17 +1182,23 @@
                                 </div>
                                 <div class="dt-info-content">
                                     <div class="dt-role-tag">
-                                        <i class="fa-solid fa-certificate me-1"></i>DIRECTOR TÉCNICO / STAFF
+                                        <i class="fa-solid fa-certificate me-1"></i>DIRECTOR TÃCNICO / STAFF
                                     </div>
                                     <div class="dt-name-val">
                                         {{ dt.user.last_name|upper }} {{ dt.user.first_name|upper }}
                                     </div>
                                     <div class="dt-sub-meta">
-                                        Cédula: <strong>{{ dt.nro_cedula|default:dt.user.username }}</strong>
-                                        {% if dt.user.telefono %} • Tel: {{ dt.user.telefono }}{% endif %}
+                                        CÃ©dula: <strong>{{ dt.nro_cedula|default:dt.user.username }}</strong>
+                                        {% if dt.user.telefono %} â¢ Tel: {{ dt.user.telefono }}{% endif %}
                                     </div>
                                 </div>
-                                <div>
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if dt.firma_imagen %}
+                                        <div class="text-center" style="max-width: 80px;">
+                                            <img src="{{ dt.firma_imagen }}" style="max-height: 28px; max-width: 75px; object-fit: contain; filter: contrast(130%);" alt="Firma DT">
+                                            <span style="font-size: 0.55rem; color: #15803d; display: block; font-weight: 700;">FIRMADO</span>
+                                        </div>
+                                    {% endif %}
                                     {% if dt.estado_validacion == 'aprobado' %}
                                         <span class="status-badge-table aprobado">Habilitado</span>
                                     {% else %}
@@ -1149,7 +1211,7 @@
                 </div>
             {% endif %}
 
-            <!-- SECCIÓN DE FIRMAS Y SELLOS OFICIALES -->
+            <!-- SECCIÃN DE FIRMAS Y SELLOS OFICIALES -->
             <div class="sheet-signatures">
                 <div class="signature-box">
                     <div class="signature-space"></div>
@@ -1164,8 +1226,8 @@
                     <div class="signature-space"></div>
                     <div>
                         <div class="signature-line"></div>
-                        <div class="signature-label">Comisión Técnica / Vocalía</div>
-                        <div class="signature-sub">{{ torneo.nombre|default:"Comisión Oficial"|upper }}</div>
+                        <div class="signature-label">ComisiÃ³n TÃ©cnica / VocalÃ­a</div>
+                        <div class="signature-sub">{{ torneo.nombre|default:"ComisiÃ³n Oficial"|upper }}</div>
                     </div>
                 </div>
 
@@ -1173,23 +1235,23 @@
                     <div class="signature-space"></div>
                     <div>
                         <div class="signature-line"></div>
-                        <div class="signature-label">Sello de Secretaría</div>
-                        <div class="signature-sub">{{ organizacion.nombre|default:"Fútbol Pro"|upper }}</div>
+                        <div class="signature-label">Sello de SecretarÃ­a</div>
+                        <div class="signature-sub">{{ organizacion.nombre|default:"FÃºtbol Pro"|upper }}</div>
                     </div>
                 </div>
             </div>
 
-            <!-- PIE DE PÁGINA OFICIAL -->
+            <!-- PIE DE PÃGINA OFICIAL -->
             <footer class="sheet-footer">
                 <div class="footer-branding">
-                    <img src="{% static 'teams/images/logo.png' %}" alt="Fútbol Pro">
-                    <span>FÚTBOL PRO • GESTIÓN DEPORTIVA PROFESIONAL</span>
+                    <img src="{% static 'teams/images/logo.png' %}" alt="FÃºtbol Pro">
+                    <span>FÃTBOL PRO â¢ GESTIÃN DEPORTIVA PROFESIONAL</span>
                 </div>
                 <div>
                     Documento de Planillaje Oficial generado el {{ fecha_impresion|date:"d/m/Y H:i:s" }}
                 </div>
                 <div>
-                    Página 1 de 1 • Ref: EQ-{{ equipo.id }}-{% now "Ymd" %}
+                    PÃ¡gina 1 de 1 â¢ Ref: EQ-{{ equipo.id }}-{% now "Ymd" %}
                 </div>
             </footer>
 
