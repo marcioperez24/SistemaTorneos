@@ -75,6 +75,9 @@ class PlayerRegistrationForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         self.equipo = kwargs.pop('equipo', None)
+        # Seguridad: Nunca asociar como jugador a usuarios administradores, staff o dirigentes
+        if self.user and (self.user.is_superuser or self.user.role != 'jugador'):
+            self.user = None
         super().__init__(*args, **kwargs)
         if self.user:
             # Eliminar campos de cuenta ya que ya está logueado
@@ -140,7 +143,7 @@ class PlayerRegistrationForm(forms.ModelForm):
         cedula = self.cleaned_data.get('nro_cedula', '').strip()
         org = organizacion or (equipo.organizacion if equipo and hasattr(equipo, 'organizacion') else None)
         
-        if self.user:
+        if self.user and not self.user.is_superuser and self.user.role == 'jugador':
             user = self.user
             user.first_name = self.cleaned_data.get('first_name', user.first_name)
             user.last_name = self.cleaned_data.get('last_name', user.last_name)
@@ -155,16 +158,18 @@ class PlayerRegistrationForm(forms.ModelForm):
             existing_user = None
             if cedula:
                 f_jug = FichaJugador.objects.filter(nro_cedula=cedula).first()
-                if f_jug:
+                if f_jug and f_jug.user and not f_jug.user.is_superuser and f_jug.user.role == 'jugador':
                     existing_user = f_jug.user
                 else:
                     f_dt = FichaDT.objects.filter(nro_cedula=cedula).first()
-                    if f_dt:
+                    if f_dt and f_dt.user and not f_dt.user.is_superuser and f_dt.user.role == 'jugador':
                         existing_user = f_dt.user
                         
             # 2. Si no por cédula, buscar por username
             if not existing_user:
-                existing_user = User.objects.filter(username=username).first()
+                u_cand = User.objects.filter(username=username).first()
+                if u_cand and not u_cand.is_superuser and u_cand.role == 'jugador':
+                    existing_user = u_cand
                     
             if existing_user:
                 user = existing_user
@@ -249,6 +254,9 @@ class DTRegistrationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
+        # Seguridad: Nunca asociar como DT a usuarios administradores, staff o dirigentes
+        if self.user and (self.user.is_superuser or self.user.role != 'dt'):
+            self.user = None
         super().__init__(*args, **kwargs)
         if self.user:
             # Eliminar campos de cuenta ya que ya está logueado
@@ -291,7 +299,7 @@ class DTRegistrationForm(forms.ModelForm):
         cedula = self.cleaned_data.get('nro_cedula', '').strip()
         org = organizacion or (equipo.organizacion if equipo and hasattr(equipo, 'organizacion') else None)
         
-        if self.user:
+        if self.user and not self.user.is_superuser and self.user.role == 'dt':
             user = self.user
             user.first_name = self.cleaned_data.get('first_name', user.first_name)
             user.last_name = self.cleaned_data.get('last_name', user.last_name)
@@ -305,15 +313,17 @@ class DTRegistrationForm(forms.ModelForm):
             existing_user = None
             if cedula:
                 f_dt = FichaDT.objects.filter(nro_cedula=cedula).first()
-                if f_dt:
+                if f_dt and f_dt.user and not f_dt.user.is_superuser and f_dt.user.role == 'dt':
                     existing_user = f_dt.user
                 else:
                     f_jug = FichaJugador.objects.filter(nro_cedula=cedula).first()
-                    if f_jug:
+                    if f_jug and f_jug.user and not f_jug.user.is_superuser and f_jug.user.role == 'dt':
                         existing_user = f_jug.user
                         
             if not existing_user:
-                existing_user = User.objects.filter(username=username).first()
+                u_cand = User.objects.filter(username=username).first()
+                if u_cand and not u_cand.is_superuser and u_cand.role == 'dt':
+                    existing_user = u_cand
                     
             if existing_user:
                 user = existing_user

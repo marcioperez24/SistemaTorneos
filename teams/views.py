@@ -292,8 +292,23 @@ def registro_jugador(request, token):
         from users.models import Organizacion
         org = Organizacion.objects.first()
     
-    # 1. Si el usuario ya está autenticado (tiene cuenta en el sistema)
-    if request.user.is_authenticated:
+    # Seguridad: Solo tratamos como auto-inscripción si el usuario autenticado es un participante regular (jugador/dt)
+    # y NO es superadmin, dirigente ni staff de gestión. Un admin o dirigente que entra al link
+    # suele estar inscribiendo a un miembro de su club o testeando el enlace.
+    es_staff_o_admin = (
+        request.user.is_authenticated and (
+            request.user.is_superuser or 
+            request.user.role in ['superadmin', 'dirigente', 'comision', 'vocal', 'arbitro', 'tesoreria', 'secretaria']
+        )
+    )
+    es_participante_autenticado = (
+        request.user.is_authenticated 
+        and not es_staff_o_admin 
+        and request.user.role == tipo
+    )
+    
+    # 1. Si el usuario ya está autenticado (tiene cuenta de jugador/dt y se inscribe a sí mismo)
+    if es_participante_autenticado:
         # Validar si ya está registrado en este torneo (independientemente del equipo)
         if invitacion.torneo:
             if tipo == 'dt':
@@ -474,14 +489,14 @@ def registro_jugador(request, token):
         existing_user = None
         if nro_cedula:
             f_jug = FichaJugador.objects.filter(nro_cedula=nro_cedula).first()
-            if f_jug:
+            if f_jug and f_jug.user and not f_jug.user.is_superuser and f_jug.user.role == tipo:
                 existing_user = f_jug.user
             else:
                 f_dt = FichaDT.objects.filter(nro_cedula=nro_cedula).first()
-                if f_dt:
+                if f_dt and f_dt.user and not f_dt.user.is_superuser and f_dt.user.role == tipo:
                     existing_user = f_dt.user
                     
-        user_to_use = request.user if request.user.is_authenticated else existing_user
+        user_to_use = request.user if es_participante_autenticado else existing_user
         
         if tipo == 'dt':
             form = DTRegistrationForm(request.POST, request.FILES, user=user_to_use)
@@ -602,7 +617,7 @@ def registro_jugador(request, token):
                 messages.error(request, f'Ocurrió un error al procesar el registro: {str(e)}')
                 return redirect(request.path)
     else:
-        form_user = request.user if request.user.is_authenticated else None
+        form_user = request.user if es_participante_autenticado else None
         if tipo == 'dt':
             form = DTRegistrationForm(user=form_user)
         else:
