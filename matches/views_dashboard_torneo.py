@@ -123,6 +123,60 @@ def dashboard_torneo(request, torneo_id):
     tabla_liga = []
     formato_visual_posiciones = 'liga'  # 'liga' o 'grupos'
 
+    def _normalizar_filas_tabla(filas_raw):
+        filas_norm = []
+        for item in filas_raw:
+            eq_obj = item.get('equipo')
+            nombre_eq = item.get('equipo_nombre') or item.get('nombre')
+            if not nombre_eq and eq_obj:
+                nombre_eq = getattr(eq_obj, 'nombre', 'Club')
+            if not nombre_eq:
+                nombre_eq = 'Club'
+
+            logo_url = item.get('equipo_logo')
+            if not logo_url:
+                if eq_obj and getattr(eq_obj, 'logo', None):
+                    try:
+                        logo_url = eq_obj.logo.url
+                    except Exception:
+                        logo_url = None
+                elif item.get('logo'):
+                    try:
+                        logo_url = item['logo'].url
+                    except Exception:
+                        logo_url = None
+
+            pj = item.get('PJ', item.get('pj', 0))
+            pg = item.get('PG', item.get('pg', 0))
+            pe = item.get('PE', item.get('pe', 0))
+            pp = item.get('PP', item.get('pp', 0))
+            gf = item.get('GF', item.get('gf', 0))
+            gc = item.get('GC', item.get('gc', 0))
+            gd = item.get('DG', item.get('gd', gf - gc))
+            pts = item.get('PTS', item.get('pts', 0))
+
+            item['nombre'] = nombre_eq
+            item['equipo_nombre'] = nombre_eq
+            item['equipo_logo'] = logo_url
+            item['pj'] = pj
+            item['PJ'] = pj
+            item['pg'] = pg
+            item['PG'] = pg
+            item['pe'] = pe
+            item['PE'] = pe
+            item['pp'] = pp
+            item['PP'] = pp
+            item['gf'] = gf
+            item['GF'] = gf
+            item['gc'] = gc
+            item['GC'] = gc
+            item['gd'] = gd
+            item['DG'] = gd
+            item['pts'] = pts
+            item['PTS'] = pts
+            filas_norm.append(item)
+        return filas_norm
+
     if torneo.tipo == 'personalizado':
         formato_visual_posiciones = 'grupos'
         from matches.services.estadisticas_personalizado import calcular_posiciones_grupo
@@ -134,7 +188,7 @@ def dashboard_torneo(request, torneo_id):
                 'grupo_nombre': g.nombre,
                 'sector': g.sector,
                 'cupos': g.cupos_clasificacion,
-                'tabla': res.get('tabla', []),
+                'tabla': _normalizar_filas_tabla(res.get('tabla', [])),
                 'advertencia': res.get('advertencia_cupos'),
             })
     elif torneo.tipo == 'torneo':
@@ -150,7 +204,7 @@ def dashboard_torneo(request, torneo_id):
                     'grupo_nombre': g.nombre,
                     'sector': g.sector,
                     'cupos': g.cupos_clasificacion,
-                    'tabla': res.get('tabla', []),
+                    'tabla': _normalizar_filas_tabla(res.get('tabla', [])),
                 })
         else:
             # Derivar grupos de partidos con fase 'grupos'
@@ -189,8 +243,10 @@ def dashboard_torneo(request, torneo_id):
                         pts = (pg * torneo.puntos_victoria) + (pe * torneo.puntos_empate) + (pp * torneo.puntos_derrota)
                         gd = gf - gc
                         grupo_tabla.append({
+                            'equipo': eq,
                             'equipo_id': eq.id,
                             'equipo_nombre': eq.nombre,
+                            'nombre': eq.nombre,
                             'equipo_logo': eq.logo.url if eq.logo else None,
                             'pj': pj, 'pg': pg, 'pe': pe, 'pp': pp,
                             'gf': gf, 'gc': gc, 'gd': gd, 'pts': pts
@@ -204,7 +260,7 @@ def dashboard_torneo(request, torneo_id):
                         'grupo_id': g_name,
                         'grupo_nombre': g_name,
                         'cupos': cupos,
-                        'tabla': grupo_tabla
+                        'tabla': _normalizar_filas_tabla(grupo_tabla)
                     })
             else:
                 formato_visual_posiciones = 'liga'
@@ -248,8 +304,10 @@ def dashboard_torneo(request, torneo_id):
             pts = (pg * torneo.puntos_victoria) + (pe * torneo.puntos_empate) + (pp * torneo.puntos_derrota)
             gd = gf - gc
             tabla_liga.append({
+                'equipo': eq,
                 'equipo_id': eq.id,
                 'equipo_nombre': eq.nombre,
+                'nombre': eq.nombre,
                 'equipo_logo': eq.logo.url if eq.logo else None,
                 'pj': pj, 'pg': pg, 'pe': pe, 'pp': pp,
                 'gf': gf, 'gc': gc, 'gd': gd, 'pts': pts,
@@ -258,6 +316,7 @@ def dashboard_torneo(request, torneo_id):
         tabla_liga.sort(key=lambda x: (-x['pts'], -x['gd'], -x['gf']))
         for idx, item in enumerate(tabla_liga, start=1):
             item['posicion'] = idx
+        tabla_liga = _normalizar_filas_tabla(tabla_liga)
 
     # 6. Cuadro de Honor / Superlativos Colectivos
     equipos_analisis = []
@@ -270,6 +329,7 @@ def dashboard_torneo(request, torneo_id):
     mejor_ataque = None
     mejor_defensa = None
     equipo_puntero = None
+    con_partidos = []
     if equipos_analisis:
         # Mejor ataque
         con_goles = [e for e in equipos_analisis if (e.get('gf') or 0) > 0]
@@ -284,9 +344,24 @@ def dashboard_torneo(request, torneo_id):
 
     # Fair Play: tarjetas acumuladas por equipo
     tarjetas_por_equipo_dict = {}
+    for eq in equipos_qs:
+        tarjetas_por_equipo_dict[eq.id] = {
+            'amarillas': 0,
+            'rojas': 0,
+            'puntos': 0,
+            'equipo_nombre': eq.nombre,
+            'equipo_logo': eq.logo.url if eq.logo else None
+        }
+
     for ev in eventos_torneo.filter(tipo__in=['amarilla', 'roja']):
         if ev.equipo_id:
-            curr = tarjetas_por_equipo_dict.setdefault(ev.equipo_id, {'amarillas': 0, 'rojas': 0, 'puntos': 0, 'equipo_nombre': ev.equipo.nombre, 'equipo_logo': ev.equipo.logo.url if ev.equipo.logo else None})
+            if ev.equipo_id not in tarjetas_por_equipo_dict:
+                tarjetas_por_equipo_dict[ev.equipo_id] = {
+                    'amarillas': 0, 'rojas': 0, 'puntos': 0,
+                    'equipo_nombre': ev.equipo.nombre if ev.equipo else 'Club',
+                    'equipo_logo': ev.equipo.logo.url if ev.equipo and ev.equipo.logo else None
+                }
+            curr = tarjetas_por_equipo_dict[ev.equipo_id]
             if ev.tipo == 'amarilla':
                 curr['amarillas'] += 1
                 curr['puntos'] += 1
@@ -295,8 +370,12 @@ def dashboard_torneo(request, torneo_id):
                 curr['puntos'] += 3
 
     equipo_fairplay = None
-    if tarjetas_por_equipo_dict:
-        # Aquel equipo con menos puntos de tarjetas (que al menos tenga partidos jugados)
+    if con_partidos:
+        equipos_con_pj_ids = {e.get('equipo_id') for e in con_partidos if e.get('equipo_id')}
+        candidatos_fairplay = [v for k, v in tarjetas_por_equipo_dict.items() if k in equipos_con_pj_ids]
+        if candidatos_fairplay:
+            equipo_fairplay = min(candidatos_fairplay, key=lambda x: x['puntos'])
+    elif tarjetas_por_equipo_dict:
         equipo_fairplay = min(tarjetas_por_equipo_dict.values(), key=lambda x: x['puntos'])
 
     # 7. Líderes Individuales (Rankings)

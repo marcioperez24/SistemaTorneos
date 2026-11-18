@@ -6,128 +6,119 @@
 {% block content %}
 <div class="container-fluid py-4 px-lg-5">
 
-    <!-- 1. HERO HEADER DEL TORNEO -->
-    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0d6efd 100%); color: #ffffff;">
-        <div class="card-body p-4 p-lg-5 position-relative">
-            <!-- Micro Breadcrumb -->
-            <nav aria-label="breadcrumb" class="mb-3">
-                <ol class="breadcrumb mb-0" style="background: transparent; font-size: 0.825rem;">
-                    <li class="breadcrumb-item"><a href="{% url 'gestion_torneos' %}" class="text-white-50 text-decoration-none"><i class="fa-solid fa-trophy me-1"></i>Torneos</a></li>
-                    <li class="breadcrumb-item active text-white" aria-current="page">{{ torneo.nombre|truncatechars:35 }}</li>
-                </ol>
-            </nav>
-
-            <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-4">
-                <div class="flex-grow-1">
-                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                        <span class="badge bg-white text-dark fw-bold text-uppercase px-3 py-1.5 rounded-pill shadow-sm fs-9">
+    <!-- 1. HEADER LIMPIO, ELEGANTE Y COMPACTO DEL TORNEO -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+        <div class="card-body p-3 p-lg-4">
+            <!-- Barra superior: Migas de pan + Estado del Torneo + Botonera de Acción -->
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 pb-3 border-bottom border-light-subtle">
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <a href="{% url 'gestion_torneos' %}" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 fs-9 fw-semibold">
+                        <i class="fa-solid fa-arrow-left me-1"></i>Torneos
+                    </a>
+                    {% if torneo.organizacion %}
+                        <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 fs-9">
                             <i class="fa-solid fa-shield-halved text-primary me-1"></i>{{ torneo.organizacion.nombre }}
                         </span>
-                        <span class="badge {{ estado_badge }} px-3 py-1.5 rounded-pill shadow-sm fs-9 fw-bold">
-                            <i class="fa-solid {{ estado_icon }} me-1"></i>{{ estado_label }}
-                        </span>
-                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-3 py-1.5 rounded-pill fs-9 fw-semibold">
-                            <i class="fa-solid fa-sitemap me-1"></i>{{ torneo.get_tipo_display }}
-                        </span>
-                    </div>
-
-                    <h1 class="display-6 fw-extrabold text-white mb-2 tracking-tight">{{ torneo.nombre }}</h1>
-                    
-                    <div class="d-flex flex-wrap align-items-center text-white-50 gap-3 fs-8">
-                        <span><i class="fa-regular fa-calendar-days text-warning me-1"></i>Temporada: <strong class="text-white">{{ torneo.temporada }}</strong></span>
-                        <span>&bull;</span>
-                        <span><i class="fa-solid fa-layer-group text-info me-1"></i>Categoría: <strong class="text-white">{{ torneo.get_categoria_display|default:"General" }}</strong></span>
-                        <span>&bull;</span>
-                        <span><i class="fa-solid fa-futbol text-success me-1"></i>Modalidad: <strong class="text-white">{{ torneo.modalidad }}</strong></span>
-                        <span>&bull;</span>
-                        <span><i class="fa-solid fa-users text-light me-1"></i>Máx. Plantilla: <strong class="text-white">{{ torneo.max_jugadores_por_equipo }} jug.</strong></span>
-                    </div>
-
-                    <!-- Reglas Financieras Rápidas -->
-                    <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
-                        <span class="badge bg-warning-subtle text-dark border border-warning rounded-pill px-3 py-1 fs-9 fw-semibold">
-                            <i class="fa-solid fa-square text-warning me-1"></i>Amarilla: ${{ torneo.costo_amarilla }}
-                        </span>
-                        <span class="badge bg-danger-subtle text-danger border border-danger rounded-pill px-3 py-1 fs-9 fw-semibold">
-                            <i class="fa-solid fa-square text-danger me-1"></i>Roja: ${{ torneo.costo_roja }}
-                        </span>
-                        <span class="badge bg-secondary-subtle text-white border border-light-subtle rounded-pill px-3 py-1 fs-9 fw-semibold">
-                            <i class="fa-solid fa-handcuffs me-1"></i>Suspensión al acumular: {{ torneo.limite_amarillas_suspension }} amarillas
-                        </span>
-                        <span class="badge bg-light text-dark rounded-pill px-3 py-1 fs-9 fw-semibold">
-                            <i class="fa-solid fa-calculator me-1"></i>Victoria: +{{ torneo.puntos_victoria }} pts | Empate: +{{ torneo.puntos_empate }} pts
-                        </span>
-                    </div>
+                    {% endif %}
+                    <span class="badge {{ estado_badge }} rounded-pill px-2.5 py-1 fs-9 fw-bold">
+                        <i class="fa-solid {{ estado_icon }} me-1"></i>{{ estado_label }}
+                    </span>
+                    <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle rounded-pill px-2.5 py-1 fs-9 fw-semibold">
+                        <i class="fa-solid fa-sitemap me-1"></i>{{ torneo.get_tipo_display }}
+                    </span>
                 </div>
 
-                <!-- Botonera de Acciones Rápidas -->
-                <div class="d-flex flex-wrap gap-2 align-items-center justify-content-start justify-content-xl-end">
+                <!-- Botonera de acciones rápidas -->
+                <div class="d-flex flex-wrap gap-2 align-items-center">
                     {% if es_gestor %}
                         {% if torneo.tipo == 'personalizado' %}
-                            <a href="{% url 'panel_torneo_personalizado' torneo.id %}" class="btn btn-warning text-dark fw-bold rounded-pill px-3 py-2 shadow-sm d-flex align-items-center gap-1.5">
-                                <i class="fa-solid fa-sliders"></i>Centro de Control
+                            <a href="{% url 'panel_torneo_personalizado' torneo.id %}" class="btn btn-sm btn-primary fw-semibold rounded-pill px-3 py-1.5 shadow-xs d-flex align-items-center gap-1.5">
+                                <i class="fa-solid fa-sliders"></i><span>Gestionar</span>
                             </a>
                         {% else %}
-                            <a href="{% url 'detalle_torneo' torneo.id %}" class="btn btn-warning text-dark fw-bold rounded-pill px-3 py-2 shadow-sm d-flex align-items-center gap-1.5">
-                                <i class="fa-solid fa-gears"></i>Gestionar Torneo
+                            <a href="{% url 'detalle_torneo' torneo.id %}" class="btn btn-sm btn-primary fw-semibold rounded-pill px-3 py-1.5 shadow-xs d-flex align-items-center gap-1.5">
+                                <i class="fa-solid fa-sliders"></i><span>Gestionar</span>
                             </a>
                         {% endif %}
                     {% endif %}
 
-                    <a href="{% url 'partidos_lista' %}?torneo_id={{ torneo.id }}" class="btn btn-light text-primary fw-semibold rounded-pill px-3 py-2 shadow-sm d-flex align-items-center gap-1.5">
-                        <i class="fa-solid fa-calendar-check"></i>Fixture / Calendario
+                    <a href="{% url 'partidos_lista' %}?torneo={{ torneo.id }}" class="btn btn-sm btn-outline-primary fw-semibold rounded-pill px-3 py-1.5 shadow-xs d-flex align-items-center gap-1.5">
+                        <i class="fa-solid fa-calendar-check"></i><span>Fixture</span>
                     </a>
 
-                    <a href="{% url 'control_tarjetas_torneo' torneo.id %}" class="btn btn-outline-light fw-semibold rounded-pill px-3 py-2 shadow-sm d-flex align-items-center gap-1.5">
-                        <i class="fa-solid fa-id-card-clip text-warning"></i>Tarjetas & Multas
+                    <a href="{% url 'control_tarjetas_torneo' torneo.id %}" class="btn btn-sm btn-outline-warning text-dark fw-semibold rounded-pill px-3 py-1.5 shadow-xs d-flex align-items-center gap-1.5">
+                        <i class="fa-solid fa-id-card-clip text-warning"></i><span>Tarjetas & Multas</span>
                     </a>
 
-                    <a href="{% url 'imprimir_fixture_torneo' torneo.id %}" target="_blank" class="btn btn-outline-light fw-semibold rounded-pill px-3 py-2 shadow-sm d-flex align-items-center gap-1.5" title="Imprimir Fixture Oficial">
-                        <i class="fa-solid fa-print"></i>Imprimir
+                    <a href="{% url 'imprimir_fixture_torneo' torneo.id %}" target="_blank" class="btn btn-sm btn-outline-secondary fw-semibold rounded-pill px-3 py-1.5 shadow-xs d-flex align-items-center gap-1.5" title="Imprimir Fixture Oficial">
+                        <i class="fa-solid fa-print"></i><span>Imprimir</span>
                     </a>
 
                     {% if base_public_url %}
-                        <button type="button" class="btn btn-success fw-semibold rounded-pill px-3 py-2 shadow-sm d-flex align-items-center gap-1.5" onclick="compartirWhatsapp('{{ base_public_url }}', '{{ torneo.nombre|escapejs }}')">
-                            <i class="fa-brands fa-whatsapp fs-6"></i>Compartir
+                        <button type="button" class="btn btn-sm btn-success fw-semibold rounded-pill px-3 py-1.5 shadow-xs d-flex align-items-center gap-1.5" onclick="compartirWhatsapp('{{ base_public_url }}', '{{ torneo.nombre|escapejs }}')">
+                            <i class="fa-brands fa-whatsapp fs-6"></i><span>Compartir</span>
                         </button>
                     {% endif %}
                 </div>
             </div>
-        </div>
 
-        <!-- Barra inferior de Progreso del Torneo -->
-        <div class="bg-dark bg-opacity-50 px-4 py-3 border-top border-light border-opacity-10">
-            <div class="row align-items-center g-3">
-                <div class="col-12 col-md-3">
-                    <div class="d-flex align-items-center justify-content-between mb-1">
-                        <span class="fs-8 fw-semibold text-white-50 text-uppercase tracking-wider">Avance Global del Fixture</span>
-                        <span class="fw-bold text-warning fs-7">{{ porcentaje_avance }}%</span>
+            <!-- Fila Principal: Título + Reglas + Resumen Operativo -->
+            <div class="row align-items-center g-3 pt-3">
+                <div class="col-xl-7">
+                    <h2 class="fw-extrabold text-dark mb-2 tracking-tight">{{ torneo.nombre }}</h2>
+                    <div class="d-flex flex-wrap align-items-center text-muted gap-2 fs-8 mb-2">
+                        <span><i class="fa-regular fa-calendar-days text-primary me-1"></i>Temporada: <strong class="text-dark">{{ torneo.temporada }}</strong></span>
+                        <span>&bull;</span>
+                        <span><i class="fa-solid fa-layer-group text-info me-1"></i>Categoría: <strong class="text-dark">{{ torneo.get_categoria_display|default:"General" }}</strong></span>
+                        <span>&bull;</span>
+                        <span><i class="fa-solid fa-futbol text-success me-1"></i>Modalidad: <strong class="text-dark">{{ torneo.modalidad }}</strong></span>
+                        <span>&bull;</span>
+                        <span><i class="fa-solid fa-users text-secondary me-1"></i>Plantilla máx.: <strong class="text-dark">{{ torneo.max_jugadores_por_equipo }} jug.</strong></span>
                     </div>
-                    <div class="progress rounded-pill bg-white bg-opacity-20" style="height: 8px;">
-                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning rounded-pill" role="progressbar" style="width: {{ porcentaje_avance }}%;" aria-valuenow="{{ porcentaje_avance }}" aria-valuemin="0" aria-valuemax="100"></div>
+
+                    <div class="d-flex flex-wrap align-items-center gap-1.5">
+                        <span class="badge bg-warning-subtle text-dark border border-warning-subtle rounded-pill px-2.5 py-1 fs-9 fw-semibold">
+                            <i class="fa-solid fa-square text-warning me-1"></i>Amarilla: ${{ torneo.costo_amarilla }}
+                        </span>
+                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill px-2.5 py-1 fs-9 fw-semibold">
+                            <i class="fa-solid fa-square text-danger me-1"></i>Roja: ${{ torneo.costo_roja }}
+                        </span>
+                        <span class="badge bg-light text-secondary border rounded-pill px-2.5 py-1 fs-9 fw-semibold">
+                            <i class="fa-solid fa-triangle-exclamation text-warning me-1"></i>Suspensión: {{ torneo.limite_amarillas_suspension }} amarillas
+                        </span>
+                        <span class="badge bg-light text-dark border rounded-pill px-2.5 py-1 fs-9 fw-semibold">
+                            <i class="fa-solid fa-calculator text-primary me-1"></i>Victoria: +{{ torneo.puntos_victoria }} pts | Empate: +{{ torneo.puntos_empate }} pts
+                        </span>
                     </div>
                 </div>
-                <div class="col-12 col-md-9">
-                    <div class="d-flex flex-wrap justify-content-between justify-content-md-end gap-3 gap-lg-4 text-center text-md-end fs-8">
-                        <div>
-                            <span class="text-white-50 d-block fs-9 text-uppercase">Partidos Totales</span>
-                            <strong class="text-white fs-6">{{ total_partidos }}</strong>
+
+                <!-- Resumen de Avance en bloque ligero -->
+                <div class="col-xl-5">
+                    <div class="bg-light rounded-4 p-3 border border-light-subtle shadow-xs">
+                        <div class="d-flex justify-content-between align-items-center mb-1.5 fs-9 text-uppercase tracking-wider fw-bold text-muted">
+                            <span>Avance Global del Fixture</span>
+                            <span class="text-primary fs-8 fw-extrabold">{{ porcentaje_avance }}%</span>
                         </div>
-                        <div class="border-start border-light border-opacity-25 ps-3">
-                            <span class="text-white-50 d-block fs-9 text-uppercase">Finalizados</span>
-                            <strong class="text-success fs-6">{{ partidos_finalizados }}</strong>
+                        <div class="progress rounded-pill mb-2.5 bg-white border" style="height: 8px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary rounded-pill" role="progressbar" style="width: {{ porcentaje_avance }}%;" aria-valuenow="{{ porcentaje_avance }}" aria-valuemin="0" aria-valuemax="100"></div>
                         </div>
-                        <div class="border-start border-light border-opacity-25 ps-3">
-                            <span class="text-white-50 d-block fs-9 text-uppercase">Pendientes</span>
-                            <strong class="text-warning fs-6">{{ partidos_programados }}</strong>
-                        </div>
-                        <div class="border-start border-light border-opacity-25 ps-3">
-                            <span class="text-white-50 d-block fs-9 text-uppercase">En Juego</span>
-                            <strong class="text-danger fs-6">{{ partidos_en_curso }}</strong>
-                        </div>
-                        <div class="border-start border-light border-opacity-25 ps-3">
-                            <span class="text-white-50 d-block fs-9 text-uppercase">Goles Totales</span>
-                            <strong class="text-info fs-6">{{ total_goles }}</strong>
+                        <div class="d-flex justify-content-between text-center fs-9 text-muted">
+                            <div>
+                                <strong class="d-block fs-7 text-dark fw-bold">{{ total_partidos }}</strong>
+                                <span>Partidos</span>
+                            </div>
+                            <div class="border-start border-light-subtle ps-2">
+                                <strong class="d-block fs-7 text-success fw-bold">{{ partidos_finalizados }}</strong>
+                                <span>Jugados</span>
+                            </div>
+                            <div class="border-start border-light-subtle ps-2">
+                                <strong class="d-block fs-7 text-warning-emphasis fw-bold">{{ partidos_programados }}</strong>
+                                <span>Pendientes</span>
+                            </div>
+                            <div class="border-start border-light-subtle ps-2">
+                                <strong class="d-block fs-7 text-info fw-bold">{{ total_goles }}</strong>
+                                <span>Goles ({{ promedio_goles }} g/p)</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -138,7 +129,7 @@
 
     <!-- 2. CUADRO DE HONOR / CAMPEÓN (Si está registrado) -->
     {% if resultado_final %}
-    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%); color: #ffffff;">
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #ffffff;">
         <div class="card-body p-4 text-center">
             <div class="d-inline-flex p-3 bg-white bg-opacity-20 rounded-circle mb-3 shadow-sm">
                 <i class="fa-solid fa-crown fa-3x text-warning"></i>
@@ -148,34 +139,36 @@
             
             <div class="row justify-content-center g-3 max-w-4xl mx-auto mt-2">
                 <!-- Campeón -->
-                <div class="col-md-3">
-                    <div class="bg-white bg-opacity-20 rounded-4 p-3 backdrop-blur border border-white border-opacity-25 shadow-sm">
-                        <span class="badge bg-warning text-dark px-2.5 py-1 rounded-pill fw-bold mb-2">🥇 1° LUGAR - CAMPEÓN</span>
-                        {% if resultado_final.campeon.logo %}
-                            <img src="{{ resultado_final.campeon.logo.url }}" alt="{{ resultado_final.campeon.nombre }}" class="d-block mx-auto mb-2 bg-white rounded-3 p-1 shadow-sm" style="width: 50px; height: 50px; object-fit: contain;">
-                        {% endif %}
-                        <h6 class="fw-bold mb-0 text-white">{{ resultado_final.campeon.nombre }}</h6>
+                <div class="col-sm-6 col-md-3">
+                    <div class="bg-white bg-opacity-15 backdrop-blur rounded-3 p-3 text-center border border-white border-opacity-20">
+                        <span class="badge bg-warning text-dark fw-bold rounded-pill mb-2">1° Campeón</span>
+                        <h6 class="fw-bold mb-0 text-white text-truncate">{{ resultado_final.campeon.nombre }}</h6>
                     </div>
                 </div>
                 <!-- Subcampeón -->
-                <div class="col-md-3">
-                    <div class="bg-white bg-opacity-10 rounded-4 p-3 backdrop-blur border border-white border-opacity-20 shadow-sm">
-                        <span class="badge bg-light text-dark px-2.5 py-1 rounded-pill fw-bold mb-2">🥈 2° LUGAR - SUBCAMPEÓN</span>
-                        {% if resultado_final.subcampeon.logo %}
-                            <img src="{{ resultado_final.subcampeon.logo.url }}" alt="{{ resultado_final.subcampeon.nombre }}" class="d-block mx-auto mb-2 bg-white rounded-3 p-1 shadow-sm" style="width: 50px; height: 50px; object-fit: contain;">
-                        {% endif %}
-                        <h6 class="fw-bold mb-0 text-white">{{ resultado_final.subcampeon.nombre }}</h6>
+                {% if resultado_final.subcampeon %}
+                <div class="col-sm-6 col-md-3">
+                    <div class="bg-white bg-opacity-15 backdrop-blur rounded-3 p-3 text-center border border-white border-opacity-20">
+                        <span class="badge bg-light text-dark fw-bold rounded-pill mb-2">2° Subcampeón</span>
+                        <h6 class="fw-bold mb-0 text-white text-truncate">{{ resultado_final.subcampeon.nombre }}</h6>
                     </div>
                 </div>
-                {% if resultado_final.tercer_lugar %}
+                {% endif %}
                 <!-- 3er Lugar -->
-                <div class="col-md-3">
-                    <div class="bg-white bg-opacity-10 rounded-4 p-3 backdrop-blur border border-white border-opacity-20 shadow-sm">
-                        <span class="badge bg-danger-subtle text-danger px-2.5 py-1 rounded-pill fw-bold mb-2">🥉 3° LUGAR</span>
-                        {% if resultado_final.tercer_lugar.logo %}
-                            <img src="{{ resultado_final.tercer_lugar.logo.url }}" alt="{{ resultado_final.tercer_lugar.nombre }}" class="d-block mx-auto mb-2 bg-white rounded-3 p-1 shadow-sm" style="width: 50px; height: 50px; object-fit: contain;">
-                        {% endif %}
-                        <h6 class="fw-bold mb-0 text-white">{{ resultado_final.tercer_lugar.nombre }}</h6>
+                {% if resultado_final.tercer_lugar %}
+                <div class="col-sm-6 col-md-3">
+                    <div class="bg-white bg-opacity-15 backdrop-blur rounded-3 p-3 text-center border border-white border-opacity-20">
+                        <span class="badge bg-light text-dark fw-bold rounded-pill mb-2">3° Lugar</span>
+                        <h6 class="fw-bold mb-0 text-white text-truncate">{{ resultado_final.tercer_lugar.nombre }}</h6>
+                    </div>
+                </div>
+                {% endif %}
+                <!-- Goleador Oficial -->
+                {% if resultado_final.goleador %}
+                <div class="col-sm-6 col-md-3">
+                    <div class="bg-white bg-opacity-15 backdrop-blur rounded-3 p-3 text-center border border-white border-opacity-20">
+                        <span class="badge bg-dark text-warning fw-bold rounded-pill mb-2">Goleador Oficial</span>
+                        <h6 class="fw-bold mb-0 text-white text-truncate">{{ resultado_final.goleador.get_full_name }}</h6>
                     </div>
                 </div>
                 {% endif %}
@@ -190,10 +183,10 @@
         <!-- KPI 1: Clubes & Jugadores -->
         <div class="col-sm-6 col-xl-3">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="rounded-3 p-3 bg-primary bg-opacity-10 text-primary">
-                            <i class="fa-solid fa-users-line fa-xl"></i>
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="rounded-3 p-2.5 bg-primary bg-opacity-10 text-primary">
+                            <i class="fa-solid fa-users-line fa-lg"></i>
                         </div>
                         <span class="badge bg-primary-subtle text-primary rounded-pill px-2.5 py-1 fs-9 fw-semibold">
                             Participantes
@@ -201,7 +194,7 @@
                     </div>
                     <h6 class="text-muted fs-8 text-uppercase tracking-wider mb-1">Clubes y Plantillas</h6>
                     <div class="d-flex align-items-baseline gap-2 mb-2">
-                        <h2 class="fw-extrabold text-dark mb-0">{{ total_equipos }}</h2>
+                        <h3 class="fw-extrabold text-dark mb-0">{{ total_equipos }}</h3>
                         <span class="text-muted fs-8">Clubes en torneo</span>
                     </div>
                     <hr class="my-2 border-light-subtle">
@@ -220,10 +213,10 @@
         <!-- KPI 2: Avance de Partidos -->
         <div class="col-sm-6 col-xl-3">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="rounded-3 p-3 bg-success bg-opacity-10 text-success">
-                            <i class="fa-solid fa-chart-pie fa-xl"></i>
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="rounded-3 p-2.5 bg-success bg-opacity-10 text-success">
+                            <i class="fa-solid fa-chart-pie fa-lg"></i>
                         </div>
                         <span class="badge bg-success-subtle text-success rounded-pill px-2.5 py-1 fs-9 fw-semibold">
                             Avance
@@ -231,13 +224,13 @@
                     </div>
                     <h6 class="text-muted fs-8 text-uppercase tracking-wider mb-1">Partidos Disputados</h6>
                     <div class="d-flex align-items-baseline gap-2 mb-2">
-                        <h2 class="fw-extrabold text-dark mb-0">{{ partidos_finalizados }}</h2>
+                        <h3 class="fw-extrabold text-dark mb-0">{{ partidos_finalizados }}</h3>
                         <span class="text-muted fs-8">de {{ total_partidos }} partidos</span>
                     </div>
                     <hr class="my-2 border-light-subtle">
                     <div class="d-flex justify-content-between fs-8 text-secondary">
                         <span>Progreso: <strong class="text-dark">{{ porcentaje_avance }}%</strong></span>
-                        <span>Pendientes: <strong class="text-warning">{{ partidos_programados }}</strong></span>
+                        <span>Pendientes: <strong class="text-warning-emphasis">{{ partidos_programados }}</strong></span>
                     </div>
                     <div class="d-flex justify-content-between fs-9 text-muted mt-1">
                         <span>En vivo: <strong class="text-danger">{{ partidos_en_curso }}</strong></span>
@@ -250,10 +243,10 @@
         <!-- KPI 3: Goles y Rendimiento -->
         <div class="col-sm-6 col-xl-3">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="rounded-3 p-3 bg-info bg-opacity-10 text-info">
-                            <i class="fa-solid fa-futbol fa-xl"></i>
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="rounded-3 p-2.5 bg-info bg-opacity-10 text-info">
+                            <i class="fa-solid fa-futbol fa-lg"></i>
                         </div>
                         <span class="badge bg-info-subtle text-info rounded-pill px-2.5 py-1 fs-9 fw-semibold">
                             Goles
@@ -261,7 +254,7 @@
                     </div>
                     <h6 class="text-muted fs-8 text-uppercase tracking-wider mb-1">Goles Registrados</h6>
                     <div class="d-flex align-items-baseline gap-2 mb-2">
-                        <h2 class="fw-extrabold text-dark mb-0">{{ total_goles }}</h2>
+                        <h3 class="fw-extrabold text-dark mb-0">{{ total_goles }}</h3>
                         <span class="text-muted fs-8">{{ promedio_goles }} gol/partido</span>
                     </div>
                     <hr class="my-2 border-light-subtle">
@@ -281,10 +274,10 @@
         <!-- KPI 4: Disciplina y Multas -->
         <div class="col-sm-6 col-xl-3">
             <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="rounded-3 p-3 bg-warning bg-opacity-10 text-warning">
-                            <i class="fa-solid fa-scale-balanced fa-xl"></i>
+                <div class="card-body p-3 p-lg-4">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="rounded-3 p-2.5 bg-warning bg-opacity-10 text-warning">
+                            <i class="fa-solid fa-scale-balanced fa-lg"></i>
                         </div>
                         <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-2.5 py-1 fs-9 fw-semibold">
                             Disciplina
@@ -292,7 +285,7 @@
                     </div>
                     <h6 class="text-muted fs-8 text-uppercase tracking-wider mb-1">Tarjetas y Multas</h6>
                     <div class="d-flex align-items-baseline gap-2 mb-2">
-                        <h2 class="fw-extrabold text-dark mb-0">{{ total_tarjetas }}</h2>
+                        <h3 class="fw-extrabold text-dark mb-0">{{ total_tarjetas }}</h3>
                         <span class="text-muted fs-8">{{ promedio_tarjetas }} tarj/partido</span>
                     </div>
                     <hr class="my-2 border-light-subtle">
@@ -301,7 +294,7 @@
                         <span><i class="fa-solid fa-square text-danger me-1"></i>{{ total_rojas }} Rojas</span>
                     </div>
                     <div class="d-flex justify-content-between fs-9 text-muted mt-1">
-                        <span>Multas Generadas: <strong class="text-dark">${{ monto_multas_generadas|floatformat:2 }}</strong></span>
+                        <span>Generadas: <strong class="text-dark">${{ monto_multas_generadas|floatformat:2 }}</strong></span>
                         <span>Pendiente: <strong class="text-danger">${{ multas_pendientes_monto|floatformat:2 }}</strong></span>
                     </div>
                 </div>
@@ -317,16 +310,18 @@
             <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white border-start border-4 border-success">
                 <div class="d-flex align-items-center gap-3">
                     {% if mejor_ataque and mejor_ataque.equipo_logo %}
-                        <img src="{{ mejor_ataque.equipo_logo }}" alt="{{ mejor_ataque.equipo_nombre }}" class="rounded-3 p-1 border shadow-sm" style="width: 48px; height: 48px; object-fit: contain;">
+                        <img src="{{ mejor_ataque.equipo_logo }}" alt="{{ mejor_ataque.equipo_nombre|default:mejor_ataque.nombre }}" class="rounded-3 p-1 border shadow-xs" style="width: 44px; height: 44px; object-fit: contain;">
                     {% else %}
-                        <div class="bg-success text-white rounded-3 p-2.5 text-center shadow-sm" style="width: 48px; height: 48px;">
-                            <i class="fa-solid fa-bolt fa-lg mt-1"></i>
+                        <div class="bg-success text-white rounded-3 d-flex align-items-center justify-content-center shadow-xs" style="width: 44px; height: 44px;">
+                            <i class="fa-solid fa-bolt fa-lg"></i>
                         </div>
                     {% endif %}
                     <div class="flex-grow-1 text-truncate">
                         <span class="text-muted fs-9 text-uppercase tracking-wider fw-bold d-block">Mejor Ataque</span>
-                        <h6 class="fw-bold mb-0 text-truncate text-dark">{{ mejor_ataque.equipo_nombre|default:"Sin datos" }}</h6>
-                        <small class="text-success fw-semibold">{{ mejor_ataque.gf|default:"0" }} goles anotados</small>
+                        <h6 class="fw-bold mb-0 text-truncate text-dark" title="{{ mejor_ataque.equipo_nombre|default:mejor_ataque.nombre }}">
+                            {{ mejor_ataque.equipo_nombre|default:mejor_ataque.nombre|default:"Sin datos" }}
+                        </h6>
+                        <small class="text-success fw-semibold">{{ mejor_ataque.gf|default:mejor_ataque.GF|default:0 }} goles anotados</small>
                     </div>
                 </div>
             </div>
@@ -337,16 +332,18 @@
             <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white border-start border-4 border-primary">
                 <div class="d-flex align-items-center gap-3">
                     {% if mejor_defensa and mejor_defensa.equipo_logo %}
-                        <img src="{{ mejor_defensa.equipo_logo }}" alt="{{ mejor_defensa.equipo_nombre }}" class="rounded-3 p-1 border shadow-sm" style="width: 48px; height: 48px; object-fit: contain;">
+                        <img src="{{ mejor_defensa.equipo_logo }}" alt="{{ mejor_defensa.equipo_nombre|default:mejor_defensa.nombre }}" class="rounded-3 p-1 border shadow-xs" style="width: 44px; height: 44px; object-fit: contain;">
                     {% else %}
-                        <div class="bg-primary text-white rounded-3 p-2.5 text-center shadow-sm" style="width: 48px; height: 48px;">
-                            <i class="fa-solid fa-shield-virus fa-lg mt-1"></i>
+                        <div class="bg-primary text-white rounded-3 d-flex align-items-center justify-content-center shadow-xs" style="width: 44px; height: 44px;">
+                            <i class="fa-solid fa-shield-halved fa-lg"></i>
                         </div>
                     {% endif %}
                     <div class="flex-grow-1 text-truncate">
                         <span class="text-muted fs-9 text-uppercase tracking-wider fw-bold d-block">Valla Menos Batida</span>
-                        <h6 class="fw-bold mb-0 text-truncate text-dark">{{ mejor_defensa.equipo_nombre|default:"Sin datos" }}</h6>
-                        <small class="text-primary fw-semibold">{{ mejor_defensa.gc|default:"0" }} goles recibidos</small>
+                        <h6 class="fw-bold mb-0 text-truncate text-dark" title="{{ mejor_defensa.equipo_nombre|default:mejor_defensa.nombre }}">
+                            {{ mejor_defensa.equipo_nombre|default:mejor_defensa.nombre|default:"Sin datos" }}
+                        </h6>
+                        <small class="text-primary fw-semibold">{{ mejor_defensa.gc|default:mejor_defensa.GC|default:0 }} goles recibidos</small>
                     </div>
                 </div>
             </div>
@@ -357,16 +354,20 @@
             <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white border-start border-4 border-warning">
                 <div class="d-flex align-items-center gap-3">
                     {% if equipo_fairplay and equipo_fairplay.equipo_logo %}
-                        <img src="{{ equipo_fairplay.equipo_logo }}" alt="{{ equipo_fairplay.equipo_nombre }}" class="rounded-3 p-1 border shadow-sm" style="width: 48px; height: 48px; object-fit: contain;">
+                        <img src="{{ equipo_fairplay.equipo_logo }}" alt="{{ equipo_fairplay.equipo_nombre }}" class="rounded-3 p-1 border shadow-xs" style="width: 44px; height: 44px; object-fit: contain;">
                     {% else %}
-                        <div class="bg-warning text-dark rounded-3 p-2.5 text-center shadow-sm" style="width: 48px; height: 48px;">
-                            <i class="fa-solid fa-dove fa-lg mt-1"></i>
+                        <div class="bg-warning text-dark rounded-3 d-flex align-items-center justify-content-center shadow-xs" style="width: 44px; height: 44px;">
+                            <i class="fa-solid fa-dove fa-lg"></i>
                         </div>
                     {% endif %}
                     <div class="flex-grow-1 text-truncate">
                         <span class="text-muted fs-9 text-uppercase tracking-wider fw-bold d-block">Líder Fair Play</span>
-                        <h6 class="fw-bold mb-0 text-truncate text-dark">{{ equipo_fairplay.equipo_nombre|default:"Sin datos" }}</h6>
-                        <small class="text-warning-emphasis fw-semibold">{{ equipo_fairplay.amarillas|default:0 }} amarillas, {{ equipo_fairplay.rojas|default:0 }} rojas</small>
+                        <h6 class="fw-bold mb-0 text-truncate text-dark" title="{{ equipo_fairplay.equipo_nombre }}">
+                            {{ equipo_fairplay.equipo_nombre|default:"Sin amonestaciones" }}
+                        </h6>
+                        <small class="text-warning-emphasis fw-semibold">
+                            {{ equipo_fairplay.amarillas|default:0 }} amarillas, {{ equipo_fairplay.rojas|default:0 }} rojas
+                        </small>
                     </div>
                 </div>
             </div>
@@ -376,13 +377,15 @@
         <div class="col-md-6 col-xl-3">
             <div class="card border-0 shadow-sm rounded-4 h-100 p-3 bg-white border-start border-4 border-info">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="bg-info text-white rounded-3 p-2.5 text-center shadow-sm" style="width: 48px; height: 48px;">
-                        <i class="fa-solid fa-fire-flame-curved fa-lg mt-1"></i>
+                    <div class="bg-info text-white rounded-3 d-flex align-items-center justify-content-center shadow-xs" style="width: 44px; height: 44px;">
+                        <i class="fa-solid fa-fire fa-lg"></i>
                     </div>
                     <div class="flex-grow-1 text-truncate">
                         <span class="text-muted fs-9 text-uppercase tracking-wider fw-bold d-block">Partido Más Emocionante</span>
                         {% if partido_record_goles %}
-                            <h6 class="fw-bold mb-0 text-truncate text-dark">{{ partido_record_goles.equipo_local.nombre|truncatechars:12 }} {{ partido_record_goles.goles_local }}-{{ partido_record_goles.goles_visitante }} {{ partido_record_goles.equipo_visitante.nombre|truncatechars:12 }}</h6>
+                            <h6 class="fw-bold mb-0 text-truncate text-dark">
+                                {{ partido_record_goles.equipo_local.nombre|truncatechars:10 }} {{ partido_record_goles.goles_local }}-{{ partido_record_goles.goles_visitante }} {{ partido_record_goles.equipo_visitante.nombre|truncatechars:10 }}
+                            </h6>
                             <small class="text-info fw-semibold">{{ partido_record_goles.goles_local|add:partido_record_goles.goles_visitante }} goles en total</small>
                         {% else %}
                             <h6 class="fw-bold mb-0 text-muted">Aún sin registros</h6>
@@ -427,8 +430,10 @@
                         <div class="tab-content" id="gruposTabContent">
                             {% for tg in tablas_grupos %}
                                 <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="pane-grupo-{{ forloop.counter }}" role="tabpanel">
-                                    <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center">
-                                        <span class="fw-bold text-secondary fs-8"><i class="fa-solid fa-users me-1 text-primary"></i>{{ tg.grupo_nombre }}{% if tg.sector %} ({{ tg.sector }}){% endif %}</span>
+                                    <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                        <span class="fw-bold text-secondary fs-8">
+                                            <i class="fa-solid fa-users me-1 text-primary"></i>{{ tg.grupo_nombre }}{% if tg.sector %} <span class="text-muted">({{ tg.sector }})</span>{% endif %}
+                                        </span>
                                         <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill fs-9">
                                             <i class="fa-solid fa-award me-1"></i>Top {{ tg.cupos }} clasifican a playoffs
                                         </span>
@@ -437,8 +442,8 @@
                                         <table class="table table-hover align-middle mb-0 text-center fs-8">
                                             <thead class="table-light text-muted text-uppercase fs-9">
                                                 <tr>
-                                                    <th class="text-center" style="width: 50px;">#</th>
-                                                    <th class="text-start">Club</th>
+                                                    <th class="text-center" style="width: 45px;">#</th>
+                                                    <th class="text-start" style="min-width: 170px;">Club</th>
                                                     <th title="Partidos Jugados">PJ</th>
                                                     <th title="Partidos Ganados">PG</th>
                                                     <th title="Partidos Empatados">PE</th>
@@ -461,17 +466,19 @@
                                                         </td>
                                                         <td class="text-start">
                                                             <div class="d-flex align-items-center gap-2">
-                                                                {% if eq.equipo_logo %}
-                                                                    <img src="{{ eq.equipo_logo }}" alt="{{ eq.equipo_nombre }}" class="rounded shadow-xs" style="width: 26px; height: 26px; object-fit: contain;">
+                                                                {% if eq.equipo_logo or eq.logo %}
+                                                                    <img src="{{ eq.equipo_logo|default:eq.logo.url }}" alt="{{ eq.equipo_nombre|default:eq.nombre }}" class="rounded shadow-xs border bg-white" style="width: 26px; height: 26px; object-fit: contain;">
                                                                 {% else %}
-                                                                    <div class="bg-primary text-white rounded text-center fw-bold" style="width: 26px; height: 26px; line-height: 26px; font-size: 10px;">
-                                                                        {{ eq.equipo_nombre|slice:":2"|upper }}
+                                                                    <div class="bg-primary text-white rounded text-center fw-bold d-flex align-items-center justify-content-center shadow-xs" style="width: 26px; height: 26px; font-size: 10px;">
+                                                                        {{ eq.equipo_nombre|default:eq.nombre|default:eq.equipo.nombre|slice:":2"|upper }}
                                                                     </div>
                                                                 {% endif %}
-                                                                <span class="fw-semibold text-dark text-truncate" style="max-width: 180px;">{{ eq.equipo_nombre }}</span>
+                                                                <span class="fw-bold text-dark text-truncate" style="max-width: 200px;" title="{{ eq.equipo_nombre|default:eq.nombre|default:eq.equipo.nombre }}">
+                                                                    {{ eq.equipo_nombre|default:eq.nombre|default:eq.equipo.nombre }}
+                                                                </span>
                                                             </div>
                                                         </td>
-                                                        <td>{{ eq.pj }}</td>
+                                                        <td class="fw-semibold">{{ eq.pj|default:eq.PJ|default:0 }}</td>
                                                         <td class="text-success fw-semibold">{{ eq.pg|default:eq.PG|default:0 }}</td>
                                                         <td class="text-muted">{{ eq.pe|default:eq.PE|default:0 }}</td>
                                                         <td class="text-danger">{{ eq.pp|default:eq.PP|default:0 }}</td>
@@ -499,8 +506,8 @@
                             <table class="table table-hover align-middle mb-0 text-center fs-8">
                                 <thead class="table-light text-muted text-uppercase fs-9">
                                     <tr>
-                                        <th class="text-center" style="width: 50px;">#</th>
-                                        <th class="text-start">Club</th>
+                                        <th class="text-center" style="width: 45px;">#</th>
+                                        <th class="text-start" style="min-width: 170px;">Club</th>
                                         <th title="Partidos Jugados">PJ</th>
                                         <th title="Partidos Ganados">PG</th>
                                         <th title="Partidos Empatados">PE</th>
@@ -526,26 +533,28 @@
                                             </td>
                                             <td class="text-start">
                                                 <div class="d-flex align-items-center gap-2">
-                                                    {% if eq.equipo_logo %}
-                                                        <img src="{{ eq.equipo_logo }}" alt="{{ eq.equipo_nombre }}" class="rounded shadow-xs" style="width: 26px; height: 26px; object-fit: contain;">
+                                                    {% if eq.equipo_logo or eq.logo %}
+                                                        <img src="{{ eq.equipo_logo|default:eq.logo.url }}" alt="{{ eq.equipo_nombre|default:eq.nombre }}" class="rounded shadow-xs border bg-white" style="width: 26px; height: 26px; object-fit: contain;">
                                                     {% else %}
-                                                        <div class="bg-primary text-white rounded text-center fw-bold" style="width: 26px; height: 26px; line-height: 26px; font-size: 10px;">
-                                                            {{ eq.equipo_nombre|slice:":2"|upper }}
+                                                        <div class="bg-primary text-white rounded text-center fw-bold d-flex align-items-center justify-content-center shadow-xs" style="width: 26px; height: 26px; font-size: 10px;">
+                                                            {{ eq.equipo_nombre|default:eq.nombre|default:eq.equipo.nombre|slice:":2"|upper }}
                                                         </div>
                                                     {% endif %}
-                                                    <span class="fw-semibold text-dark text-truncate" style="max-width: 200px;">{{ eq.equipo_nombre }}</span>
+                                                    <span class="fw-bold text-dark text-truncate" style="max-width: 200px;" title="{{ eq.equipo_nombre|default:eq.nombre|default:eq.equipo.nombre }}">
+                                                        {{ eq.equipo_nombre|default:eq.nombre|default:eq.equipo.nombre }}
+                                                    </span>
                                                 </div>
                                             </td>
-                                            <td>{{ eq.pj }}</td>
-                                            <td class="text-success fw-semibold">{{ eq.pg }}</td>
-                                            <td class="text-muted">{{ eq.pe }}</td>
-                                            <td class="text-danger">{{ eq.pp }}</td>
-                                            <td>{{ eq.gf }}</td>
-                                            <td>{{ eq.gc }}</td>
-                                            <td class="fw-semibold {% if eq.gd > 0 %}text-success{% elif eq.gd < 0 %}text-danger{% else %}text-muted{% endif %}">
-                                                {% if eq.gd > 0 %}+{% endif %}{{ eq.gd }}
+                                            <td class="fw-semibold">{{ eq.pj|default:eq.PJ|default:0 }}</td>
+                                            <td class="text-success fw-semibold">{{ eq.pg|default:eq.PG|default:0 }}</td>
+                                            <td class="text-muted">{{ eq.pe|default:eq.PE|default:0 }}</td>
+                                            <td class="text-danger">{{ eq.pp|default:eq.PP|default:0 }}</td>
+                                            <td>{{ eq.gf|default:eq.GF|default:0 }}</td>
+                                            <td>{{ eq.gc|default:eq.GC|default:0 }}</td>
+                                            <td class="fw-semibold {% if eq.gd > 0 or eq.DG > 0 %}text-success{% elif eq.gd < 0 or eq.DG < 0 %}text-danger{% else %}text-muted{% endif %}">
+                                                {% if eq.gd > 0 or eq.DG > 0 %}+{% endif %}{{ eq.gd|default:eq.DG|default:0 }}
                                             </td>
-                                            <td class="table-primary fw-extrabold text-primary fs-7">{{ eq.pts }}</td>
+                                            <td class="table-primary fw-extrabold text-primary fs-7">{{ eq.pts|default:eq.PTS|default:0 }}</td>
                                             <td class="d-none d-md-table-cell">
                                                 <div class="d-flex justify-content-center gap-1">
                                                     {% for r in eq.forma %}
@@ -742,7 +751,7 @@
                     <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
                         <i class="fa-regular fa-clock text-primary"></i>Próximos Encuentros Programados
                     </h5>
-                    <a href="{% url 'partidos_lista' %}?torneo_id={{ torneo.id }}" class="fs-8 fw-semibold text-primary text-decoration-none">Ver todos</a>
+                    <a href="{% url 'partidos_lista' %}?torneo={{ torneo.id }}" class="fs-8 fw-semibold text-primary text-decoration-none">Ver todos</a>
                 </div>
                 <div class="card-body p-3">
                     {% for p in proximos_partidos %}
@@ -755,7 +764,7 @@
                                 <div class="col-5 text-end">
                                     <span class="fw-bold text-dark fs-8 me-2">{{ p.equipo_local.nombre }}</span>
                                     {% if p.equipo_local.logo %}
-                                        <img src="{{ p.equipo_local.logo.url }}" alt="" class="rounded shadow-xs" style="width: 24px; height: 24px; object-fit: contain;">
+                                        <img src="{{ p.equipo_local.logo.url }}" alt="" class="rounded shadow-xs border bg-white" style="width: 24px; height: 24px; object-fit: contain;">
                                     {% endif %}
                                 </div>
                                 <div class="col-2">
@@ -763,7 +772,7 @@
                                 </div>
                                 <div class="col-5 text-start">
                                     {% if p.equipo_visitante.logo %}
-                                        <img src="{{ p.equipo_visitante.logo.url }}" alt="" class="rounded shadow-xs me-2" style="width: 24px; height: 24px; object-fit: contain;">
+                                        <img src="{{ p.equipo_visitante.logo.url }}" alt="" class="rounded shadow-xs border bg-white me-2" style="width: 24px; height: 24px; object-fit: contain;">
                                     {% endif %}
                                     <span class="fw-bold text-dark fs-8">{{ p.equipo_visitante.nombre }}</span>
                                 </div>
@@ -790,7 +799,7 @@
                     <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
                         <i class="fa-solid fa-circle-check text-success"></i>Últimos Resultados Oficiales
                     </h5>
-                    <a href="{% url 'partidos_lista' %}?torneo_id={{ torneo.id }}" class="fs-8 fw-semibold text-primary text-decoration-none">Ver historial</a>
+                    <a href="{% url 'partidos_lista' %}?torneo={{ torneo.id }}" class="fs-8 fw-semibold text-primary text-decoration-none">Ver historial</a>
                 </div>
                 <div class="card-body p-3">
                     {% for p in ultimos_resultados %}
@@ -803,7 +812,7 @@
                                 <div class="col-4 text-end">
                                     <span class="fw-bold text-dark fs-8 me-2">{{ p.equipo_local.nombre }}</span>
                                     {% if p.equipo_local.logo %}
-                                        <img src="{{ p.equipo_local.logo.url }}" alt="" class="rounded shadow-xs" style="width: 24px; height: 24px; object-fit: contain;">
+                                        <img src="{{ p.equipo_local.logo.url }}" alt="" class="rounded shadow-xs border bg-white" style="width: 24px; height: 24px; object-fit: contain;">
                                     {% endif %}
                                 </div>
                                 <div class="col-4">
@@ -813,7 +822,7 @@
                                 </div>
                                 <div class="col-4 text-start">
                                     {% if p.equipo_visitante.logo %}
-                                        <img src="{{ p.equipo_visitante.logo.url }}" alt="" class="rounded shadow-xs me-2" style="width: 24px; height: 24px; object-fit: contain;">
+                                        <img src="{{ p.equipo_visitante.logo.url }}" alt="" class="rounded shadow-xs border bg-white me-2" style="width: 24px; height: 24px; object-fit: contain;">
                                     {% endif %}
                                     <span class="fw-bold text-dark fs-8">{{ p.equipo_visitante.nombre }}</span>
                                 </div>
@@ -842,13 +851,13 @@
     <div class="card border-0 shadow-sm rounded-4 bg-white mb-4">
         <div class="card-body p-4">
             <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
-                <i class="fa-solid fa-stadium text-primary"></i>Sedes y Canchas de Juego
+                <i class="fa-solid fa-map-location-dot text-primary"></i>Sedes y Canchas de Juego
             </h5>
             <div class="row g-3">
                 {% for est in estadios_stats %}
                 <div class="col-sm-6 col-md-4 col-xl">
                     <div class="p-3 rounded-4 bg-light text-center border border-light-subtle">
-                        <i class="fa-solid fa-map-location-dot text-primary fa-lg mb-2 d-block"></i>
+                        <i class="fa-solid fa-location-dot text-primary fa-lg mb-2 d-block"></i>
                         <h6 class="fw-bold mb-1 fs-8 text-dark text-truncate">{{ est.estadio }}</h6>
                         <small class="text-muted d-block fs-9">{{ est.total }} partidos programados</small>
                         <span class="badge bg-success-subtle text-success rounded-pill px-2 py-0.5 fs-9 mt-1">
