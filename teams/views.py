@@ -292,19 +292,19 @@ def registro_jugador(request, token):
         from users.models import Organizacion
         org = Organizacion.objects.first()
     
-    # Seguridad: Solo tratamos como auto-inscripción si el usuario autenticado es un participante regular (jugador/dt)
+    # Seguridad: Solo tratamos como auto-inscripción si el usuario autenticado es un participante regular
     # y NO es superadmin, dirigente ni staff de gestión. Un admin o dirigente que entra al link
     # suele estar inscribiendo a un miembro de su club o testeando el enlace.
     es_staff_o_admin = (
         request.user.is_authenticated and (
             request.user.is_superuser or 
+            request.user.is_staff or
             request.user.role in ['superadmin', 'dirigente', 'comision', 'vocal', 'arbitro', 'tesoreria', 'secretaria']
         )
     )
     es_participante_autenticado = (
         request.user.is_authenticated 
-        and not es_staff_o_admin 
-        and request.user.role == tipo
+        and not es_staff_o_admin
     )
     
     # 1. Si el usuario ya está autenticado (tiene cuenta de jugador/dt y se inscribe a sí mismo)

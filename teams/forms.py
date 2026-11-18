@@ -76,7 +76,7 @@ class PlayerRegistrationForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)
         self.equipo = kwargs.pop('equipo', None)
         # Seguridad: Nunca asociar como jugador a usuarios administradores, staff o dirigentes
-        if self.user and (self.user.is_superuser or self.user.role != 'jugador'):
+        if self.user and (self.user.is_superuser or self.user.is_staff or self.user.role in ['superadmin', 'dirigente', 'comision', 'vocal', 'arbitro', 'tesoreria', 'secretaria']):
             self.user = None
         super().__init__(*args, **kwargs)
         if self.user:
@@ -143,11 +143,21 @@ class PlayerRegistrationForm(forms.ModelForm):
         cedula = self.cleaned_data.get('nro_cedula', '').strip()
         org = organizacion or (equipo.organizacion if equipo and hasattr(equipo, 'organizacion') else None)
         
-        if self.user and not self.user.is_superuser and self.user.role == 'jugador':
+        es_staff_o_admin = self.user and (
+            self.user.is_superuser or 
+            self.user.is_staff or 
+            self.user.role in ['superadmin', 'dirigente', 'comision', 'vocal', 'arbitro', 'tesoreria', 'secretaria']
+        )
+        if self.user and not es_staff_o_admin:
             user = self.user
-            user.first_name = self.cleaned_data.get('first_name', user.first_name)
-            user.last_name = self.cleaned_data.get('last_name', user.last_name)
-            user.telefono = self.cleaned_data.get('telefono', user.telefono)
+            if self.cleaned_data.get('first_name'):
+                user.first_name = self.cleaned_data['first_name']
+            if self.cleaned_data.get('last_name'):
+                user.last_name = self.cleaned_data['last_name']
+            if self.cleaned_data.get('telefono'):
+                user.telefono = self.cleaned_data['telefono']
+            if user.role != 'jugador':
+                user.role = 'jugador'
             user.save()
         else:
             username = self.cleaned_data.get('username') or (f"jug_{cedula}" if cedula else "jug_usuario")
@@ -158,17 +168,17 @@ class PlayerRegistrationForm(forms.ModelForm):
             existing_user = None
             if cedula:
                 f_jug = FichaJugador.objects.filter(nro_cedula=cedula).first()
-                if f_jug and f_jug.user and not f_jug.user.is_superuser and f_jug.user.role == 'jugador':
+                if f_jug and f_jug.user and not (f_jug.user.is_superuser or f_jug.user.is_staff or f_jug.user.role in ['superadmin', 'dirigente', 'comision', 'vocal', 'arbitro', 'tesoreria', 'secretaria']):
                     existing_user = f_jug.user
                 else:
                     f_dt = FichaDT.objects.filter(nro_cedula=cedula).first()
-                    if f_dt and f_dt.user and not f_dt.user.is_superuser and f_dt.user.role == 'jugador':
+                    if f_dt and f_dt.user and not (f_dt.user.is_superuser or f_dt.user.is_staff or f_dt.user.role in ['superadmin', 'dirigente', 'comision', 'vocal', 'arbitro', 'tesoreria', 'secretaria']):
                         existing_user = f_dt.user
                         
             # 2. Si no por cédula, buscar por username
             if not existing_user:
                 u_cand = User.objects.filter(username=username).first()
-                if u_cand and not u_cand.is_superuser and u_cand.role == 'jugador':
+                if u_cand and not (u_cand.is_superuser or u_cand.is_staff or u_cand.role in ['superadmin', 'dirigente', 'comision', 'vocal', 'arbitro', 'tesoreria', 'secretaria']):
                     existing_user = u_cand
                     
             if existing_user:
@@ -179,6 +189,8 @@ class PlayerRegistrationForm(forms.ModelForm):
                     user.last_name = self.cleaned_data['last_name']
                 if self.cleaned_data.get('telefono'):
                     user.telefono = self.cleaned_data['telefono']
+                if user.role != 'jugador':
+                    user.role = 'jugador'
                 user.save()
             else:
                 base_username = username
@@ -255,7 +267,7 @@ class DTRegistrationForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         # Seguridad: Nunca asociar como DT a usuarios administradores, staff o dirigentes
-        if self.user and (self.user.is_superuser or self.user.role != 'dt'):
+        if self.user and (self.user.is_superuser or self.user.is_staff or self.user.role in ['superadmin', 'dirigente', 'comision', 'vocal', 'arbitro', 'tesoreria', 'secretaria']):
             self.user = None
         super().__init__(*args, **kwargs)
         if self.user:
@@ -299,11 +311,21 @@ class DTRegistrationForm(forms.ModelForm):
         cedula = self.cleaned_data.get('nro_cedula', '').strip()
         org = organizacion or (equipo.organizacion if equipo and hasattr(equipo, 'organizacion') else None)
         
-        if self.user and not self.user.is_superuser and self.user.role == 'dt':
+        es_staff_o_admin = self.user and (
+            self.user.is_superuser or 
+            self.user.is_staff or 
+            self.user.role in ['superadmin', 'dirigente', 'comision', 'vocal', 'arbitro', 'tesoreria', 'secretaria']
+        )
+        if self.user and not es_staff_o_admin:
             user = self.user
-            user.first_name = self.cleaned_data.get('first_name', user.first_name)
-            user.last_name = self.cleaned_data.get('last_name', user.last_name)
-            user.telefono = self.cleaned_data.get('telefono', user.telefono)
+            if self.cleaned_data.get('first_name'):
+                user.first_name = self.cleaned_data['first_name']
+            if self.cleaned_data.get('last_name'):
+                user.last_name = self.cleaned_data['last_name']
+            if self.cleaned_data.get('telefono'):
+                user.telefono = self.cleaned_data['telefono']
+            if user.role != 'dt':
+                user.role = 'dt'
             user.save()
         else:
             username = self.cleaned_data.get('username') or (f"dt_{cedula}" if cedula else "dt_usuario")
@@ -313,16 +335,16 @@ class DTRegistrationForm(forms.ModelForm):
             existing_user = None
             if cedula:
                 f_dt = FichaDT.objects.filter(nro_cedula=cedula).first()
-                if f_dt and f_dt.user and not f_dt.user.is_superuser and f_dt.user.role == 'dt':
+                if f_dt and f_dt.user and not (f_dt.user.is_superuser or f_dt.user.is_staff or f_dt.user.role in ['superadmin', 'dirigente', 'comision', 'vocal', 'arbitro', 'tesoreria', 'secretaria']):
                     existing_user = f_dt.user
                 else:
                     f_jug = FichaJugador.objects.filter(nro_cedula=cedula).first()
-                    if f_jug and f_jug.user and not f_jug.user.is_superuser and f_jug.user.role == 'dt':
+                    if f_jug and f_jug.user and not (f_jug.user.is_superuser or f_jug.user.is_staff or f_jug.user.role in ['superadmin', 'dirigente', 'comision', 'vocal', 'arbitro', 'tesoreria', 'secretaria']):
                         existing_user = f_jug.user
                         
             if not existing_user:
                 u_cand = User.objects.filter(username=username).first()
-                if u_cand and not u_cand.is_superuser and u_cand.role == 'dt':
+                if u_cand and not (u_cand.is_superuser or u_cand.is_staff or u_cand.role in ['superadmin', 'dirigente', 'comision', 'vocal', 'arbitro', 'tesoreria', 'secretaria']):
                     existing_user = u_cand
                     
             if existing_user:
@@ -333,6 +355,8 @@ class DTRegistrationForm(forms.ModelForm):
                     user.last_name = self.cleaned_data['last_name']
                 if self.cleaned_data.get('telefono'):
                     user.telefono = self.cleaned_data['telefono']
+                if user.role != 'dt':
+                    user.role = 'dt'
                 user.save()
             else:
                 base_username = username
