@@ -77,7 +77,9 @@
                                         </div>
                                     </div>
                                     
-                                    <h5 class="fw-bold text-dark mb-1 text-truncate" title="{{ t.nombre }}">{{ t.nombre }}</h5>
+                                    <h5 class="fw-bold text-dark mb-1 text-truncate" title="{{ t.nombre }}">
+                                        <a href="{% url 'dashboard_torneo' t.id %}" class="text-dark text-decoration-none hover-primary">{{ t.nombre }}</a>
+                                    </h5>
                                     <p class="text-muted fs-8 mb-3"><i class="fa-regular fa-calendar me-1"></i>Temporada: <span class="fw-semibold text-dark">{{ t.temporada }}</span></p>
                                     
                                     <div class="d-flex justify-content-between align-items-center bg-light rounded-3 p-2 mb-3">
@@ -100,19 +102,24 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="card-footer bg-white border-top-0 pt-0 pb-3 px-3 d-flex gap-2">
-                                    <a href="{% url 'detalle_torneo' t.id %}" class="btn btn-sm btn-custom-primary rounded-pill flex-grow-1 d-flex align-items-center justify-content-center">
-                                        <i class="fa-solid fa-gears me-1"></i>Gestionar
-                                    </a>
-                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="Editar Precios y Reglas" data-bs-toggle="modal" data-bs-target="#modalEditarTorneo{{ t.id }}">
-                                        <i class="fa-solid fa-sliders fs-8"></i>
-                                    </button>
-                                    <form method="POST" action="{% url 'eliminar_torneo' t.id %}" data-confirm="¿Eliminar el torneo {{ t.nombre }}?" class="m-0">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;" title="Eliminar">
-                                            <i class="fa-solid fa-trash-can fs-8"></i>
+                                <div class="card-footer bg-white border-top-0 pt-0 pb-3 px-3">
+                                    <div class="d-flex gap-2 mb-2">
+                                        <a href="{% url 'dashboard_torneo' t.id %}" class="btn btn-sm btn-primary rounded-pill flex-grow-1 d-flex align-items-center justify-content-center shadow-sm">
+                                            <i class="fa-solid fa-chart-pie me-1.5"></i>Dashboard
+                                        </a>
+                                        <a href="{% url 'detalle_torneo' t.id %}" class="btn btn-sm btn-outline-secondary rounded-pill flex-grow-1 d-flex align-items-center justify-content-center">
+                                            <i class="fa-solid fa-gears me-1.5"></i>Gestionar
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;" title="Editar Precios y Reglas" data-bs-toggle="modal" data-bs-target="#modalEditarTorneo{{ t.id }}">
+                                            <i class="fa-solid fa-sliders fs-9"></i>
                                         </button>
-                                    </form>
+                                        <form method="POST" action="{% url 'eliminar_torneo' t.id %}" data-confirm="¿Eliminar el torneo {{ t.nombre }}?" class="m-0">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px;" title="Eliminar">
+                                                <i class="fa-solid fa-trash-can fs-9"></i>
+                                            </button>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
                         </div>

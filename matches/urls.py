@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views, views_grupos, views_fixture_personalizado, views_estadisticas_personalizado, views_eliminatorias_personalizado, views_panel_personalizado, views_publica_personalizado, views_tarjetas_torneo
+from . import views, views_grupos, views_fixture_personalizado, views_estadisticas_personalizado, views_eliminatorias_personalizado, views_panel_personalizado, views_publica_personalizado, views_tarjetas_torneo, views_dashboard_torneo
 
 urlpatterns = [
     # Cartelera Pública de Partidos (Calendario)
@@ -44,6 +44,7 @@ urlpatterns = [
     # Gestión de Torneos y Ligas
     path('torneos/', views.gestion_torneos, name='gestion_torneos'),
     path('torneos/<int:torneo_id>/', views.detalle_torneo, name='detalle_torneo'),
+    path('torneos/<int:torneo_id>/dashboard/', views_dashboard_torneo.dashboard_torneo, name='dashboard_torneo'),
     path('torneos/<int:torneo_id>/editar/', views.editar_torneo, name='editar_torneo'),
     path('torneos/eliminar/<int:torneo_id>/', views.eliminar_torneo, name='eliminar_torneo'),
     path('torneos/<int:torneo_id>/generar/', views.generar_fixture_torneo, name='generar_fixture_torneo'),

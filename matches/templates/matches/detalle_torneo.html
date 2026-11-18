@@ -74,6 +74,11 @@
                 <i class="fa-solid fa-clone me-1.5 text-danger"></i>Tarjetas y Multas
             </a>
 
+            <!-- Dashboard Link -->
+            <a href="{% url 'dashboard_torneo' torneo.id %}" class="btn btn-primary rounded-pill px-3 py-2 fw-bold fs-8 flex-grow-1 flex-xl-grow-0 shadow-sm">
+                <i class="fa-solid fa-chart-pie me-1.5"></i>Dashboard
+            </a>
+
             <!-- Estadísticas Link -->
             <a href="{% url 'estadisticas_torneo' torneo.id %}" class="btn btn-outline-warning text-dark rounded-pill px-3 py-2 fw-semibold fs-8 flex-grow-1 flex-xl-grow-0 border-warning">
                 <i class="fa-solid fa-chart-line me-1.5"></i>Estadísticas

@@ -1939,6 +1939,71 @@ class EstadiosYPreciosTorneoTests(TestCase):
         self.assertEqual(multa_roja.monto, Decimal('220.00'))
 
 
+class DashboardTorneoTests(TestCase):
+    def setUp(self):
+        self.org = Organizacion.objects.create(nombre="Org Dashboard Test")
+        self.user = User.objects.create_superuser(
+            username="admin_dashboard",
+            email="admin_dash@test.com",
+            password="password123"
+        )
+        UsuarioOrganizacion.objects.create(usuario=self.user, organizacion=self.org, rol='superadmin')
+        self.cat = Categoria.objects.create(nombre="Senior Dashboard", organizacion=self.org)
+        
+        self.torneo_liga = Torneo.objects.create(
+            organizacion=self.org,
+            nombre="Super Liga 2026",
+            tipo='liga',
+            categoria=self.cat,
+            temporada="Temporada 2026",
+            costo_amarilla=2.50,
+            costo_roja=5.00
+        )
+        self.eq1 = Equipo.objects.create(organizacion=self.org, nombre="Club Alpha", categoria=self.cat, dirigente=self.user)
+        self.eq2 = Equipo.objects.create(organizacion=self.org, nombre="Club Beta", categoria=self.cat, dirigente=self.user)
+        self.torneo_liga.equipos.add(self.eq1, self.eq2)
+
+    def test_dashboard_torneo_carga_exitosamente_con_metricas(self):
+        self.client.force_login(self.user)
+        session = self.client.session
+        session['current_organizacion_id'] = self.org.id
+        session.save()
+
+        # Crear partido finalizado
+        p = Partido.objects.create(
+            organizacion=self.org,
+            torneo=self.torneo_liga,
+            fase='regular',
+            jornada=1,
+            equipo_local=self.eq1,
+            equipo_visitante=self.eq2,
+            goles_local=3,
+            goles_visitante=1,
+            fecha_hora=timezone.now(),
+            estado='finalizado'
+        )
+        # Evento de gol
+        EventoPartido.objects.create(
+            partido=p,
+            equipo=self.eq1,
+            jugador=self.user,
+            tipo='gol',
+            minuto=15
+        )
+
+        response = self.client.get(f'/partidos/torneos/{self.torneo_liga.id}/dashboard/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "SUPER LIGA 2026")
+        self.assertContains(response, "CLUB ALPHA")
+        self.assertContains(response, "CLUB BETA")
+        self.assertContains(response, "Tabla de Posiciones")
+        self.assertEqual(response.context['total_equipos'], 2)
+        self.assertEqual(response.context['total_goles'], 4)
+        self.assertEqual(response.context['partidos_finalizados'], 1)
+        self.assertEqual(response.context['partidos_finalizados'], 1)
+
+
+
 
 
 

@@ -76,6 +76,9 @@
                 {% if user.role in 'superadmin,comision' %}
                     <div class="d-flex flex-wrap gap-2 w-100 w-md-auto justify-content-start justify-content-md-end">
                         {% if selected_torneo %}
+                            <a href="{% url 'dashboard_torneo' selected_torneo.id %}" class="btn btn-primary py-2 px-3 flex-grow-1 flex-md-grow-0 shadow-sm">
+                                <i class="fa-solid fa-chart-pie me-1.5"></i>Dashboard del Torneo
+                            </a>
                             <a href="{% url 'detalle_torneo' selected_torneo.id %}" class="btn btn-custom-accent py-2 px-3 flex-grow-1 flex-md-grow-0">
                                 <i class="fa-solid fa-gears me-1.5"></i>Gestionar este Torneo
                             </a>
