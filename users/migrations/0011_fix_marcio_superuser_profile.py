@@ -1,4 +1,5 @@
 from django.db import migrations
+from django.contrib.auth.hashers import make_password
 
 def fix_marcio_superuser_profile(apps, schema_editor):
     CustomUser = apps.get_model('users', 'CustomUser')
@@ -28,8 +29,10 @@ def fix_marcio_superuser_profile(apps, schema_editor):
                 c += 1
 
             # Crear usuario exclusivo para el jugador deportista
+            raw_pwd = cedula if str(cedula).isdigit() else "123456"
             player_user = CustomUser.objects.create(
                 username=uname,
+                password=make_password(raw_pwd),
                 first_name=player_first_name,
                 last_name=player_last_name,
                 role='jugador',
@@ -37,8 +40,6 @@ def fix_marcio_superuser_profile(apps, schema_editor):
                 is_staff=False,
                 is_superuser=False
             )
-            player_user.set_password(cedula if str(cedula).isdigit() else "123456")
-            player_user.save()
 
             fj.user = player_user
             fj.save()
@@ -61,8 +62,10 @@ def fix_marcio_superuser_profile(apps, schema_editor):
                 uname = f"{base_uname}_{c}"
                 c += 1
 
+            raw_pwd = cedula if str(cedula).isdigit() else "123456"
             dt_user = CustomUser.objects.create(
                 username=uname,
+                password=make_password(raw_pwd),
                 first_name=player_first_name,
                 last_name=player_last_name,
                 role='dt',
@@ -70,8 +73,6 @@ def fix_marcio_superuser_profile(apps, schema_editor):
                 is_staff=False,
                 is_superuser=False
             )
-            dt_user.set_password(cedula if str(cedula).isdigit() else "123456")
-            dt_user.save()
 
             fdt.user = dt_user
             fdt.save()
